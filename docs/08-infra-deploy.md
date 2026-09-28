@@ -79,7 +79,7 @@ Os 2 projetos do plano Free são `orco-staging` e `orco-prod` (ADR-0008).
 
 | Arquivo | Gatilho | Passos |
 |---|---|---|
-| `ci.yml` | PR e push em `main` | checkout → Node 24 (cache do npm) → `npm ci` → lint → typecheck → Vitest → build → `npm audit --audit-level=high` |
+| `ci.yml` | PR e push em `main` | checkout → Node do `.nvmrc` (cache do npm) → `npm ci` → Prettier (`format:check`) → lint → typecheck → Vitest → build → `npm audit --audit-level=high` |
 | `codeql.yml` | PR, push em `main`, semanal | CodeQL `javascript-typescript`, suite `security-extended` |
 | `e2e.yml` | deploy de preview concluído (a partir da M2) | Playwright contra a URL do preview |
 | `pr-title.yml` | PR aberto/editado | valida o título em Conventional Commits |
