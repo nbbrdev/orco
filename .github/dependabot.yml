@@ -17,6 +17,19 @@ updates:
     groups:
       npm-minor-e-patch:
         update-types: [minor, patch]
+    # Majors ignorados de propósito (revisar periodicamente):
+    ignore:
+      # Os tipos do Node acompanham o runtime do projeto (Node 24, .nvmrc).
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # ESLint 10: eslint-plugin-react (via eslint-config-next) ainda quebra (react/display-name).
+      # Remover quando o eslint-config-next suportar ESLint 10.
+      - dependency-name: eslint
+        update-types: ["version-update:semver-major"]
+      # TypeScript 7 (reescrito em Go): typescript-eslint ainda não suporta.
+      # Remover quando typescript-eslint suportar TS 7.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
