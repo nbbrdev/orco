@@ -63,10 +63,19 @@ Os 2 projetos do plano Free são `orco-staging` e `orco-prod` (ADR-0008).
 
 ## Resend
 
-- Domínio de envio `orco.nbbrdev.com` verificado (SPF, DKIM, DMARC) com registros criados no DNS da Hostinger. Usar o subdomínio isola a reputação de envio do domínio principal.
+- Domínio de envio `orco.nbbrdev.com` **verificado** (2026-09-28), com registros na Hostinger:
+  - DKIM `resend._domainkey.orco`;
+  - SPF/MX em `send.orco`;
+  - DMARC herdado do domínio raiz (`_dmarc.nbbrdev.com`, `p=none`).
+
+  Usar o subdomínio isola a reputação de envio do domínio principal. O domínio raiz `nbbrdev.com` também está no Resend, para outros usos.
 - **Remetente:** `Orçô <nao-responda@orco.nbbrdev.com>`, sem Reply-To. Os e-mails avisam no rodapé que a caixa não recebe respostas.
 - Dois usos:
-  1. **SMTP do Supabase Auth** (confirmação, recuperação): credenciais no painel do Supabase.
+  1. **SMTP do Supabase Auth** (confirmação, recuperação, troca de e-mail, link de acesso e aviso de senha alterada), configurado no **painel de cada projeto**:
+     - SMTP: `smtp.resend.com:465`, usuário `resend`;
+     - senha: API key `supabase-smtp` com só *Sending access* e só o domínio `orco.nbbrdev.com`.
+
+     Os **templates** em pt-BR são versionados em `supabase/templates/` (usados direto pelo Supabase local) e colados no painel, conforme o checklist em `supabase/templates/README.md`. Os links usam `token_hash` → `/auth/confirm`.
   2. **API do Resend no app** (notificação de resposta ao freelancer, RN-40): `RESEND_API_KEY` na Vercel, só no servidor. Templates com React Email.
 - Plano Free: 3.000 e-mails/mês, 100/dia, compartilhados entre os dois usos.
 

@@ -39,7 +39,7 @@
 1. Landing `/` → **Começar grátis** → `/cadastro`.
 2. Informa e-mail e senha (RN-03), com o requisito da senha visível enquanto digita. O Turnstile roda invisível.
 3. **Criar conta** → a tela mostra "Enviamos um link para *email*. Abra para ativar sua conta." com botão **Reenviar**.
-4. Abre o e-mail (remetente Orçô, domínio próprio) → clica no link → `/auth/callback` → já entra logado em `/app/orcamentos`, que está vazia e mostra o botão grande **Criar primeiro orçamento** (F-09).
+4. Abre o e-mail (remetente Orçô, domínio próprio) → clica no link → `/auth/confirm` (o servidor confere o código do link; funciona mesmo se o e-mail for aberto em outro aparelho) → já entra logado em `/app/orcamentos`, que está vazia e mostra o botão grande **Criar primeiro orçamento** (F-09).
 
 **Erros:**
 - E-mail já cadastrado: mensagem genérica "Se este e-mail puder ser usado, você receberá um link", para não revelar quais contas existem.
@@ -71,7 +71,8 @@ A sessão persiste no navegador até o logout; não existe "lembrar de mim".
 
 1. `/entrar` → **Esqueci minha senha** → `/recuperar-senha` → e-mail → **Enviar**.
 2. A resposta é sempre "Se existir uma conta, enviamos um link".
-3. Link do e-mail → `/redefinir-senha` → nova senha → **Salvar** → entra logado.
+3. Link do e-mail → `/auth/confirm` → `/redefinir-senha` → nova senha → **Salvar** → entra logado.
+4. A conta recebe o e-mail **"Sua senha do Orçô foi alterada"**, com o botão "Não fui eu: redefinir senha". O mesmo aviso sai em qualquer troca de senha (segurança, 2026-09-28).
 
 ## F-05 — Primeiro orçamento (fluxo principal) · ✅
 

@@ -23,6 +23,7 @@ Uma ferramenta web para **um freelancer** criar, enviar e acompanhar **orçament
 ### Conta
 - Cadastro e login com **e-mail + senha** (confirmação de e-mail obrigatória) e **Google**.
 - Recuperação de senha por e-mail.
+- Aviso por e-mail sempre que a senha da conta é alterada (segurança; incluído em 2026-09-28, NBB-37).
 - CAPTCHA invisível (Cloudflare Turnstile) no cadastro.
 - Exclusão da própria conta (apaga todos os dados).
 

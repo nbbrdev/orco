@@ -72,7 +72,8 @@ flowchart LR
 │   ├── app/
 │   │   ├── (marketing)/       /, /termos, /privacidade
 │   │   ├── (auth)/            /entrar, /cadastro, /recuperar-senha, /redefinir-senha
-│   │   ├── auth/callback/     route handler OAuth/confirmação
+│   │   ├── auth/callback/     route handler do OAuth (Google, PKCE)
+│   │   ├── auth/confirm/      route handler dos links de e-mail (token_hash + verifyOtp)
 │   │   ├── app/               área logada (layout com navegação)
 │   │   │   ├── orcamentos/
 │   │   │   ├── clientes/
