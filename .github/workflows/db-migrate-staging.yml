@@ -22,11 +22,11 @@ jobs:
     name: migrate
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # O environment `staging` guarda só a connection string do banco de staging: sem Access Token
+    # da conta Supabase no GitHub (menor privilégio). Session Pooler, porque o runner não tem IPv6.
     environment: staging
     env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -42,8 +42,5 @@ jobs:
       - name: Instalar dependências (Supabase CLI fixado no lockfile)
         run: npm ci
 
-      - name: Vincular ao projeto de staging
-        run: npx supabase link --project-ref "$SUPABASE_PROJECT_REF"
-
       - name: Aplicar migrations pendentes
-        run: npx supabase db push
+        run: npx supabase db push --db-url "$SUPABASE_DB_URL"
