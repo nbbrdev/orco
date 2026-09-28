@@ -14,7 +14,7 @@
 
 Os 2 projetos do plano Free são `orco-staging` e `orco-prod` (ADR-0008).
 
-**Não há preview por PR** (decisão de 2026-09-28): um PR é revisado pelo código, pela explicação, pelo CI e rodando a branch localmente (inclusive no celular, pelo endereço "Network" do `npm run dev` na mesma Wi-Fi). Depois do merge, o teste acontece no staging. Motivos: um único endereço de teste, banco sempre coerente com o código, token da Vercel fora do alcance de PRs e pipeline igual ao da futura VPS (ADR-0011).
+**Não há preview por PR** (decisão de 2026-09-28): um PR é revisado pelo código, pela explicação, pelo CI e rodando a branch localmente (inclusive no celular, pelo endereço "Network" do `npm run dev` na mesma Wi-Fi; as faixas privadas `192.168.*.*` e `10.*.*.*` estão liberadas em `allowedDevOrigins` no `next.config.ts`). Depois do merge, o teste acontece no staging. Motivos: um único endereço de teste, banco sempre coerente com o código, token da Vercel fora do alcance de PRs e pipeline igual ao da futura VPS (ADR-0011).
 
 ## Vercel
 
