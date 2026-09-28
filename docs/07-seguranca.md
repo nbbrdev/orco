@@ -117,6 +117,7 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 - Lockfile (`package-lock.json`) commitado; CI com `npm ci` (instala exatamente o lockfile e falha se ele estiver desatualizado).
 - Dependabot (npm + github-actions) semanal; alertas e atualizações de segurança ativos.
 - `npm audit --audit-level=high` no CI.
+- **Scripts de instalação de dependências** (`preinstall`/`install`/`postinstall`) só rodam com aprovação explícita, registrada em `allowScripts` no `package.json` (npm 11). Padrão: **negar**, a menos que o pacote realmente precise do script. Cada aprovação é decidida no PR. Ex.: `unrs-resolver` negado (o binário nativo já vem pelas `optionalDependencies`).
 - CodeQL `security-extended` em todo PR (bloqueante).
 - Actions de terceiros fixadas por SHA; `permissions:` mínimas em cada workflow.
 
