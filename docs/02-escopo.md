@@ -63,7 +63,7 @@ Uma ferramenta web para **um freelancer** criar, enviar e acompanhar **orçament
 ### Plataforma
 - Interface pt-BR, BRL, mobile-first.
 - **PWA instalável** ("Adicionar à tela inicial"), abrindo como app. Sem modo offline.
-- **Tema claro/escuro** seguindo o sistema do aparelho. O PDF é sempre claro.
+- **Tema claro/escuro:** padrão "Automático" (segue o sistema do aparelho), com opção de fixar Claro ou Escuro no perfil. O PDF e a página do cliente são sempre claros.
 - Termos de uso e política de privacidade (LGPD).
 
 ## Fora do MVP (explícito)

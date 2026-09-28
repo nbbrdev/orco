@@ -20,7 +20,7 @@
 | PWA | `app/manifest.ts` + service worker próprio (`public/sw.js`), sem cache offline | 0009 |
 | Push | Web Push padrão: lib `web-push` + chaves VAPID, sem serviço externo | 0009 |
 | Jobs agendados | Vercel Cron (1×/dia) → Route Handler protegido; `pg_cron` para manutenção no banco | 0009 |
-| Tema | Tailwind `dark:` + `prefers-color-scheme` (segue o sistema) | 0001 |
+| Tema | **next-themes** (classe `.dark` no `<html>`, escolha salva no navegador) + Tailwind `dark:`. Padrão "Automático" (segue o sistema); o usuário pode fixar Claro ou Escuro no perfil | 0001 |
 | Testes | Vitest (unitário) + Playwright (E2E) | 0001 |
 | Qualidade / segurança de código | ESLint, Prettier, GitHub Actions, CodeQL, Dependabot, secret scanning | 0007 |
 | Hosting | Vercel (preview por PR e `main` = staging; produção em orco.nbbrdev.com só via release) | 0001, 0010 |

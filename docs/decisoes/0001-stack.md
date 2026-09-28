@@ -15,6 +15,7 @@ O Orçô é um SaaS público e gratuito, mantido por uma pessoa, hospedado na Ve
 
 ## Revisões
 - **2026-09-28:** gerenciador de pacotes trocado de **pnpm para npm** (decisão do usuário: nada extra para instalar; o npm já vem com o Node). Custos aceitos: instalação um pouco mais lenta, mais disco e menos rigidez contra dependências não declaradas, mitigada pelo ESLint (`import/no-extraneous-dependencies`). Runtime fixado em **Node 24 LTS** (`.nvmrc` + `engines`).
+- **2026-09-28 · Tema com next-themes:** o usuário pode escolher **Automático** (padrão, segue o sistema), **Claro** ou **Escuro**. Antes, o tema seguia só o sistema via CSS puro. Com o next-themes, a classe `.dark` vai no `<html>` e a escolha fica no `localStorage` do navegador. Ele injeta um script inline que evita a "piscada" do tema errado e que precisa receber o `nonce` da CSP (NBB-36). Custos aceitos: +1 dependência e +1 opção no perfil; a escolha vale por aparelho, não por conta.
 
 ## Consequências
 - Um único runtime (Node/TS) de ponta a ponta.

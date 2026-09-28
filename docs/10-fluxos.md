@@ -230,6 +230,7 @@ Sua marca ........ nome de exibição, nome comercial, logo (RN-05)
 Contato .......... telefone, e-mail, site, Instagram, CPF/CNPJ
 Pagamento ........ dados de pagamento, ex.: Pix (RN-04)
 Padrões .......... validade (dias), observações, condições de pagamento, prazo de execução
+Aparência ........ Tema: [Automático | Claro | Escuro] (padrão Automático; salvo neste aparelho, RNF-16)
 Notificações ..... ☑ Notificações por e-mail (respostas e lembretes, RN-41)
                    ☐ Notificações push neste aparelho (RN-45)
                    [Instalar o Orçô no celular] (quando o navegador permitir)

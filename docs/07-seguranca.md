@@ -61,6 +61,7 @@
 ## 7. Headers HTTP (via `next.config` / proxy)
 
 - `Content-Security-Policy` com **nonce** por requisição: `default-src 'self'`; scripts `'self' 'nonce-…' 'strict-dynamic'` + Turnstile; `img-src 'self' data: blob: <supabase-storage>`; `connect-src 'self' <supabase>`; `frame-src` só Turnstile; `frame-ancestors 'none'`; `object-src 'none'`; `base-uri 'self'`; `form-action 'self'`.
+- O script inline do **next-themes** (evita piscar o tema) recebe o mesmo `nonce` da CSP via prop `nonce` do `ThemeProvider`.
 - `Strict-Transport-Security` (ver acima).
 - `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`.
 - `Referrer-Policy: strict-origin-when-cross-origin` (padrão) / `no-referrer` (em `/p/*`).
