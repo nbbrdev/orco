@@ -1,0 +1,100 @@
+# Publica em PRODUÇÃO quando o usuário cria uma release (docs/06-regras-dev.md §4.1, ADR-0010):
+#   gh release create vX.Y.Z --target main --generate-notes
+# verify (tag na main + CI verde) → migrate (orco-prod) → deploy (Vercel --prod).
+# Para republicar uma versão (ex.: rollback de código), use "Re-run all jobs" na execução dela.
+name: Production
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+# Um deploy de produção por vez, sem cancelar no meio (migration interrompida é pior que fila).
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      checks: read
+    env:
+      TAG: ${{ github.event.release.tag_name }}
+      SHA: ${{ github.sha }}
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Checkout (histórico completo, para comparar com a main)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Tag no formato vX.Y.Z
+        run: |
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::A tag \"$TAG\" não segue o formato vX.Y.Z (ex.: v0.1.0)."
+            exit 1
+          fi
+
+      - name: Commit da tag pertence à main
+        run: |
+          if ! git merge-base --is-ancestor "$SHA" origin/main; then
+            echo "::error::O commit da tag $TAG ($SHA) não está na main. Crie a release com --target main."
+            exit 1
+          fi
+
+      - name: CI verde nesse commit
+        run: |
+          passed=$(gh api "repos/$REPO/commits/$SHA/check-runs?check_name=ci" \
+            --jq '[.check_runs[] | select(.conclusion == "success")] | length')
+          if [ "$passed" -lt 1 ]; then
+            echo "::error::O check \"ci\" do commit $SHA não passou (ou ainda não terminou). Espere o CI da main ficar verde e rode de novo."
+            exit 1
+          fi
+
+  migrate:
+    name: migrate
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Environment "production": só aceita tags v* e guarda a connection string do orco-prod.
+    environment: production
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - name: Checkout do commit da tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Node (versão do .nvmrc) com cache do npm
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependências (Supabase CLI fixado no lockfile)
+        run: npm ci
+
+      # Antes do código novo: as migrations precisam ser compatíveis com a versão anterior.
+      - name: Aplicar migrations pendentes no orco-prod
+        run: npx supabase db push --db-url "$SUPABASE_DB_URL"
+
+  deploy:
+    name: deploy
+    needs: migrate
+    # Enquanto a Vercel não estiver configurada (NBB-35), aparece como "skipped", não como erro.
+    if: vars.VERCEL_PROJECT_ID != ''
+    uses: ./.github/workflows/deploy-vercel.yml
+    with:
+      github-environment: production
+      vercel-environment: production
+      ref: ${{ github.sha }}
+      version: ${{ github.event.release.tag_name }}

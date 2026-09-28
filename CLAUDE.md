@@ -14,7 +14,7 @@ Produção: https://orco.nbbrdev.com · Repo: `nbbrdev/orco` (público) · Linea
 
 ## Fase atual
 **M1: Setup técnico** (M0 concluída em 2026-09-28). Meta: `v0.1.0` no ar. Sequência de PRs e issues no milestone M1 do Linear.
-Stack de ferramentas: **Node 24 LTS**, **npm**, Supabase CLI como devDependency (`npx supabase`), Vercel CLI via `npx vercel`.
+Stack de ferramentas: **Node 24 LTS**, **npm**, Supabase CLI como devDependency (`npx supabase`), Vercel CLI isolado em `tools/deploy/` (só nos workflows de deploy).
 
 ## Como trabalhar com o usuário
 - O usuário quer **participar das decisões técnicas e aprender**. Não decida sozinho: apresente opções com prós e contras e uma recomendação, e pergunte.
@@ -33,6 +33,6 @@ Stack de ferramentas: **Node 24 LTS**, **npm**, Supabase CLI como devDependency 
 - **Dinheiro** em centavos inteiros; cálculo só em `src/lib/money.ts`.
 - **Portabilidade:** nada de `@vercel/*` ou recursos exclusivos da Vercel; o app vai migrar para uma VPS após o `1.0.0` (ADR-0011).
 - **Repo público:** nenhum segredo, dado real ou PII em código, docs, seeds ou testes.
-- Commits e **títulos de PR** em Conventional Commits, pt-BR, com o ID do Linear: eles definem a versão (SemVer via release-please, ADR-0010).
-- Produção só recebe **releases** (merge do PR do release-please → tag `vX.Y.Z`). Nunca criar tags, editar o `CHANGELOG.md` ou a versão do `package.json` à mão.
+- Commits e **títulos de PR** em Conventional Commits, pt-BR, com o ID do Linear: viram o histórico da `main` e as notas das releases (ADR-0010).
+- Produção só recebe **versões criadas pelo usuário** (`gh release create vX.Y.Z --target main --generate-notes` → `production.yml`). O agente **nunca** cria tags ou releases (docs/06-regras-dev.md §4.1).
 - Regras numeradas (RN, RF, RNF, F, ADR) nunca são renumeradas.

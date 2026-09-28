@@ -1,6 +1,6 @@
 # Atualiza o STAGING depois de cada merge na main, só com o CI verde (docs/08-infra-deploy.md):
 # 1) aplica as migrations no orco-staging; 2) publica o mesmo commit em staging.orco.nbbrdev.com.
-# Produção só muda na release (release.yml, NBB-63).
+# Produção só muda quando o usuário cria uma release (production.yml).
 name: Staging
 
 on:
@@ -33,7 +33,15 @@ jobs:
     environment: staging
     env:
       SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
+      # Versão exibida no app de staging: "staging-" + 7 primeiros caracteres do commit.
+      - name: Versão do staging
+        id: version
+        run: echo "version=staging-${SHA::7}" >> "$GITHUB_OUTPUT"
+
       - name: Checkout do commit validado pelo CI
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -64,3 +72,4 @@ jobs:
       vercel-environment: preview
       ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       alias: staging.orco.nbbrdev.com
+      version: ${{ needs.migrate.outputs.version }}
