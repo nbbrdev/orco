@@ -23,6 +23,7 @@ Produção: https://orco.nbbrdev.com · Repo: `nbbrdev/orco` (público) · Linea
 - **Simplicidade:** nada adiciona passo, campo obrigatório ou tela ao fluxo principal sem justificativa (`docs/01-visao.md`).
 - **Segurança:** siga `docs/07-seguranca.md`. RLS em todas as tabelas; senhas só via Supabase Auth; autorização com `getUser()`/`getClaims()`, nunca `getSession()`; `service_role` só em `src/lib/supabase/admin.ts`; Zod no servidor.
 - **Dinheiro** em centavos inteiros; cálculo só em `src/lib/money.ts`.
+- **Portabilidade:** nada de `@vercel/*` ou recursos exclusivos da Vercel; o app vai migrar para uma VPS após o `1.0.0` (ADR-0011).
 - **Repo público:** nenhum segredo, dado real ou PII em código, docs, seeds ou testes.
 - Commits e **títulos de PR** em Conventional Commits, pt-BR, com o ID do Linear: eles definem a versão (SemVer via release-please, ADR-0010).
 - Produção só recebe **releases** (merge do PR do release-please → tag `vX.Y.Z`). Nunca criar tags, editar o `CHANGELOG.md` ou a versão do `package.json` à mão.

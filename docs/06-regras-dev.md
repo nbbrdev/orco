@@ -72,8 +72,10 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
 - Um schema Zod por entidade em `schemas.ts`, reutilizado no client (RHF) e no servidor.
 - Dinheiro: **sempre centavos (`bigint` no banco, `number` inteiro no TS)**, com cálculo apenas em `src/lib/money.ts` e formatação só na borda (ADR-0006).
 - Datas: `valid_until` como `date`; "hoje" sempre no fuso `America/Sao_Paulo` (`src/lib/dates.ts`).
+- **Portabilidade (ADR-0011):** proibido usar `@vercel/*` ou recursos exclusivos da Vercel; o código deve rodar em `next start`/standalone.
 - Componentes de UI: shadcn/ui em `src/components/ui` (não editar sem motivo); componentes do produto fora dessa pasta.
 - Acessibilidade: todo input com label, todo botão-ícone com `aria-label`.
+- **Visual:** cores, tipografia, cantos e status só pelos tokens de [12-identidade-visual.md](12-identidade-visual.md) (variáveis CSS mapeadas no Tailwind/shadcn). Nada de cor literal em componente.
 
 ## 6. Banco
 
@@ -115,7 +117,8 @@ Bug corrigido = teste que reproduz o bug.
 | `LINEAR_API_KEY` (status update do projeto no release) | GitHub Secrets | Não |
 | `NEXT_PUBLIC_APP_VERSION` (injetada no build a partir do `package.json`) | build | Sim |
 | `STAGING_BASIC_AUTH_USER`, `STAGING_BASIC_AUTH_PASSWORD` | Vercel, **somente Preview** | **Não** |
-| `SUPABASE_DB_URL`, chave de criptografia do backup | GitHub Secrets | Não |
+| `SUPABASE_DB_URL` (Session Pooler do prod), `BACKUP_AGE_PUBLIC_KEY` | GitHub Secrets | Não |
+| Chave **privada** do `age` (restauração de backups) | **Somente** com o dono do projeto (gerenciador de senhas), nunca no GitHub | Não |
 
 `.env.example` lista todas, sem valores.
 

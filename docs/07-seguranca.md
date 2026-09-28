@@ -131,7 +131,10 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 
 ## 14. Backups e continuidade
 
-- O plano Free do Supabase não inclui backups gerenciados. Um workflow agendado do GitHub Actions executa `pg_dump` diário e guarda o dump **criptografado** (age/GPG, chave só em GitHub Secrets). Em repo público, os artifacts do Actions podem ser baixados por qualquer pessoa logada, por isso a criptografia é obrigatória; o destino preferido é um armazenamento externo privado. ⚠️ PENDENTE: destino.
+- O plano Free do Supabase não inclui backups restauráveis. O workflow `backup.yml` (diário) gera um dump **só do banco de produção** (`supabase db dump`: roles, schema e dados, incluindo o schema `auth`), via Session Pooler (IPv4). Os logos do Storage não entram: o usuário pode reenviá-los.
+- O dump é **criptografado com `age`** usando uma **chave pública** (secret `BACKUP_AGE_PUBLIC_KEY`). A **chave privada nunca vai para o GitHub**: fica só com o dono do projeto, num gerenciador de senhas. Mesmo que o artifact seja baixado ou os secrets vazem, o backup permanece ilegível.
+- **Destino:** artifact do GitHub Actions com **retenção de 30 dias**. Em repo público, qualquer usuário logado pode baixar o arquivo, e é por isso que a criptografia é obrigatória. Risco aceito: os backups ficam vinculados ao repositório.
+- **Restauração:** baixar o artifact → `age -d -i <chave-privada>` → aplicar roles, schema e dados em um projeto novo (procedimento documentado em `docs/` na M7, com um **teste de restauração** antes do go-live).
 - Projetos Free pausam após 7 dias sem atividade: monitorar, ou manter atividade mínima pelo mesmo workflow.
 
 ## Checklist de segurança do PR
