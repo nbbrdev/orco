@@ -1,0 +1,190 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+ * Tema escuro (RNF-16): o next-themes aplica a classe `.dark` no <html>.
+ * Padrão "Automático" (segue o sistema); o usuário pode fixar Claro ou Escuro no perfil.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --font-sans:
+    var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Consolas, monospace;
+  --font-heading: var(--font-sans);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Status do orçamento (docs/12-identidade-visual.md): sempre com ícone e rótulo. */
+  --color-status-draft: var(--status-draft);
+  --color-status-draft-bg: var(--status-draft-bg);
+  --color-status-sent: var(--status-sent);
+  --color-status-sent-bg: var(--status-sent-bg);
+  --color-status-approved: var(--status-approved);
+  --color-status-approved-bg: var(--status-approved-bg);
+  --color-status-rejected: var(--status-rejected);
+  --color-status-rejected-bg: var(--status-rejected-bg);
+  --color-status-expired: var(--status-expired);
+  --color-status-expired-bg: var(--status-expired-bg);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* Tema claro (docs/12-identidade-visual.md). */
+:root {
+  --radius: 0.5rem;
+
+  --background: #f6f8f8;
+  --foreground: #10201e;
+  --card: #ffffff;
+  --card-foreground: #10201e;
+  --popover: #ffffff;
+  --popover-foreground: #10201e;
+  --primary: #0f766e;
+  --primary-foreground: #ffffff;
+  --primary-hover: #115e59;
+  --secondary: #e6f4f2;
+  --secondary-foreground: #115e59;
+  --muted: #eef2f1;
+  --muted-foreground: #51615f;
+  --accent: #e6f4f2;
+  --accent-foreground: #10201e;
+  --destructive: #b91c1c;
+  --border: #d6dfdd;
+  --input: #d6dfdd;
+  --ring: #0f766e;
+
+  --status-draft: #475569;
+  --status-draft-bg: #eef2f4;
+  --status-sent: #1d4ed8;
+  --status-sent-bg: #dbeafe;
+  --status-approved: #15803d;
+  --status-approved-bg: #dcfce7;
+  --status-rejected: #b91c1c;
+  --status-rejected-bg: #fee2e2;
+  --status-expired: #b45309;
+  --status-expired-bg: #fef3c7;
+
+  --chart-1: #0f766e;
+  --chart-2: #2dd4bf;
+  --chart-3: #51615f;
+  --chart-4: #1d4ed8;
+  --chart-5: #b45309;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #10201e;
+  --sidebar-primary: #0f766e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e6f4f2;
+  --sidebar-accent-foreground: #10201e;
+  --sidebar-border: #d6dfdd;
+  --sidebar-ring: #0f766e;
+}
+
+/* Tema escuro: classe `.dark` aplicada pelo next-themes. */
+.dark {
+  color-scheme: dark;
+
+  --background: #0b1413;
+  --foreground: #e6eeec;
+  --card: #111d1b;
+  --card-foreground: #e6eeec;
+  --popover: #111d1b;
+  --popover-foreground: #e6eeec;
+  --primary: #2dd4bf;
+  --primary-foreground: #042f2e;
+  --primary-hover: #5eead4;
+  --secondary: #0f2e2a;
+  --secondary-foreground: #5eead4;
+  --muted: #1a2629;
+  --muted-foreground: #93a5a2;
+  --accent: #0f2e2a;
+  --accent-foreground: #e6eeec;
+  --destructive: #f87171;
+  --border: #24342f;
+  --input: #24342f;
+  --ring: #2dd4bf;
+
+  --status-draft: #a5b4c3;
+  --status-draft-bg: #1a2629;
+  --status-sent: #93c5fd;
+  --status-sent-bg: #13223f;
+  --status-approved: #4ade80;
+  --status-approved-bg: #0f2a1a;
+  --status-rejected: #f87171;
+  --status-rejected-bg: #2e1414;
+  --status-expired: #fbbf24;
+  --status-expired-bg: #2e2410;
+
+  --chart-1: #2dd4bf;
+  --chart-2: #0f766e;
+  --chart-3: #93a5a2;
+  --chart-4: #93c5fd;
+  --chart-5: #fbbf24;
+  --sidebar: #111d1b;
+  --sidebar-foreground: #e6eeec;
+  --sidebar-primary: #2dd4bf;
+  --sidebar-primary-foreground: #042f2e;
+  --sidebar-accent: #0f2e2a;
+  --sidebar-accent-foreground: #e6eeec;
+  --sidebar-border: #24342f;
+  --sidebar-ring: #2dd4bf;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  /* Valores, tabelas, números de orçamento e datas: sempre tabulares. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}

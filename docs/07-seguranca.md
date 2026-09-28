@@ -19,7 +19,7 @@
 ## 2. Sessão
 
 - Cookies gerenciados por `@supabase/ssr`: `HttpOnly`, `Secure`, `SameSite=Lax`.
-- O middleware renova a sessão a cada requisição.
+- O proxy (`src/proxy.ts`, antigo "middleware" até o Next 15) renova a sessão a cada requisição.
 - **No servidor, a autorização usa sempre `supabase.auth.getUser()` ou `getClaims()`**, que validam o JWT. **Nunca** `getSession()`, que lê o cookie sem validar.
 - Logout invalida a sessão no Supabase (`signOut`).
 
@@ -58,9 +58,10 @@
 | Tokens públicos | Aleatórios (CSPRNG), 256 bits. |
 | Por coluna | **Não** no MVP: não guardamos dados de pagamento nem dados sensíveis (art. 5º, II, da LGPD). O CPF/CNPJ é opcional (minimização). Reavaliar se o escopo mudar. |
 
-## 7. Headers HTTP (via `next.config` / middleware)
+## 7. Headers HTTP (via `next.config` / proxy)
 
 - `Content-Security-Policy` com **nonce** por requisição: `default-src 'self'`; scripts `'self' 'nonce-…' 'strict-dynamic'` + Turnstile; `img-src 'self' data: blob: <supabase-storage>`; `connect-src 'self' <supabase>`; `frame-src` só Turnstile; `frame-ancestors 'none'`; `object-src 'none'`; `base-uri 'self'`; `form-action 'self'`.
+- O script inline do **next-themes** (evita piscar o tema) recebe o mesmo `nonce` da CSP via prop `nonce` do `ThemeProvider`.
 - `Strict-Transport-Security` (ver acima).
 - `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`.
 - `Referrer-Policy: strict-origin-when-cross-origin` (padrão) / `no-referrer` (em `/p/*`).
@@ -99,7 +100,7 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 
 ## 10.2 Staging e previews
 
-- Protegidos por **HTTP Basic Auth no middleware** quando `VERCEL_ENV=preview`, exceto nas rotas públicas do orçamento (`/p/*`, `/api/p/*`) e nos arquivos do PWA. A comparação das credenciais é feita em tempo constante.
+- Protegidos por **HTTP Basic Auth no proxy** quando `VERCEL_ENV=preview`, exceto nas rotas públicas do orçamento (`/p/*`, `/api/p/*`) e nos arquivos do PWA. A comparação das credenciais é feita em tempo constante.
 - `X-Robots-Tag: noindex` em todas as rotas de staging/preview.
 - Dados sempre fictícios; o banco `orco-staging` nunca recebe cópia de produção.
 
@@ -117,6 +118,7 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 - Lockfile (`package-lock.json`) commitado; CI com `npm ci` (instala exatamente o lockfile e falha se ele estiver desatualizado).
 - Dependabot (npm + github-actions) semanal; alertas e atualizações de segurança ativos.
 - `npm audit --audit-level=high` no CI.
+- **Scripts de instalação de dependências** (`preinstall`/`install`/`postinstall`) só rodam com aprovação explícita, registrada em `allowScripts` no `package.json` (npm 11). Padrão: **negar**, a menos que o pacote realmente precise do script. Cada aprovação é decidida no PR. Ex.: `unrs-resolver` negado (o binário nativo já vem pelas `optionalDependencies`).
 - CodeQL `security-extended` em todo PR (bloqueante).
 - Actions de terceiros fixadas por SHA; `permissions:` mínimas em cada workflow.
 

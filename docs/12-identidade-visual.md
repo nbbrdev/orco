@@ -64,7 +64,7 @@ Os neutros puxam levemente para o teal, em vez de cinza puro.
 
 ## Temas
 
-- O app segue `prefers-color-scheme` (RNF-16). Tokens definidos como variáveis CSS e mapeados no Tailwind/shadcn.
+- Tema **Automático** por padrão (segue o sistema), com opção de fixar **Claro** ou **Escuro** no perfil (RNF-16). Implementação: next-themes aplica a classe `.dark` no `<html>`; os tokens são variáveis CSS em `:root` (claro) e `.dark` (escuro), mapeadas no Tailwind/shadcn (`src/app/globals.css`).
 - **PDF e página pública do cliente (`/p/[token]`) são sempre claros**, porque funcionam como documento.
 - Contraste WCAG AA garantido nos dois temas.
 

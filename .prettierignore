@@ -1,0 +1,11 @@
+node_modules
+.next
+out
+build
+coverage
+package-lock.json
+src/types/database.ts
+supabase/migrations
+docs
+CLAUDE.md
+AGENTS.md

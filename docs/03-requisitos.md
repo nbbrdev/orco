@@ -95,7 +95,7 @@
 | RNF-04 | Toda lista tem estado vazio com orientação e ação. Todo erro diz o que fazer. |
 | RNF-05 | Textos em pt-BR simples; datas `dd/mm/aaaa`; valores `R$ 1.234,56`. |
 | RNF-06 | Acessibilidade WCAG 2.1 AA: contraste, navegação por teclado, labels, foco visível. |
-| RNF-16 | Tema claro/escuro automático (`prefers-color-scheme`), com contraste AA nos dois. O PDF é sempre claro. |
+| RNF-16 | Tema **Automático** (padrão, segue o sistema), **Claro** ou **Escuro**, escolhido no perfil e salvo no navegador (por aparelho), com contraste AA nos dois temas e sem "piscar" o tema errado ao carregar. O PDF e a página do cliente final são sempre claros. |
 
 ### Performance
 | # | Requisito |
