@@ -15,7 +15,7 @@ em `supabase/migrations/` são **geradas** a partir daqui, nunca escritas do zer
 6. Atualize os tipos: `npm run db:types` → `src/types/database.ts`.
 7. Escreva os testes de RLS e atualize `docs/05-dados.md` no mesmo PR.
 
-Depois do merge na `main`, o workflow `db-migrate-staging.yml` aplica a migration no staging. Em
+Depois do merge na `main` (com o CI verde), o workflow `staging.yml` aplica a migration no staging e só então publica o código. Em
 produção ela entra só com o release (ADR-0010).
 
 ## Regras

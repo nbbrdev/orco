@@ -105,6 +105,7 @@ Bug corrigido = teste que reproduz o bug.
 
 | Variável | Onde | Pública? |
 |---|---|---|
+| `APP_ENV` (`development` \| `staging` \| `production`; ausente = `development`) | Vercel (Preview = `staging`, Production = `production`), local | Não é segredo |
 | `NEXT_PUBLIC_SUPABASE_URL` | Vercel, local | Sim |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (anon) | Vercel, local | Sim |
 | `SUPABASE_SERVICE_ROLE_KEY` (secret key) | Vercel (server), local | **Não** |
@@ -117,10 +118,11 @@ Bug corrigido = teste que reproduz o bug.
 | `CRON_SECRET` | Vercel (server) | **Não** |
 | Resend SMTP, Google OAuth secret | **Painel do Supabase** (não no app) | Não |
 | `SUPABASE_DB_URL` (connection string do **Session Pooler**, porta 5432) para `db push --db-url` e, no prod, para o backup | GitHub **Environments** `staging` e `production` (mesmo nome, valor por ambiente). **Sem** Access Token da conta Supabase no GitHub: ele daria acesso a todos os projetos da conta | Não |
-| `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` (deploy de produção no release) | GitHub Secrets | Não |
+| `VERCEL_TOKEN` (deploys pelo Actions) | GitHub Environments `staging` e `production` | Não |
+| `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` | GitHub **Variables** do repositório (identificadores, não são segredo) | — |
 | `LINEAR_API_KEY` (status update do projeto no release) | GitHub Secrets | Não |
 | `NEXT_PUBLIC_APP_VERSION` (injetada no build a partir do `package.json`) | build | Sim |
-| `STAGING_BASIC_AUTH_USER`, `STAGING_BASIC_AUTH_PASSWORD` | Vercel, **somente Preview** | **Não** |
+| `STAGING_BASIC_AUTH_USER`, `STAGING_BASIC_AUTH_PASSWORD` | Vercel, **somente Preview** (= staging) | **Não** |
 | `BACKUP_AGE_PUBLIC_KEY` | GitHub Environment `production` | Não |
 | Chave **privada** do `age` (restauração de backups) | **Somente** com o dono do projeto (gerenciador de senhas), nunca no GitHub | Não |
 
@@ -134,4 +136,4 @@ Bug corrigido = teste que reproduz o bug.
 - [ ] Checklist de segurança do PR ok
 - [ ] Testado no celular (360 px) e no desktop
 - [ ] `/docs` e Linear Docs atualizados, se algo mudou
-- [ ] Preview da Vercel revisado
+- [ ] Testado localmente antes do merge e verificado no staging depois (não há preview por PR)

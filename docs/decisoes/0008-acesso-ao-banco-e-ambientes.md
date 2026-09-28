@@ -26,10 +26,11 @@ A segurança do Orçô se apoia na RLS do Postgres (ver [07-seguranca.md](../07-
 | Ambiente | Banco | Uso |
 |---|---|---|
 | Local | Supabase CLI no **Docker** | Desenvolvimento e testes |
-| Preview (Vercel, por PR) | Projeto Supabase **staging** (nuvem, Free) | Testar PRs de verdade, sem dados reais |
+| Staging (`staging.orco.nbbrdev.com`) | Projeto Supabase **staging** (nuvem, Free) | Testar o que já foi aprovado, sem dados reais |
 | Produção | Projeto Supabase **prod** (nuvem, Free) | Usuários reais |
 
-- As migrations chegam ao **staging** quando um PR que altera `supabase/migrations/` é aberto ou atualizado (e no merge em `main`), e à **produção** somente no **release** (ADR-0010). Ambos rodam pelo GitHub Actions (`supabase db push`), nunca pelo painel.
+- As migrations chegam ao **staging** depois do merge na `main`, com o CI verde (`staging.yml`), e à **produção** somente no **release** (ADR-0010). Ambos rodam pelo GitHub Actions (`supabase db push`), nunca pelo painel.
+- **Revisão (2026-09-28):** a linha original "Preview (Vercel, por PR)" e a aplicação de migrations em PRs foram removidas. Não há preview por PR (NBB-35), e migration não mergeada nunca chega ao staging (NBB-34).
 - Dados de staging são fictícios e podem ser apagados a qualquer momento.
 
 ## Consequências

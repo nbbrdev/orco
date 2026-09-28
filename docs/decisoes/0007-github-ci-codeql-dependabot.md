@@ -13,7 +13,7 @@
 - **CodeQL** `security-extended` em PR, push e semanalmente.
 - **Dependabot** (npm + github-actions) semanal, com security updates ativas.
 - **Secret scanning + push protection** ativos.
-- Integração GitHub↔Linear (IDs nos branches e commits) e GitHub↔Vercel (previews).
+- Integração GitHub↔Linear (IDs nos branches e commits). ~~GitHub↔Vercel (previews).~~ **Revisão (2026-09-28, NBB-35):** sem integração com a Vercel; os deploys saem do Actions (ADR-0010).
 
 ## Consequências
 - O código é visível publicamente: a segurança não pode depender de sigilo do código, e segredos ou dados reais nunca vão para o repositório (ver [07-seguranca.md](../07-seguranca.md) §11).

@@ -28,9 +28,11 @@ O usuário quer controle de versão (major/minor/patch) e que **toda versão em 
 - Changelog em **`CHANGELOG.md`** (repo) + **GitHub Releases** + **Linear** (status update).
 
 ### Vercel
-- A integração Git **continua ligada** para previews (PRs e `main`, com env vars de staging).
+> **Revisão (2026-09-28, NBB-35, validada pelo usuário):** a integração Git da Vercel foi **desligada** e **todos** os deploys saem do GitHub Actions pela receita reutilizável `deploy-vercel.yml`: o staging via `staging.yml` (após o CI verde na `main`, com as migrations antes do código) e a produção via `release.yml`. **Não há preview por PR.** Sem ambiente *Development* na Vercel: as chaves locais ficam no `.env.local`. O texto original está abaixo, riscado.
+
+- ~~A integração Git **continua ligada** para previews (PRs e `main`, com env vars de staging).~~
 - A **promoção automática da `main` para produção fica desligada**: produção só via CLI no workflow de release.
-- **Localmente**, a CLI é usada para `vercel env pull` (gera o `.env.local`). As variáveis do ambiente *Development* na Vercel apontam para o Supabase local (Docker).
+- ~~**Localmente**, a CLI é usada para `vercel env pull` (gera o `.env.local`). As variáveis do ambiente *Development* na Vercel apontam para o Supabase local (Docker).~~
 
 ## Alternativas descartadas
 - **Tag a cada merge com deploy contínuo:** sem controle de quando lançar e excesso de versões.
@@ -41,6 +43,6 @@ O usuário quer controle de versão (major/minor/patch) e que **toda versão em 
 
 ## Consequências
 - Novos arquivos: `release-please-config.json`, `.release-please-manifest.json`, `.github/workflows/release.yml`, `.github/workflows/pr-title.yml`.
-- Novos segredos no GitHub: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `LINEAR_API_KEY`.
+- Novos segredos no GitHub: `VERCEL_TOKEN` (environments `staging` e `production`), `LINEAR_API_KEY`; `VERCEL_ORG_ID` e `VERCEL_PROJECT_ID` como variables do repositório.
 - Migrations de produção passam a rodar **no release**, junto com o código correspondente.
 - Hotfix = PR `fix:` → merge → merge do PR de release (patch) → produção em minutos.

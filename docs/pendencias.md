@@ -28,7 +28,7 @@
 | P-09 | ~~Subdomínio e DNS~~ **Resolvido:** `orco.nbbrdev.com`, DNS na Hostinger. | — |
 | P-10 | ~~URL do repositório~~ **Resolvido:** `nbbrdev/orco` (público). | — |
 | P-11 | ~~Supabase local via Docker ou projeto dev na nuvem?~~ **Resolvido:** local via Docker (Supabase CLI + Docker Desktop). | — |
-| P-12 | ~~Dois projetos Supabase?~~ **Resolvido:** `orco-staging` (previews) + `orco-prod`; local no Docker (ADR-0008). | — |
+| P-12 | ~~Dois projetos Supabase?~~ **Resolvido:** `orco-staging` (staging) + `orco-prod`; local no Docker (ADR-0008). | — |
 | P-13 | ~~Remetente de e-mail~~ **Resolvido:** `Orçô <nao-responda@orco.nbbrdev.com>`, sem Reply-To. | — |
 | P-14 | ~~Destino dos backups~~ **Resolvido:** artifact do GitHub criptografado com `age` (chave privada só com o dono), 30 dias, só o banco. | — |
 | P-15 | ~~Vercel Hobby~~ **Resolvido:** Hobby no MVP; migração para VPS própria após o `1.0.0`, mantendo o Supabase (ADR-0011). | — |

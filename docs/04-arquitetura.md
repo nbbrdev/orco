@@ -23,7 +23,7 @@
 | Tema | **next-themes** (classe `.dark` no `<html>`, escolha salva no navegador) + Tailwind `dark:`. Padrão "Automático" (segue o sistema); o usuário pode fixar Claro ou Escuro no perfil | 0001 |
 | Testes | Vitest (unitário) + Playwright (E2E) | 0001 |
 | Qualidade / segurança de código | ESLint, Prettier, GitHub Actions, CodeQL, Dependabot, secret scanning | 0007 |
-| Hosting | Vercel (preview por PR e `main` = staging; produção em orco.nbbrdev.com só via release) | 0001, 0010 |
+| Hosting | Vercel, com deploys pelo GitHub Actions (`main` = staging; produção em orco.nbbrdev.com só via release; sem preview por PR) | 0001, 0010, 0011 |
 | Versionamento / releases | SemVer + Conventional Commits + release-please; deploy de produção por tag com a Vercel CLI no Actions | 0010 |
 
 **Fora por ora:** Sentry, Upstash, magic link, MFA (reavaliar em M7).
