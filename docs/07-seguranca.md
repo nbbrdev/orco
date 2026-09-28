@@ -58,14 +58,36 @@
 | Tokens públicos | Aleatórios (CSPRNG), 256 bits. |
 | Por coluna | **Não** no MVP: não guardamos dados de pagamento nem dados sensíveis (art. 5º, II, da LGPD). O CPF/CNPJ é opcional (minimização). Reavaliar se o escopo mudar. |
 
-## 7. Headers HTTP (via `next.config` / proxy)
+## 7. Headers HTTP (CSP no proxy; demais no `next.config`)
 
-- `Content-Security-Policy` com **nonce** por requisição: `default-src 'self'`; scripts `'self' 'nonce-…' 'strict-dynamic'` + Turnstile; `img-src 'self' data: blob: <supabase-storage>`; `connect-src 'self' <supabase>`; `frame-src` só Turnstile; `frame-ancestors 'none'`; `object-src 'none'`; `base-uri 'self'`; `form-action 'self'`.
-- O script inline do **next-themes** (evita piscar o tema) recebe o mesmo `nonce` da CSP via prop `nonce` do `ThemeProvider`.
-- `Strict-Transport-Security` (ver acima).
+**CSP com nonce, no proxy** (`src/proxy.ts` + `src/lib/security/csp.ts`), porque muda a cada requisição:
+- **Nonce:** 16 bytes aleatórios (`randomBytes`), novo a cada requisição. Vai nos headers da **requisição** (`x-nonce` e a CSP), de onde o Next extrai o nonce e o coloca nos próprios scripts, e na **resposta**, que o navegador aplica.
+- **Diretivas:**
+  - `default-src 'self'`;
+  - `script-src 'self' 'nonce-…' 'strict-dynamic'` + Turnstile (`https://challenges.cloudflare.com`), **nunca** `'unsafe-inline'`;
+  - `style-src 'self' 'unsafe-inline'`;
+  - `img-src 'self' data: blob: <supabase>`;
+  - `font-src 'self'`;
+  - `connect-src 'self' <supabase>`;
+  - `frame-src` só Turnstile;
+  - `worker-src 'self'` e `manifest-src 'self'`;
+  - `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`, `frame-ancestors 'none'`.
+- `<supabase>` é a origem de `NEXT_PUBLIC_SUPABASE_URL`.
+- **Só em desenvolvimento:** `'unsafe-eval'`, que o React usa para detalhar erros.
+- **Só fora de desenvolvimento:** `upgrade-insecure-requests`. Em `http://localhost` e no celular pela rede local não há HTTPS, e a troca quebraria a página.
+- **Por que `style-src 'unsafe-inline'`:** atributos `style="…"` (React, Radix/shadcn) não aceitam nonce, e bloqueá-los quebraria componentes. CSS injetado não executa código nem lê cookies: o risco é muito menor que o de script, que continua travado pelo nonce.
+- O script inline do **next-themes** (evita piscar o tema) recebe o mesmo nonce: o `src/app/layout.tsx` lê `x-nonce` e passa na prop `nonce` do `ThemeProvider`.
+- **Consequência aceita:** com nonce, **todas as páginas são renderizadas por requisição** (dinâmicas). O nonce não existe no build, e o layout lê `headers()`. Sem páginas estáticas nem cache de CDN para HTML.
+- **O matcher do proxy não exclui prefetches** (a doc do Next sugere excluir): no staging, eles escapariam do Basic Auth.
+
+**Headers fixos, no `next.config.ts`** (lista em `src/lib/security/headers.ts`), que vale também para arquivos estáticos e APIs:
+- `Strict-Transport-Security` (ver §6).
 - `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`.
 - `Referrer-Policy: strict-origin-when-cross-origin` (padrão) / `no-referrer` (em `/p/*`).
+- `X-Robots-Tag: noindex, nofollow` em `/p/*`.
 - `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()`.
+- `poweredByHeader: false`: sem `X-Powered-By: Next.js`.
+- Verificação externa (securityheaders.com, nota A) no staging, quando ele estiver no ar (NBB-35).
 
 ## 8. CSRF
 

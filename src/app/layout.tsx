@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { headers } from "next/headers";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
@@ -27,12 +28,16 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // Nonce da CSP desta requisição (gerado no proxy): libera o script inline do next-themes.
+  // Ler headers() torna as páginas dinâmicas, o que o nonce exige (docs/07-seguranca.md §7).
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   return (
     // suppressHydrationWarning: o next-themes adiciona a classe do tema no <html> antes da hidratação.
     <html lang="pt-BR" className={`${inter.variable} h-full`} suppressHydrationWarning>
       <body className="flex min-h-full flex-col">
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider nonce={nonce}>{children}</ThemeProvider>
       </body>
     </html>
   );

@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { getAppEnv } from "@/lib/app-env";
 import { isAuthorized, isPublicPath } from "@/lib/basic-auth";
+import { buildCsp, createNonce } from "@/lib/security/csp";
+import { getSupabaseEnv } from "@/lib/supabase/env";
 import { updateSession } from "@/lib/supabase/proxy";
 
 // Buscadores não devem indexar o staging.
@@ -9,7 +11,8 @@ const NOINDEX = "noindex, nofollow";
 
 // Proxy do Next 16 (antigo middleware.ts): roda antes de cada rota que casa com o matcher.
 export async function proxy(request: NextRequest) {
-  const isStaging = getAppEnv() === "staging";
+  const appEnv = getAppEnv();
+  const isStaging = appEnv === "staging";
 
   if (isStaging && !isPublicPath(request.nextUrl.pathname)) {
     const user = process.env.STAGING_BASIC_AUTH_USER;
@@ -35,7 +38,16 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  // CSP com nonce novo a cada requisição (docs/07-seguranca.md §7). Vai nos headers da REQUISIÇÃO,
+  // de onde o Next extrai o nonce para marcar os próprios scripts, e nos da RESPOSTA, que o
+  // navegador aplica.
+  const nonce = createNonce();
+  const csp = buildCsp({ nonce, appEnv, supabaseUrl: getSupabaseEnv().url });
+  request.headers.set("x-nonce", nonce);
+  request.headers.set("Content-Security-Policy", csp);
+
   const response = await updateSession(request);
+  response.headers.set("Content-Security-Policy", csp);
   if (isStaging) {
     response.headers.set("X-Robots-Tag", NOINDEX);
   }
@@ -43,6 +55,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
+  // Sem excluir prefetches (a doc do Next sugere): no staging, eles escapariam do Basic Auth.
   matcher: [
     // Tudo, exceto arquivos estáticos e de otimização de imagem do Next, favicon/ícones e imagens.
     "/((?!_next/static|_next/image|favicon.ico|icon.svg|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
