@@ -83,7 +83,7 @@ Os 2 projetos do plano Free são `orco-staging` e `orco-prod` (ADR-0008).
 | `codeql.yml` | PR, push em `main`, semanal | CodeQL `javascript-typescript`, suite `security-extended` |
 | `e2e.yml` | deploy de preview concluído (a partir da M2) | Playwright contra a URL do preview |
 | `pr-title.yml` | PR aberto/editado | valida o título em Conventional Commits |
-| `db-migrate-staging.yml` | PR ou push em `main` com mudança em `supabase/migrations` | `supabase db push` no **orco-staging** |
+| `db-migrate-staging.yml` | push em `main` com mudança em `supabase/migrations` (ou manual) | `supabase link` + `supabase db push` no **orco-staging**, com os secrets do environment `staging`. Não roda em PR: migration não mergeada nunca chega ao staging |
 | `release-please.yml` | push em `main` | mantém o PR de release (versão + `CHANGELOG.md`); no merge dele, cria a tag `vX.Y.Z` e o GitHub Release |
 | `release.yml` | release publicado | `supabase db push` no **orco-prod** → Vercel CLI `build --prod` + `deploy --prebuilt --prod` → status update no Linear |
 | `backup.yml` | diário 06:00 UTC (03:00 SP) | `supabase db dump` do **orco-prod** via Session Pooler (roles + schema + dados) → criptografa com `age` (chave **pública**) → `upload-artifact` com retenção de **30 dias** |

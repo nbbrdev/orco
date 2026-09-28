@@ -83,10 +83,11 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
 
 - Acesso ao banco via `supabase-js` com tipos gerados, **sem ORM** (ADR-0008).
 - O Supabase CLI é **devDependency** do projeto (versão fixada no `package.json`) e roda com `npx supabase …`.
-- O schema é **declarativo** em `supabase/schemas/*.sql`. Toda mudança começa ali → `npx supabase db diff -f <nome>` gera a migration → revisão manual da migration → `npx supabase db reset` para testar do zero.
+- O schema é **declarativo** em `supabase/schemas/*.sql`. Toda mudança começa ali → `npm run db:diff -- <nome>` gera a migration → revisão manual da migration → `npm run db:reset` para testar do zero. Passo a passo em `supabase/schemas/README.md`.
+- Banco local: `npm run db:start` / `db:stop` (Docker). As chaves locais são as padrão do CLI e vão em `.env.local`.
 - Nunca alterar o banco pelo painel em staging ou produção; migrations chegam lá só pelo CI.
 - Uma migration aplicada nunca é editada; a correção vem em nova migration.
-- Depois de cada migration: `supabase gen types typescript` → `src/types/database.ts` (commitado).
+- Depois de cada migration: `npm run db:types` → `src/types/database.ts` (commitado, formatado pelo Prettier).
 - Tabela nova = RLS + policies + teste de RLS no mesmo PR.
 - [05-dados.md](05-dados.md) atualizado no mesmo PR.
 
@@ -115,7 +116,7 @@ Bug corrigido = teste que reproduz o bug.
 | `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (`mailto:`) | Vercel (server), local | **Não** |
 | `CRON_SECRET` | Vercel (server) | **Não** |
 | Resend SMTP, Google OAuth secret | **Painel do Supabase** (não no app) | Não |
-| `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` e project refs (staging/prod) para `db push` | GitHub Secrets | Não |
+| `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF` para `db push` | GitHub **Environments** `staging` e `production` (mesmos nomes, valores por ambiente) | Não |
 | `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` (deploy de produção no release) | GitHub Secrets | Não |
 | `LINEAR_API_KEY` (status update do projeto no release) | GitHub Secrets | Não |
 | `NEXT_PUBLIC_APP_VERSION` (injetada no build a partir do `package.json`) | build | Sim |
