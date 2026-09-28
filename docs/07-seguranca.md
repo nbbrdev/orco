@@ -14,7 +14,7 @@
 - **CAPTCHA** Cloudflare Turnstile **somente no cadastro**. Como a opção nativa do Supabase Auth vale para todos os endpoints de auth, ela fica **desligada**: a Server Action de cadastro valida o token no endpoint `siteverify` da Cloudflare **antes** de chamar `supabase.auth.signUp`. Se houver abuso, estender a login e recuperação (ou ligar a opção nativa).
 - Rate limit de Auth nativo do Supabase (tentativas de login, envio de e-mails), revisado no painel.
 - Mensagens que não revelam se uma conta existe (F-01, F-03, F-04).
-- Redirect URLs do Auth restritas ao subdomínio de produção, aos previews da Vercel e a `localhost`.
+- Redirect URLs do Auth restritas ao domínio de cada ambiente: produção no `orco-prod`; staging e `localhost` no `orco-staging`.
 
 ## 2. Sessão
 
@@ -98,10 +98,12 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 - **Conteúdo do push:** apenas número do orçamento, primeiro nome do cliente e o evento. Nada de valores, CPF/CNPJ ou dados de contato na notificação, porque ela aparece na tela bloqueada.
 - **Service worker:** servido do próprio domínio (`/sw.js`, escopo `/`), sem cache de páginas autenticadas (sem modo offline) e sem importar scripts de terceiros. A CSP inclui `worker-src 'self'` e `manifest-src 'self'`.
 
-## 10.2 Staging e previews
+## 10.2 Staging
 
-- Protegidos por **HTTP Basic Auth no proxy** quando `VERCEL_ENV=preview`, exceto nas rotas públicas do orçamento (`/p/*`, `/api/p/*`) e nos arquivos do PWA. A comparação das credenciais é feita em tempo constante.
-- `X-Robots-Tag: noindex` em todas as rotas de staging/preview.
+- Protegido por **HTTP Basic Auth no proxy** quando `APP_ENV=staging`, exceto nas rotas públicas do orçamento (`/p/*`, `/api/p/*`) e nos arquivos do PWA (`src/lib/basic-auth.ts`). A comparação das credenciais é feita em **tempo constante** (hash SHA-256 + `timingSafeEqual`), para que o tempo de resposta não revele a senha.
+- Sem credenciais configuradas, o staging responde **503**: fica fechado, nunca aberto por esquecimento.
+- `X-Robots-Tag: noindex, nofollow` em todas as rotas do staging.
+- Não há preview por PR ([08-infra-deploy.md](08-infra-deploy.md)): o token da Vercel e os segredos do banco ficam nos environments `staging` (só `main`) e `production` (só tags `v*`), fora do alcance de qualquer PR.
 - Dados sempre fictícios; o banco `orco-staging` nunca recebe cópia de produção.
 
 ## 11. Segredos e repositório público

@@ -30,5 +30,5 @@ O plano Hobby da Vercel é gratuito, mas restrito a uso não comercial. O usuár
 - **Vercel Pro desde o início:** custo sem necessidade enquanto o produto for gratuito.
 
 ## Consequências
-- Na VPS perdemos os previews automáticos por PR: será preciso um substituto (ex.: staging fixo na VPS) no projeto de migração.
-- O workflow de release (ADR-0010) terá o passo de deploy trocado (Vercel CLI → build de imagem + deploy na VPS).
+- ~~Na VPS perdemos os previews automáticos por PR: será preciso um substituto (ex.: staging fixo na VPS) no projeto de migração.~~ **Revisão (2026-09-28, NBB-35):** o projeto já não usa preview por PR; o staging fixo existe desde a M1. Se fizer falta na VPS, ferramentas como Coolify ou Dokploy oferecem preview por PR.
+- ~~O workflow de release (ADR-0010) terá o passo de deploy trocado (Vercel CLI → build de imagem + deploy na VPS).~~ **Revisão (2026-09-28, NBB-35):** o pipeline da VPS foi antecipado. Staging e produção já publicam pelo GitHub Actions, e só a receita `deploy-vercel.yml` conhece a Vercel. Na migração, troca-se só esse arquivo (Vercel CLI → build de imagem + deploy na VPS) e apaga-se `tools/deploy/` e `vercel.json`.

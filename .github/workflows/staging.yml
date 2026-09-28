@@ -1,0 +1,64 @@
+# Atualiza o STAGING depois de cada merge na main, só com o CI verde (docs/08-infra-deploy.md):
+# 1) aplica as migrations no orco-staging; 2) publica o mesmo commit em staging.orco.nbbrdev.com.
+# Produção só muda na release (release.yml, NBB-63).
+name: Staging
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Um de cada vez e sem cancelar no meio (uma migration interrompida é pior que uma fila).
+concurrency:
+  group: staging
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: migrate
+    # Só depois de um CI verde de um push na main deste repositório (nunca de PR ou fork).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Só a connection string do banco de staging (Session Pooler); sem Access Token da conta.
+    environment: staging
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - name: Checkout do commit validado pelo CI
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
+
+      - name: Node (versão do .nvmrc) com cache do npm
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependências (Supabase CLI fixado no lockfile)
+        run: npm ci
+
+      # Idempotente: sem migration nova, só confirma "Remote database is up to date".
+      - name: Aplicar migrations pendentes
+        run: npx supabase db push --db-url "$SUPABASE_DB_URL"
+
+  deploy:
+    name: deploy
+    needs: migrate
+    uses: ./.github/workflows/deploy-vercel.yml
+    with:
+      github-environment: staging
+      vercel-environment: preview
+      ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      alias: staging.orco.nbbrdev.com

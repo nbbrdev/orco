@@ -19,7 +19,8 @@ Stack de ferramentas: **Node 24 LTS**, **npm**, Supabase CLI como devDependency 
 ## Como trabalhar com o usuário
 - O usuário quer **participar das decisões técnicas e aprender**. Não decida sozinho: apresente opções com prós e contras e uma recomendação, e pergunte.
 - Decisão que ele não confirmou fica como **proposto** nos ADRs.
-- Explicações necessárias para uma decisão vão **dentro** da pergunta (texto/preview das opções): texto escrito antes da pergunta pode não aparecer para ele.
+- Explicações de uma decisão vão **no chat**, num turno que termina com a pergunta em texto. Nada de explicação longa dentro do AskUserQuestion (fica difícil de ler), nem texto antes dele no mesmo turno (pode não aparecer).
+- Responda sempre em **pt-BR**.
 - **Eu implemento, ele revisa:** um PR por issue, com explicação do que e por quê; merge (squash) só após o OK dele.
 
 ## Regras de trabalho (definidas pelo usuário)
