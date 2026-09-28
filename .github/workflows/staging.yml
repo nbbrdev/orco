@@ -56,6 +56,8 @@ jobs:
   deploy:
     name: deploy
     needs: migrate
+    # Enquanto a Vercel não estiver configurada (NBB-35), o deploy aparece como "skipped", não como erro.
+    if: vars.VERCEL_PROJECT_ID != ''
     uses: ./.github/workflows/deploy-vercel.yml
     with:
       github-environment: staging

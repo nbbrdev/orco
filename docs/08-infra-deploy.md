@@ -89,7 +89,7 @@ Os 2 projetos do plano Free são `orco-staging` e `orco-prod` (ADR-0008).
 | `codeql.yml` | PR, push em `main`, semanal | CodeQL `javascript-typescript`, suite `security-extended` |
 | `e2e.yml` | a partir da M2; a definir (local no CI ou contra o staging após o deploy) | Playwright |
 | `pr-title.yml` | PR aberto/editado | valida o título em Conventional Commits |
-| `staging.yml` | **CI concluído com sucesso** num push na `main` (ou manual) | 1) `migrate`: `supabase db push --db-url` no **orco-staging** (Session Pooler, environment `staging`, sem Access Token); 2) `deploy`: chama `deploy-vercel.yml` no **mesmo commit** que o CI validou e move o alias `staging.orco.nbbrdev.com`. Nunca roda para PR ou fork; um de cada vez, sem cancelar no meio |
+| `staging.yml` | **CI concluído com sucesso** num push na `main` (ou manual) | 1) `migrate`: `supabase db push --db-url` no **orco-staging** (Session Pooler, environment `staging`, sem Access Token); 2) `deploy`: chama `deploy-vercel.yml` no **mesmo commit** que o CI validou e move o alias `staging.orco.nbbrdev.com`. Nunca roda para PR ou fork; um de cada vez, sem cancelar no meio. Sem a variable `VERCEL_PROJECT_ID`, o `deploy` fica "skipped" |
 | `deploy-vercel.yml` | só quando chamado (`workflow_call`) | receita de publicar: `npm ci` (app + `tools/deploy`) → `vercel pull` → `build` → `deploy --prebuilt` → `alias set` (opcional). Registra a URL no environment do GitHub |
 | `release-please.yml` | push em `main` | mantém o PR de release (versão + `CHANGELOG.md`); no merge dele, cria a tag `vX.Y.Z` e o GitHub Release |
 | `release.yml` | release publicado | `supabase db push` no **orco-prod** → `deploy-vercel.yml` com `--prod` → status update no Linear |
