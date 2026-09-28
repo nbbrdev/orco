@@ -14,6 +14,9 @@
 - **CAPTCHA** Cloudflare Turnstile **somente no cadastro**. Como a opção nativa do Supabase Auth vale para todos os endpoints de auth, ela fica **desligada**: a Server Action de cadastro valida o token no endpoint `siteverify` da Cloudflare **antes** de chamar `supabase.auth.signUp`. Se houver abuso, estender a login e recuperação (ou ligar a opção nativa).
 - Rate limit de Auth nativo do Supabase (tentativas de login, envio de e-mails), revisado no painel.
 - Mensagens que não revelam se uma conta existe (F-01, F-03, F-04).
+- **Links dos e-mails de conta** com `token_hash`, conferido **no servidor** (`verifyOtp`) em `/auth/confirm`: uso único, 1 hora de validade, funcionam em qualquer aparelho. O `/auth/callback` (PKCE) fica só para o Google.
+- **Aviso de senha alterada:** todo e-mail de conta recebe um aviso quando a senha muda, com link para redefinir ("não fui eu").
+- A chave SMTP do Resend só tem permissão de envio e só para `orco.nbbrdev.com`.
 - Redirect URLs do Auth restritas ao domínio de cada ambiente: produção no `orco-prod`; staging e `localhost` no `orco-staging`.
 
 ## 2. Sessão

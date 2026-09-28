@@ -6,6 +6,8 @@ coverage
 package-lock.json
 src/types/database.ts
 supabase/migrations
+# Templates Go do Supabase Auth: o Prettier quebra as lacunas {{ .X }} em várias linhas.
+supabase/templates/*.html
 docs
 CLAUDE.md
 AGENTS.md

@@ -79,7 +79,8 @@ App (logado) — barra fixa com botão "Novo orçamento"
 └── /app/perfil               Perfil, logo, padrões, sair, excluir conta
 
 Técnico
-├── /auth/callback            Retorno do OAuth / confirmação de e-mail
+├── /auth/callback            Retorno do OAuth (Google)
+├── /auth/confirm             Links dos e-mails de conta (confirmação, recuperação, troca de e-mail)
 ├── /api/orcamentos/[id]/pdf  PDF (dono) · /api/p/[token]/pdf (cliente final)
 ├── /api/cron/lembretes       Lembrete diário de vencimento (Vercel Cron, protegido por segredo)
 ├── /manifest.webmanifest     Manifesto do PWA
