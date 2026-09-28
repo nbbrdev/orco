@@ -21,7 +21,8 @@ Esta pasta é a **fonte da verdade do conteúdo** do projeto. O **planejamento e
 | [09-regras-negocio.md](09-regras-negocio.md) | Regras de negócio numeradas (RN) |
 | [10-fluxos.md](10-fluxos.md) | Jornadas de usuário (F), com orçamento de simplicidade |
 | [11-mapa.md](11-mapa.md) | Atores, entidades, estados, mapa de telas, glossário |
-| [decisoes/](decisoes/) | ADRs: registro de decisões técnicas (0001–0010) |
+| [12-identidade-visual.md](12-identidade-visual.md) | Logo, cores, tipografia, forma, temas e PDF |
+| [decisoes/](decisoes/) | ADRs: registro de decisões técnicas (0001–0011) |
 | [pendencias.md](pendencias.md) | Perguntas em aberto |
 
 ## Fases

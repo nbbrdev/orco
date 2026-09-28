@@ -19,7 +19,7 @@
 | P-05 | ~~Limites de uso por conta~~ **Resolvido:** 200 orçamentos/mês, 1.000 clientes, 500 itens (RN-38). | — |
 | P-06 | ~~Retenção do IP~~ **Resolvido:** 12 meses (RN-37). | — |
 | P-07 | Texto dos termos de uso e da política de privacidade | Não (até M7) |
-| P-08 | Identidade visual: cores, logo do Orçô, tipografia | Não (até M2) |
+| P-08 | ~~Identidade visual~~ **Resolvido:** teal + Inter + ícone de documento com visto, tom sóbrio ([12-identidade-visual.md](12-identidade-visual.md)). | — |
 
 ## Infra
 
@@ -29,7 +29,7 @@
 | P-10 | ~~URL do repositório~~ **Resolvido:** `nbbrdev/orco` (público). | — |
 | P-11 | ~~Supabase local via Docker ou projeto dev na nuvem?~~ **Resolvido:** local via Docker (Supabase CLI + Docker Desktop). | — |
 | P-12 | ~~Dois projetos Supabase?~~ **Resolvido:** `orco-staging` (previews) + `orco-prod`; local no Docker (ADR-0008). | — |
-| P-13 | Remetente de e-mail (sugestão: `nao-responda@orco.nbbrdev.com`) | Não (até M2) |
-| P-14 | Destino dos backups criptografados | Não (até M7) |
-| P-15 | Vercel Hobby é só para uso não comercial: ok no MVP gratuito? | Não |
+| P-13 | ~~Remetente de e-mail~~ **Resolvido:** `Orçô <nao-responda@orco.nbbrdev.com>`, sem Reply-To. | — |
+| P-14 | ~~Destino dos backups~~ **Resolvido:** artifact do GitHub criptografado com `age` (chave privada só com o dono), 30 dias, só o banco. | — |
+| P-15 | ~~Vercel Hobby~~ **Resolvido:** Hobby no MVP; migração para VPS própria após o `1.0.0`, mantendo o Supabase (ADR-0011). | — |
 | P-16 | ~~Proteção contra senhas vazadas~~ **Resolvido:** fica sem; risco aceito no ADR-0002, reavaliar na M7. | — |

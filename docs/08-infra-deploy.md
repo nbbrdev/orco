@@ -20,7 +20,8 @@ Os 2 projetos do plano Free são `orco-staging` e `orco-prod` (ADR-0008).
 - Projeto `orco` ligado ao repositório GitHub. Framework Next.js, pnpm.
 - **Deploy automático de produção desligado** (ADR-0010). A integração Git gera só previews (PRs e `main`). Produção é publicada pela **Vercel CLI no GitHub Actions** (`release.yml`): `vercel pull --environment=production` → `vercel build --prod` → `vercel deploy --prebuilt --prod`. A configuração exata (ex.: `git.deploymentEnabled` no `vercel.json` ou a opção de produção no painel) é validada na M1.
 - Ambiente **Development** na Vercel com as variáveis do Supabase local, para `vercel env pull` gerar o `.env.local`.
-- Plano Hobby no MVP. ⚠️ O Hobby é restrito a uso **não comercial**; ao monetizar, migrar para o Pro.
+- Plano **Hobby** no MVP (produto gratuito, não comercial). Após o `1.0.0`, o app migra para uma **VPS própria** (ADR-0011). Se houver monetização antes disso, a Vercel precisa ir para o Pro.
+- **Portabilidade:** nada de `@vercel/*` ou recursos exclusivos da Vercel; o código precisa rodar em `next start`/standalone (ADR-0011).
 - Env vars por ambiente (Preview ≠ Production), conforme [06-regras-dev.md](06-regras-dev.md) §8.
 - Domínio: `orco.nbbrdev.com` adicionado ao projeto. No painel de DNS da **Hostinger** (zona `nbbrdev.com`), criar um registro **CNAME** com nome `orco` apontando para o alvo que a Vercel indicar (normalmente `cname.vercel-dns.com`). O certificado TLS é emitido automaticamente pela Vercel. O domínio raiz e os outros subdomínios não são afetados.
 - Nome ASCII: o slug `orco` é usado na URL porque domínios com acento (IDN) viram *punycode* (`xn--…`) em vários contextos. A marca **Orçô** aparece só na interface.
@@ -56,7 +57,8 @@ Os 2 projetos do plano Free são `orco-staging` e `orco-prod` (ADR-0008).
 
 ## Resend
 
-- Domínio de envio verificado (SPF, DKIM, DMARC) com registros criados no DNS da Hostinger. Remetente sugerido: `nao-responda@orco.nbbrdev.com`. ⚠️ PENDENTE confirmar o remetente. Usar o subdomínio isola a reputação de envio do domínio principal.
+- Domínio de envio `orco.nbbrdev.com` verificado (SPF, DKIM, DMARC) com registros criados no DNS da Hostinger. Usar o subdomínio isola a reputação de envio do domínio principal.
+- **Remetente:** `Orçô <nao-responda@orco.nbbrdev.com>`, sem Reply-To. Os e-mails avisam no rodapé que a caixa não recebe respostas.
 - Dois usos:
   1. **SMTP do Supabase Auth** (confirmação, recuperação): credenciais no painel do Supabase.
   2. **API do Resend no app** (notificação de resposta ao freelancer, RN-40): `RESEND_API_KEY` na Vercel, só no servidor. Templates com React Email.
@@ -84,7 +86,7 @@ Os 2 projetos do plano Free são `orco-staging` e `orco-prod` (ADR-0008).
 | `db-migrate-staging.yml` | PR ou push em `main` com mudança em `supabase/migrations` | `supabase db push` no **orco-staging** |
 | `release-please.yml` | push em `main` | mantém o PR de release (versão + `CHANGELOG.md`); no merge dele, cria a tag `vX.Y.Z` e o GitHub Release |
 | `release.yml` | release publicado | `supabase db push` no **orco-prod** → Vercel CLI `build --prod` + `deploy --prebuilt --prod` → status update no Linear |
-| `backup.yml` | diário (cron) | `pg_dump` → criptografa com age → envia ao destino ⚠️ PENDENTE |
+| `backup.yml` | diário 06:00 UTC (03:00 SP) | `supabase db dump` do **orco-prod** via Session Pooler (roles + schema + dados) → criptografa com `age` (chave **pública**) → `upload-artifact` com retenção de **30 dias** |
 
 Regras de workflow: `permissions:` mínimas por job, actions de terceiros fixadas por SHA, secrets nunca impressos.
 
