@@ -43,7 +43,9 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
 
 ## 4. Git e GitHub
 
-- Branch padrão `main`, **protegida**: sem push direto, PR obrigatório, CI + CodeQL verdes, histórico linear (squash merge), branch atualizada.
+- Branch padrão `main`, **protegida** (inclusive para administradores): sem push direto, PR obrigatório, CI + CodeQL + título de PR verdes, histórico linear, conversas resolvidas, sem force push nem exclusão.
+- **Aprovações exigidas: 0.** O repositório tem uma única conta (nbbrdev), e o GitHub não permite aprovar o próprio PR. A revisão acontece na conversa com o agente, antes do merge.
+- Merge **somente squash**; a branch é apagada automaticamente. O commit na `main` usa **o título do PR** e fica **sem corpo** (o contexto está no PR, linkado pelo `(#n)` do título).
 - Branch: `<tipo>/<ID-linear>-<descricao-curta>`, ex.: `feat/NBB-12-editor-orcamento`.
 - Commits em **Conventional Commits**, em pt-BR, com o ID do Linear:
   `feat(quotes): adiciona desconto percentual [NBB-12]`
