@@ -28,9 +28,17 @@ seção Resend).
 - **Troca de e-mail e link de acesso** não têm tela no Orçô, mas a API pública do Auth aceita esses
   pedidos. Por isso também estão em pt-BR.
 - **Layout:**
-  - HTML com estilos inline e sem imagens (muitos clientes de e-mail bloqueiam imagens);
+  - HTML com estilos inline;
+  - cabeçalho com o ícone à esquerda do nome "Orçô", em texto;
   - cores do doc 12 (primária `#0F766E`);
   - rodapé "Esta caixa não recebe respostas".
+- **Logo:** `{{ .SiteURL }}/email/logo.png`, servida pelo próprio site a partir de `public/email/logo.png`.
+  - **PNG**, porque Gmail e Outlook não exibem SVG.
+  - 96×96 px exibido em 40×40, nítido em telas de alta resolução.
+  - `alt=""`: com imagens bloqueadas, o nome em texto ao lado identifica o e-mail.
+  - Arquivos `.png` ficam fora do proxy (matcher), então a logo carrega mesmo com o Basic Auth do staging.
+  - Localmente, aparece no Mailpit com o `npm run dev` rodando. Em staging e produção, só depois que o site estiver no ar (NBB-35).
+  - Para gerar de novo a partir do ícone, após autorização do usuário (exceção à RT-01 para arquivo binário): `npx sharp-cli -i src/app/icon.svg -o public/email/logo.png resize 96 96`.
 
 ## Checklist do painel (fazer em `orco-staging` e em `orco-prod`)
 
