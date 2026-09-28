@@ -7,7 +7,7 @@
 | Camada | Escolha | ADR |
 |---|---|---|
 | Framework | Next.js (App Router, última estável) + React Server Components + Server Actions | 0001 |
-| Linguagem / runtime | TypeScript `strict`, Node LTS, pnpm | 0001 |
+| Linguagem / runtime | TypeScript `strict`, **Node 24 LTS**, **npm** | 0001 |
 | UI | Tailwind CSS + shadcn/ui (Radix) + lucide-react | 0001 |
 | Formulários / validação | React Hook Form + Zod (schemas compartilhados client/server) | 0001 |
 | Banco / Auth / Storage | Supabase (Postgres, Auth, Storage) via `@supabase/supabase-js` + `@supabase/ssr` | 0001, 0002 |

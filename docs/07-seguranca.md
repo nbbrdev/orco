@@ -114,9 +114,9 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 
 ## 12. Dependências e código
 
-- Lockfile (`pnpm-lock.yaml`) commitado; CI com `pnpm install --frozen-lockfile`.
+- Lockfile (`package-lock.json`) commitado; CI com `npm ci` (instala exatamente o lockfile e falha se ele estiver desatualizado).
 - Dependabot (npm + github-actions) semanal; alertas e atualizações de segurança ativos.
-- `pnpm audit --audit-level=high` no CI.
+- `npm audit --audit-level=high` no CI.
 - CodeQL `security-extended` em todo PR (bloqueante).
 - Actions de terceiros fixadas por SHA; `permissions:` mínimas em cada workflow.
 

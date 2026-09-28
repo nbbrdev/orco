@@ -9,14 +9,17 @@ Produção: https://orco.nbbrdev.com · Repo: `nbbrdev/orco` (público) · Linea
 - Mudou `docs/`? Atualize o Linear Doc correspondente na mesma sessão, e vice-versa.
 
 ## Fase atual
-**M0: Documentação & Negócio.** Não escreva código de aplicação até o usuário validar todos os fluxos (`docs/10-fluxos.md`) e regras (`docs/09-regras-negocio.md`).
+**M1: Setup técnico** (M0 concluída em 2026-09-28). Meta: `v0.1.0` no ar. Sequência de PRs e issues no milestone M1 do Linear.
+Stack de ferramentas: **Node 24 LTS**, **npm**, Supabase CLI como devDependency (`npx supabase`), Vercel CLI via `npx vercel`.
 
 ## Como trabalhar com o usuário
 - O usuário quer **participar das decisões técnicas e aprender**. Não decida sozinho: apresente opções com prós e contras e uma recomendação, e pergunte.
 - Decisão que ele não confirmou fica como **proposto** nos ADRs.
+- Explicações necessárias para uma decisão vão **dentro** da pergunta (texto/preview das opções): texto escrito antes da pergunta pode não aparecer para ele.
+- **Eu implemento, ele revisa:** um PR por issue, com explicação do que e por quê; merge (squash) só após o OK dele.
 
 ## Regras de trabalho (definidas pelo usuário)
-1. **Sempre use as ferramentas Write e Edit para criar ou editar arquivos.** Nada de scripts Python, `sed`, `awk`, heredocs ou redirecionamento de shell para modificar arquivos: o usuário acompanha as mudanças pelos diffs.
+1. **Sempre use as ferramentas Write e Edit para criar ou editar arquivos.** Nada de scripts Python, `sed`, `awk`, heredocs ou redirecionamento de shell para modificar arquivos: o usuário acompanha as mudanças pelos diffs. Exceção: geradores/CLIs oficiais (`create-next-app`, `shadcn`, `supabase init/db diff/gen types`, `npm install`) podem criar arquivos, e tudo é revisado no PR.
 2. **Código sempre em inglês:** variáveis, funções, classes, tipos, arquivos de código, tabelas e colunas. Textos da UI, URLs e mensagens para o usuário final ficam em pt-BR.
 
 ## Regras inegociáveis

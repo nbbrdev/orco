@@ -8,7 +8,7 @@
 
 | Ambiente | App | Banco | Gatilho |
 |---|---|---|---|
-| Local | `pnpm dev` | Supabase CLI no **Docker** | — |
+| Local | `npm run dev` | Supabase CLI no **Docker** (`npx supabase start`) | — |
 | Preview (por PR) | Vercel Preview, URL gerada por PR | Supabase **`orco-staging`** | PR aberto/atualizado |
 | **Staging** | Vercel Preview da `main` em **`https://staging.orco.nbbrdev.com`** | Supabase **`orco-staging`** | merge na `main` |
 | Produção | Vercel Production em `https://orco.nbbrdev.com` | Supabase **`orco-prod`** | **release** (merge do PR do release-please → tag `vX.Y.Z`), ADR-0010 |
@@ -17,7 +17,7 @@ Os 2 projetos do plano Free são `orco-staging` e `orco-prod` (ADR-0008).
 
 ## Vercel
 
-- Projeto `orco` ligado ao repositório GitHub. Framework Next.js, pnpm.
+- Projeto `orco` ligado ao repositório GitHub. Framework Next.js, npm, Node 24.
 - **Deploy automático de produção desligado** (ADR-0010). A integração Git gera só previews (PRs e `main`). Produção é publicada pela **Vercel CLI no GitHub Actions** (`release.yml`): `vercel pull --environment=production` → `vercel build --prod` → `vercel deploy --prebuilt --prod`. A configuração exata (ex.: `git.deploymentEnabled` no `vercel.json` ou a opção de produção no painel) é validada na M1.
 - Ambiente **Development** na Vercel com as variáveis do Supabase local, para `vercel env pull` gerar o `.env.local`.
 - Plano **Hobby** no MVP (produto gratuito, não comercial). Após o `1.0.0`, o app migra para uma **VPS própria** (ADR-0011). Se houver monetização antes disso, a Vercel precisa ir para o Pro.
@@ -79,7 +79,7 @@ Os 2 projetos do plano Free são `orco-staging` e `orco-prod` (ADR-0008).
 
 | Arquivo | Gatilho | Passos |
 |---|---|---|
-| `ci.yml` | PR e push em `main` | checkout → pnpm (cache) → `install --frozen-lockfile` → lint → typecheck → Vitest → build → `pnpm audit --audit-level=high` |
+| `ci.yml` | PR e push em `main` | checkout → Node 24 (cache do npm) → `npm ci` → lint → typecheck → Vitest → build → `npm audit --audit-level=high` |
 | `codeql.yml` | PR, push em `main`, semanal | CodeQL `javascript-typescript`, suite `security-extended` |
 | `e2e.yml` | deploy de preview concluído (a partir da M2) | Playwright contra a URL do preview |
 | `pr-title.yml` | PR aberto/editado | valida o título em Conventional Commits |

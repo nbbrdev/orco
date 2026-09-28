@@ -29,8 +29,8 @@ Esta pasta é a **fonte da verdade do conteúdo** do projeto. O **planejamento e
 
 | # | Milestone | Objetivo | Versão |
 |---|---|---|---|
-| M0 | Documentação & Negócio | Escopo, regras, fluxos e mapa **validados** ← *fase atual* | — |
-| M1 | Setup técnico | Repo, CI/CodeQL/Dependabot, releases, Next.js, Supabase, Vercel, subdomínio | `0.1.0` |
+| M0 | Documentação & Negócio | Escopo, regras, fluxos e mapa **validados** ✅ | — |
+| M1 | Setup técnico | Repo, CI/CodeQL/Dependabot, releases, Next.js, Supabase, Vercel, subdomínio ← *fase atual* | `0.1.0` |
 | M2 | Auth & Perfil | Cadastro, login, Google, perfil e logo, PWA e tema | `0.2.0` |
 | M3 | Clientes & Catálogo | CRUDs | `0.3.0` |
 | M4 | Orçamentos | Editor, cálculo, status, duplicar | `0.4.0` |
@@ -40,7 +40,7 @@ Esta pasta é a **fonte da verdade do conteúdo** do projeto. O **planejamento e
 
 Versionamento e releases: [ADR-0010](decisoes/0010-versionamento-e-releases.md). Produção só recebe versões com tag.
 
-**Portão da M0:** a M1 só começa com todos os fluxos e regras `✅ validados` e sem pendências bloqueantes.
+**Portão da M0:** a M1 só começa com todos os fluxos e regras `✅ validados` e sem pendências bloqueantes. Cumprido em 2026-09-28.
 
 ## Como manter
 

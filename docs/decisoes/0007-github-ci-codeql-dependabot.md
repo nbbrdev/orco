@@ -9,7 +9,7 @@
 ## Decisão
 - Repositório **público** no GitHub.
 - `main` protegida: PR obrigatório, CI e CodeQL como checks obrigatórios, squash merge, histórico linear.
-- **CI** (GitHub Actions): lint, typecheck, Vitest, build e `pnpm audit` em todo PR.
+- **CI** (GitHub Actions): lint, typecheck, Vitest, build e `npm audit` em todo PR.
 - **CodeQL** `security-extended` em PR, push e semanalmente.
 - **Dependabot** (npm + github-actions) semanal, com security updates ativas.
 - **Secret scanning + push protection** ativos.
