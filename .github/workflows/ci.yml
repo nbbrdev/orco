@@ -42,8 +42,8 @@ jobs:
       - name: Tipos (TypeScript)
         run: npm run typecheck
 
-      - name: Testes (Vitest)
-        run: npm test
+      - name: Testes com cobertura (Vitest; 100% em money.ts e dates.ts)
+        run: npm run test:coverage
 
       - name: Build
         run: npm run build
