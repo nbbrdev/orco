@@ -116,12 +116,12 @@ Bug corrigido = teste que reproduz o bug.
 | `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (`mailto:`) | Vercel (server), local | **Não** |
 | `CRON_SECRET` | Vercel (server) | **Não** |
 | Resend SMTP, Google OAuth secret | **Painel do Supabase** (não no app) | Não |
-| `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF` para `db push` | GitHub **Environments** `staging` e `production` (mesmos nomes, valores por ambiente) | Não |
+| `SUPABASE_DB_URL` (connection string do **Session Pooler**, porta 5432) para `db push --db-url` e, no prod, para o backup | GitHub **Environments** `staging` e `production` (mesmo nome, valor por ambiente). **Sem** Access Token da conta Supabase no GitHub: ele daria acesso a todos os projetos da conta | Não |
 | `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` (deploy de produção no release) | GitHub Secrets | Não |
 | `LINEAR_API_KEY` (status update do projeto no release) | GitHub Secrets | Não |
 | `NEXT_PUBLIC_APP_VERSION` (injetada no build a partir do `package.json`) | build | Sim |
 | `STAGING_BASIC_AUTH_USER`, `STAGING_BASIC_AUTH_PASSWORD` | Vercel, **somente Preview** | **Não** |
-| `SUPABASE_DB_URL` (Session Pooler do prod), `BACKUP_AGE_PUBLIC_KEY` | GitHub Secrets | Não |
+| `BACKUP_AGE_PUBLIC_KEY` | GitHub Environment `production` | Não |
 | Chave **privada** do `age` (restauração de backups) | **Somente** com o dono do projeto (gerenciador de senhas), nunca no GitHub | Não |
 
 `.env.example` lista todas, sem valores.
