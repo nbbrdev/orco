@@ -23,7 +23,7 @@ O plano Hobby da Vercel é gratuito, mas restrito a uso não comercial. O usuár
 - **Proibido** usar pacotes `@vercel/*` e recursos exclusivos da Vercel (Edge Config, KV, Blob, Postgres, `@vercel/og`, Analytics pagos etc.) sem novo ADR.
 - O cron de lembretes é uma **rota HTTP comum** protegida por `CRON_SECRET`: na Vercel é chamada pelo Vercel Cron; na VPS, por um cron do sistema.
 - Configurações específicas da Vercel ficam restritas ao `vercel.json` e aos workflows de deploy.
-- Usar só APIs do Next.js que funcionam em `next start`/standalone (ex.: `after()`, Route Handlers, middleware).
+- Usar só APIs do Next.js que funcionam em `next start`/standalone (ex.: `after()`, Route Handlers, proxy).
 
 ## Alternativas descartadas
 - **Postgres puro na VPS:** o Supabase fornece Auth (GoTrue), RLS com `auth.uid()`, PostgREST/`supabase-js` e Storage, todos centrais na arquitetura (ADR-0002, 0005, 0008). Trocar exigiria reescrever autenticação, camada de dados, estratégia de RLS e storage (cerca de 40% do backend), além de migrar usuários e arquivos.

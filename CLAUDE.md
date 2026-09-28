@@ -1,5 +1,9 @@
 # Orçô — instruções para agentes
 
+@AGENTS.md
+
+> **Next.js 16:** antes de escrever código de Next, consulte `node_modules/next/dist/docs/`. Exemplo de mudança: o antigo `middleware.ts` agora se chama **`proxy.ts`** (`src/proxy.ts`).
+
 SaaS gratuito para freelancers criarem orçamentos (slug técnico `orco`). Next.js + Supabase + Vercel.
 Produção: https://orco.nbbrdev.com · Repo: `nbbrdev/orco` (público) · Linear: time "Nbbr dev" (chave `NBB`), projeto "Orçô".
 
@@ -19,7 +23,7 @@ Stack de ferramentas: **Node 24 LTS**, **npm**, Supabase CLI como devDependency 
 - **Eu implemento, ele revisa:** um PR por issue, com explicação do que e por quê; merge (squash) só após o OK dele.
 
 ## Regras de trabalho (definidas pelo usuário)
-1. **Sempre use as ferramentas Write e Edit para criar ou editar arquivos.** Nada de scripts Python, `sed`, `awk`, heredocs ou redirecionamento de shell para modificar arquivos: o usuário acompanha as mudanças pelos diffs. Exceção: geradores/CLIs oficiais (`create-next-app`, `shadcn`, `supabase init/db diff/gen types`, `npm install`) podem criar arquivos, e tudo é revisado no PR.
+1. **Sempre use as ferramentas Write e Edit para criar ou editar arquivos.** Nada de scripts Python, `sed`, `awk`, heredocs ou redirecionamento de shell para modificar arquivos: o usuário acompanha as mudanças pelos diffs. Exceção: geradores/CLIs oficiais (`create-next-app`, `shadcn`, `supabase init/db diff/gen types`, `npm install`) podem criar arquivos, e o Prettier (`npm run format`) pode reformatar; tudo é revisado no PR.
 2. **Código sempre em inglês:** variáveis, funções, classes, tipos, arquivos de código, tabelas e colunas. Textos da UI, URLs e mensagens para o usuário final ficam em pt-BR.
 
 ## Regras inegociáveis

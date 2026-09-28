@@ -6,9 +6,9 @@
 
 | Camada | Escolha | ADR |
 |---|---|---|
-| Framework | Next.js (App Router, última estável) + React Server Components + Server Actions | 0001 |
+| Framework | **Next.js 16** (App Router, Turbopack, React Compiler ligado) + React 19 Server Components + Server Actions. No Next 16 o antigo `middleware.ts` chama-se **`proxy.ts`** | 0001 |
 | Linguagem / runtime | TypeScript `strict`, **Node 24 LTS**, **npm** | 0001 |
-| UI | Tailwind CSS + shadcn/ui (Radix) + lucide-react | 0001 |
+| UI | Tailwind CSS 4 + shadcn/ui (base Radix, preset Nova, pacote `cn`) + lucide-react; tokens do doc 12 em `src/app/globals.css` | 0001 |
 | Formulários / validação | React Hook Form + Zod (schemas compartilhados client/server) | 0001 |
 | Banco / Auth / Storage | Supabase (Postgres, Auth, Storage) via `@supabase/supabase-js` + `@supabase/ssr` | 0001, 0002 |
 | Acesso ao banco | `supabase-js` + tipos gerados, **sem ORM** | 0008 |
@@ -37,7 +37,7 @@ flowchart LR
       C[Cliente final<br/>/p/token]
     end
     subgraph Vercel
-      MW[Middleware<br/>refresh de sessão + headers]
+      MW[Proxy<br/>refresh de sessão + headers]
       RSC[Server Components<br/>+ Server Actions]
       RH[Route Handlers<br/>PDF]
     end
@@ -86,11 +86,12 @@ flowchart LR
 │   ├── features/              lógica por domínio: quotes/, clients/, catalog/, profile/
 │   │   └── <feature>/         actions.ts, queries.ts, schemas.ts (Zod), components/
 │   ├── lib/
-│   │   ├── supabase/          server.ts, client.ts, middleware.ts, admin.ts (server-only)
+│   │   ├── supabase/          server.ts, client.ts, proxy.ts (refresh de sessão), admin.ts (server-only)
 │   │   ├── money.ts           centavos ↔ BRL, cálculo (RN-15–RN-18)
 │   │   ├── notify.ts          e-mail + push ao freelancer (ADR-0009)
 │   │   ├── whatsapp.ts        buildWhatsAppLink (click-to-chat)
 │   │   └── dates.ts           fuso America/Sao_Paulo
+│   ├── proxy.ts               Proxy do Next 16 (antigo middleware): sessão, headers/CSP, Basic Auth do staging
 │   ├── pdf/                   templates react-pdf
 │   └── types/database.ts      gerado pelo Supabase CLI
 ├── tests/
