@@ -1,0 +1,47 @@
+# Dependências
+node_modules/
+.pnpm-store/
+
+# Next.js / build
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# Variáveis de ambiente (nunca commitar; use .env.example)
+.env
+.env*.local
+.env.*
+!.env.example
+
+# Vercel
+.vercel/
+
+# Supabase (arquivos locais do CLI)
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+
+# Testes
+coverage/
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
+
+# Logs
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Sistema / editores
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+
+# Claude Code (configurações locais do usuário)
+.claude/settings.local.json
