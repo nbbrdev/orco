@@ -2,8 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import { buildCsp, createNonce } from "@/lib/security/csp";
 
-const SUPABASE_URL = "https://abcdefghijklmnopqrst.supabase.co";
-
 function directive(csp: string, name: string): string | undefined {
   return csp.split("; ").find((part) => part === name || part.startsWith(`${name} `));
 }
@@ -18,12 +16,8 @@ describe("createNonce", () => {
 });
 
 describe("buildCsp", () => {
-  const production = buildCsp({ nonce: "abc123", appEnv: "production", supabaseUrl: SUPABASE_URL });
-  const development = buildCsp({
-    nonce: "abc123",
-    appEnv: "development",
-    supabaseUrl: "http://127.0.0.1:54321",
-  });
+  const production = buildCsp({ nonce: "abc123", appEnv: "production" });
+  const development = buildCsp({ nonce: "abc123", appEnv: "development" });
 
   it("only allows scripts carrying the request nonce", () => {
     const scriptSrc = directive(production, "script-src");
@@ -37,15 +31,9 @@ describe("buildCsp", () => {
     expect(directive(development, "script-src")).toContain("'unsafe-eval'");
   });
 
-  it("allows the Supabase origin (without path) for requests and images", () => {
-    const withPath = buildCsp({
-      nonce: "n",
-      appEnv: "production",
-      supabaseUrl: `${SUPABASE_URL}/rest/v1`,
-    });
-    expect(directive(withPath, "connect-src")).toBe(`connect-src 'self' ${SUPABASE_URL}`);
-    expect(directive(withPath, "img-src")).toContain(SUPABASE_URL);
-    expect(directive(development, "connect-src")).toContain("http://127.0.0.1:54321");
+  it("lets the browser talk only to the app itself", () => {
+    expect(directive(production, "connect-src")).toBe("connect-src 'self'");
+    expect(directive(production, "img-src")).toBe("img-src 'self' data: blob:");
   });
 
   it("blocks framing, plugins and foreign form targets", () => {
@@ -58,10 +46,7 @@ describe("buildCsp", () => {
   it("upgrades insecure requests only outside development", () => {
     expect(directive(production, "upgrade-insecure-requests")).toBeDefined();
     expect(
-      directive(
-        buildCsp({ nonce: "n", appEnv: "staging", supabaseUrl: SUPABASE_URL }),
-        "upgrade-insecure-requests",
-      ),
+      directive(buildCsp({ nonce: "n", appEnv: "staging" }), "upgrade-insecure-requests"),
     ).toBeDefined();
     expect(directive(development, "upgrade-insecure-requests")).toBeUndefined();
   });

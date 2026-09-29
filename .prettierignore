@@ -4,10 +4,9 @@ out
 build
 coverage
 package-lock.json
-src/types/database.ts
-supabase/migrations
-# Templates Go do Supabase Auth: o Prettier quebra as lacunas {{ .X }} em várias linhas.
-supabase/templates/*.html
+# Templates de e-mail no formato antigo ({{ .X }}): o Prettier quebra as lacunas em várias linhas.
+# Saem na NBB-39, quando viram funções TypeScript.
+src/lib/email/templates/*.html
 docs
 CLAUDE.md
 AGENTS.md

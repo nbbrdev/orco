@@ -1,7 +1,7 @@
 # Publica em PRODUÇÃO quando o usuário cria uma release (docs/06-regras-dev.md §4.1, ADR-0010):
 #   gh release create vX.Y.Z --target main --generate-notes
-# verify (tag na main + CI verde) → migrate (orco-prod) → deploy (Vercel --prod).
-# Para republicar uma versão (ex.: rollback de código), use "Re-run all jobs" na execução dela.
+# Hoje só verifica a tag (formato, commit na main, CI verde). O build da imagem, as migrations e o
+# deploy na VPS entram na NBB-63 (ADR-0012).
 name: Production
 
 on:
@@ -58,43 +58,3 @@ jobs:
             echo "::error::O check \"ci\" do commit $SHA não passou (ou ainda não terminou). Espere o CI da main ficar verde e rode de novo."
             exit 1
           fi
-
-  migrate:
-    name: migrate
-    needs: verify
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    # Environment "production": só aceita tags v* e guarda a connection string do orco-prod.
-    environment: production
-    env:
-      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-    steps:
-      - name: Checkout do commit da tag
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Node (versão do .nvmrc) com cache do npm
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Instalar dependências (Supabase CLI fixado no lockfile)
-        run: npm ci
-
-      # Antes do código novo: as migrations precisam ser compatíveis com a versão anterior.
-      - name: Aplicar migrations pendentes no orco-prod
-        run: npx supabase db push --db-url "$SUPABASE_DB_URL"
-
-  deploy:
-    name: deploy
-    needs: migrate
-    # Enquanto a Vercel não estiver configurada (NBB-35), aparece como "skipped", não como erro.
-    if: vars.VERCEL_PROJECT_ID != ''
-    uses: ./.github/workflows/deploy-vercel.yml
-    with:
-      github-environment: production
-      vercel-environment: production
-      ref: ${{ github.sha }}
-      version: ${{ github.event.release.tag_name }}

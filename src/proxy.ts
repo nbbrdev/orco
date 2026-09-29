@@ -3,14 +3,13 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getAppEnv } from "@/lib/app-env";
 import { isAuthorized, isPublicPath } from "@/lib/basic-auth";
 import { buildCsp, createNonce } from "@/lib/security/csp";
-import { getSupabaseEnv } from "@/lib/supabase/env";
-import { updateSession } from "@/lib/supabase/proxy";
 
 // Buscadores não devem indexar o staging.
 const NOINDEX = "noindex, nofollow";
 
 // Proxy do Next 16 (antigo middleware.ts): roda antes de cada rota que casa com o matcher.
-export async function proxy(request: NextRequest) {
+// A sessão de login (Better Auth, M2) é validada nas próprias rotas, no servidor, e não aqui.
+export function proxy(request: NextRequest) {
   const appEnv = getAppEnv();
   const isStaging = appEnv === "staging";
 
@@ -42,11 +41,12 @@ export async function proxy(request: NextRequest) {
   // de onde o Next extrai o nonce para marcar os próprios scripts, e nos da RESPOSTA, que o
   // navegador aplica.
   const nonce = createNonce();
-  const csp = buildCsp({ nonce, appEnv, supabaseUrl: getSupabaseEnv().url });
-  request.headers.set("x-nonce", nonce);
-  request.headers.set("Content-Security-Policy", csp);
+  const csp = buildCsp({ nonce, appEnv });
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("Content-Security-Policy", csp);
 
-  const response = await updateSession(request);
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("Content-Security-Policy", csp);
   if (isStaging) {
     response.headers.set("X-Robots-Tag", NOINDEX);

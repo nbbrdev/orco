@@ -14,7 +14,7 @@ O domínio de envio `orco.nbbrdev.com` já está verificado no Resend (DKIM, SPF
 ## Decisão
 - O app envia por **SMTP** com a biblioteca **Nodemailer**, num módulo único, `src/lib/email/`. **Só o destino muda** por ambiente:
   - **local:** o **Mailpit** do `compose.dev.yaml`. Nada sai para a internet, e os e-mails são vistos em `http://localhost:8025`;
-  - **staging e produção:** `smtp.resend.com:465`, usuário `resend`, senha = API key do Resend (**só *Sending access*, só o domínio `orco.nbbrdev.com`**; já criadas: `supabase-smtp-staging` e `supabase-smtp-prod`).
+  - **staging e produção:** `smtp.resend.com:465`, usuário `resend`, senha = API key do Resend (**só *Sending access*, só o domínio `orco.nbbrdev.com`**, uma por ambiente; criadas na M2, porque as chaves antigas do SMTP do Supabase foram apagadas em 2026-09-29).
 - **Remetente:** `Orçô <nao-responda@orco.nbbrdev.com>`, sem Reply-To.
 - **Templates:** os HTML em pt-BR já aprovados (logo à esquerda do nome, botão teal, rodapé "Esta caixa não recebe respostas") viram **funções TypeScript** que **escapam** qualquer texto variável (nome, e-mail) antes de inserir no HTML.
 - Os links usam `SITE_URL` do ambiente. A logo vem de `{SITE_URL}/email/logo.png`.

@@ -31,22 +31,6 @@ updates:
       - dependency-name: typescript
         update-types: ["version-update:semver-major"]
 
-  # Ferramentas de deploy isoladas do app (Vercel CLI), com lockfile próprio.
-  - package-ecosystem: npm
-    directory: /tools/deploy
-    schedule:
-      interval: weekly
-      day: monday
-      time: "06:00"
-      timezone: America/Sao_Paulo
-    labels: [dependencies]
-    commit-message:
-      prefix: ci
-      include: scope
-    groups:
-      deploy-tools:
-        patterns: ["*"]
-
   - package-ecosystem: github-actions
     directory: /
     schedule:
