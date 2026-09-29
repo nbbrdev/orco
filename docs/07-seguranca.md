@@ -1,46 +1,55 @@
 # 07 — Segurança
 
-> Status: rascunho para validação · Última atualização: 2026-09-27
+> Status: rascunho para validação · Última atualização: 2026-09-29
 >
 > As regras deste documento são **obrigatórias**. Um PR que viole qualquer uma delas não é aprovado.
+>
+> **2026-09-29:** revisado para a arquitetura em VPS, sem Supabase e sem Vercel (ADR-0012 a 0016).
 
-## 1. Senhas e autenticação
+## 1. Senhas e autenticação (ADR-0013)
 
-- **Senhas nunca tocam nosso código nem nossas tabelas.** O Supabase Auth (GoTrue) faz o hash com **bcrypt** e guarda no schema `auth`. É proibido criar tabela de senha, fazer hash próprio ou logar senhas.
-- Métodos: e-mail + senha e Google OAuth (ADR-0002).
+- **Senhas só pelo Better Auth.** Ele faz o hash (scrypt ou argon2, lento de propósito) e guarda nas tabelas do schema `auth`, acessíveis só pela role `app_auth`. É proibido criar outra tabela de senha, fazer hash próprio fora da biblioteca ou logar senhas.
+- Métodos: e-mail + senha e Google OAuth.
 - Confirmação de e-mail obrigatória para cadastro por senha (RN-02).
-- Política de senha configurada no Supabase: mínimo de 8 caracteres, sem exigência de tipos (RN-03). Risco aceito, registrado no ADR-0002.
-- Proteção contra senhas vazadas (HaveIBeenPwned): **não** no MVP (recurso de plano pago). Risco aceito no ADR-0002.
-- **CAPTCHA** Cloudflare Turnstile **somente no cadastro**. Como a opção nativa do Supabase Auth vale para todos os endpoints de auth, ela fica **desligada**: a Server Action de cadastro valida o token no endpoint `siteverify` da Cloudflare **antes** de chamar `supabase.auth.signUp`. Se houver abuso, estender a login e recuperação (ou ligar a opção nativa).
-- Rate limit de Auth nativo do Supabase (tentativas de login, envio de e-mails), revisado no painel.
+- Política de senha: mínimo de 8 caracteres, sem exigência de tipos (RN-03), aplicada pelo Zod no servidor e pela configuração do Better Auth. Risco aceito (ADR-0002/0013).
+- Proteção contra senhas vazadas (HaveIBeenPwned): **não** no MVP. Risco aceito, a reavaliar na M7.
+- **CAPTCHA** Cloudflare Turnstile **somente no cadastro**: a Server Action valida o token no `siteverify` da Cloudflare **antes** de criar a conta. Se houver abuso, estender a login e recuperação.
+- **Limite de tentativas** de login e de envio de e-mails: o do Better Auth, somado ao nosso rate limit (§10).
 - Mensagens que não revelam se uma conta existe (F-01, F-03, F-04).
-- **Links dos e-mails de conta** com `token_hash`, conferido **no servidor** (`verifyOtp`) em `/auth/confirm`: uso único, 1 hora de validade, funcionam em qualquer aparelho. O `/auth/callback` (PKCE) fica só para o Google.
+- **Links dos e-mails de conta:** token de **uso único**, com validade de 1 hora, conferido **no servidor** em `/auth/confirm`. Funcionam em qualquer aparelho.
 - **Aviso de senha alterada:** todo e-mail de conta recebe um aviso quando a senha muda, com link para redefinir ("não fui eu").
-- A chave SMTP do Resend só tem permissão de envio e só para `orco.nbbrdev.com`.
-- Redirect URLs do Auth restritas ao domínio de cada ambiente: produção no `orco-prod`; staging e `localhost` no `orco-staging`.
+- A chave SMTP do Resend só tem permissão de envio e só para `orco.nbbrdev.com` (ADR-0016).
+- **Google OAuth:** redirects cadastrados só para os domínios de cada ambiente (produção, staging e localhost).
 
 ## 2. Sessão
 
-- Cookies gerenciados por `@supabase/ssr`: `HttpOnly`, `Secure`, `SameSite=Lax`.
-- O proxy (`src/proxy.ts`, antigo "middleware" até o Next 15) renova a sessão a cada requisição.
-- **No servidor, a autorização usa sempre `supabase.auth.getUser()` ou `getClaims()`**, que validam o JWT. **Nunca** `getSession()`, que lê o cookie sem validar.
-- Logout invalida a sessão no Supabase (`signOut`).
+- Sessões do Better Auth guardadas no Postgres, com cookie `HttpOnly`, `Secure` e `SameSite=Lax`.
+- **Toda autorização parte da sessão validada no servidor**, a cada requisição que exige login (Server Components, Server Actions, Route Handlers). Nunca confiar em dados de sessão vindos do navegador sem validar.
+- Logout invalida a sessão no banco.
 
-## 3. Autorização (RLS)
+## 3. Autorização (RLS, ADR-0014)
 
-- **RLS habilitada em 100% das tabelas**, deny-by-default. Policies em [05-dados.md](05-dados.md).
-- Toda policy de dono usa `user_id = (select auth.uid())`.
-- `anon` não tem `select/insert/update/delete` em nenhuma tabela, nem `execute` em nenhuma função.
+- **RLS habilitada e forçada (`FORCE`) em 100% das tabelas do produto**, deny-by-default. Policies em [05-dados.md](05-dados.md).
+- **Três roles:**
+  - `orco_owner`: dona das tabelas; **só** nas migrations;
+  - `app_auth`: **só** as tabelas de login;
+  - `app_user`: **só** as tabelas do produto, com RLS.
+- O app **nunca** se conecta como `orco_owner`, `postgres` ou qualquer role com `BYPASSRLS`.
+- Toda policy de dono usa `user_id = app.current_user_id()`.
+- Todo acesso a dados do produto passa por `withUserDb(userId, fn)`. Ela abre uma transação com `set_config('app.user_id', …, true)`, que vale **só nessa transação**. Fora dela, nenhuma linha é visível.
+- `PUBLIC` não tem acesso a tabelas nem `execute` em funções; cada permissão é concedida à role certa.
 - Transições de status e travas (RN-25) garantidas por trigger no banco, não só na UI.
-- Todo PR que cria ou altera uma tabela inclui teste de RLS: outro usuário não lê nem altera, e `anon` não acessa.
+- Todo PR que cria ou altera uma tabela inclui **teste de RLS contra um Postgres real**:
+  - outro usuário não lê nem altera;
+  - sem usuário na transação, nada é visível;
+  - a `app_auth` não alcança as tabelas do produto.
 
-## 4. Acesso público ao orçamento (ADR-0005)
+## 4. Acesso público ao orçamento (ADR-0005/0014)
 
 - Token: 32 bytes de `gen_random_bytes` (256 bits) em base64url. É inviável adivinhar, não é sequencial e não deriva do ID.
-- A página `/p/[token]` e o PDF público chamam as RPCs `get_public_quote` / `respond_to_quote` **somente do servidor**, usando um client `service_role` isolado em `src/lib/supabase/admin.ts` (com `import 'server-only'`).
-- Esse módulo admin só pode ser importado por: página pública, route handler do PDF público e exclusão de conta. A regra é garantida por lint (`no-restricted-imports`).
-- As RPCs retornam **apenas** os campos necessários à exibição, nunca IDs internos, `user_id` ou e-mail da conta.
-- IP e user agent vêm dos headers da Vercel (`x-forwarded-for`, `x-real-ip`), lidos no servidor.
+- A página `/p/[token]` e o PDF público chamam as funções `get_public_quote` / `respond_to_quote` (`SECURITY DEFINER`, donas `orco_owner`, `execute` para `app_user`) **somente do servidor**. O banco não tem porta pública, então o navegador nunca fala com ele.
+- As funções retornam **apenas** os campos necessários à exibição, nunca IDs internos, `user_id` ou e-mail da conta.
+- IP e user agent vêm dos headers repassados pelo **Nginx** (`X-Forwarded-For`, `X-Real-IP`), lidos no servidor. O app só confia nesses headers porque só o Nginx o alcança (porta ligada a `127.0.0.1`).
 - Respostas idênticas para token inválido, rascunho e excluído (RN-31), para não revelar se um token existe.
 - `Referrer-Policy: no-referrer` e `X-Robots-Tag: noindex` na página pública, para o token não vazar nem ser indexado.
 
@@ -55,9 +64,9 @@
 
 | Onde | Como |
 |---|---|
-| Em trânsito | TLS em tudo (Vercel e Supabase). HSTS com `max-age=63072000; includeSubDomains; preload`. |
-| Em repouso | Criptografia de disco AES-256 do Supabase (banco, backups, storage). |
-| Senhas | bcrypt pelo Supabase Auth. |
+| Em trânsito | TLS em tudo que sai da VPS: Nginx + Let's Encrypt; SMTP do Resend com TLS. Dentro da VPS, o app fala com o banco e o RustFS pela rede privada do Docker, sem sair da máquina. HSTS com `max-age=63072000; includeSubDomains; preload`. |
+| Em repouso | Disco da VPS (proteção física do provedor). **Backups sempre criptografados** com `age` (§14). Criptografia do disco da VPS: reavaliar na M7. |
+| Senhas | Hash lento (scrypt/argon2) pelo Better Auth. |
 | Tokens públicos | Aleatórios (CSPRNG), 256 bits. |
 | Por coluna | **Não** no MVP: não guardamos dados de pagamento nem dados sensíveis (art. 5º, II, da LGPD). O CPF/CNPJ é opcional (minimização). Reavaliar se o escopo mudar. |
 
@@ -69,13 +78,12 @@
   - `default-src 'self'`;
   - `script-src 'self' 'nonce-…' 'strict-dynamic'` + Turnstile (`https://challenges.cloudflare.com`), **nunca** `'unsafe-inline'`;
   - `style-src 'self' 'unsafe-inline'`;
-  - `img-src 'self' data: blob: <supabase>`;
+  - `img-src 'self' data: blob:` (os logos vêm de uma rota do próprio app);
   - `font-src 'self'`;
-  - `connect-src 'self' <supabase>`;
+  - `connect-src 'self'`;
   - `frame-src` só Turnstile;
   - `worker-src 'self'` e `manifest-src 'self'`;
   - `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`, `frame-ancestors 'none'`.
-- `<supabase>` é a origem de `NEXT_PUBLIC_SUPABASE_URL`.
 - **Só em desenvolvimento:** `'unsafe-eval'`, que o React usa para detalhar erros.
 - **Só fora de desenvolvimento:** `upgrade-insecure-requests`. Em `http://localhost` e no celular pela rede local não há HTTPS, e a troca quebraria a página.
 - **Por que `style-src 'unsafe-inline'`:** atributos `style="…"` (React, Radix/shadcn) não aceitam nonce, e bloqueá-los quebraria componentes. CSS injetado não executa código nem lê cookies: o risco é muito menor que o de script, que continua travado pelo nonce.
@@ -100,9 +108,10 @@
 
 ## 9. Upload (logo)
 
-- Tipos PNG, JPEG e WebP; **SVG proibido** (pode conter script). Tamanho de até 5 MB. A regra vale no bucket (servidor) e no client. O redimensionamento no client (RN-05) é otimização, não controle de segurança: o bucket valida tipo e tamanho de qualquer forma.
-- Caminho com UUID gerado pelo servidor; o nome original do arquivo é descartado.
-- Policies de Storage por pasta `{user_id}/` (ver [05-dados.md](05-dados.md)).
+- Tipos PNG, JPEG e WebP; **SVG proibido** (pode conter script). Tamanho de até 5 MB. A regra vale **no servidor** (e no client, só como UX). O redimensionamento no client (RN-05) é otimização, não controle de segurança.
+- O servidor confere o tipo pelo **conteúdo** do arquivo, não só pela extensão ou pelo `Content-Type` enviado.
+- Chave `{user_id}/{uuid}.webp` com UUID gerado pelo servidor; o `user_id` vem **da sessão**, nunca do navegador; o nome original é descartado ([05-dados.md](05-dados.md), ADR-0015).
+- O RustFS não tem porta pública. As chaves de acesso a ele ficam só no servidor.
 
 ## 10. Rate limit e anti-abuso (ADR-0004)
 
@@ -118,7 +127,7 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 
 ## 10.1 Notificações, cron e service worker (ADR-0009)
 
-- **Cron:** `/api/cron/lembretes` só executa com `Authorization: Bearer $CRON_SECRET` (a Vercel envia esse header automaticamente). Sem o header correto, a resposta é 401.
+- **Cron:** `/api/cron/lembretes` só executa com `Authorization: Bearer $CRON_SECRET`, enviado pelo agendamento na VPS. Sem o header correto, a resposta é 401. A comparação é em tempo constante.
 - **Push:** a `VAPID_PRIVATE_KEY` fica só no servidor. As assinaturas (`push_subscriptions`) ficam protegidas por RLS e são tratadas como dado pessoal: apagadas com a conta e quando expiram.
 - **Conteúdo do push:** apenas número do orçamento, primeiro nome do cliente e o evento. Nada de valores, CPF/CNPJ ou dados de contato na notificação, porque ela aparece na tela bloqueada.
 - **Service worker:** servido do próprio domínio (`/sw.js`, escopo `/`), sem cache de páginas autenticadas (sem modo offline) e sem importar scripts de terceiros. A CSP inclui `worker-src 'self'` e `manifest-src 'self'`.
@@ -128,22 +137,24 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 - Protegido por **HTTP Basic Auth no proxy** quando `APP_ENV=staging`, exceto nas rotas públicas do orçamento (`/p/*`, `/api/p/*`) e nos arquivos do PWA (`src/lib/basic-auth.ts`). A comparação das credenciais é feita em **tempo constante** (hash SHA-256 + `timingSafeEqual`), para que o tempo de resposta não revele a senha.
 - Sem credenciais configuradas, o staging responde **503**: fica fechado, nunca aberto por esquecimento.
 - `X-Robots-Tag: noindex, nofollow` em todas as rotas do staging.
-- Não há preview por PR ([08-infra-deploy.md](08-infra-deploy.md)): o token da Vercel e os segredos do banco ficam nos environments `staging` (só `main`) e `production` (só tags `v*`), fora do alcance de qualquer PR.
-- Dados sempre fictícios; o banco `orco-staging` nunca recebe cópia de produção.
+- Não há preview por PR ([08-infra-deploy.md](08-infra-deploy.md)): o acesso SSH à VPS fica nos environments `staging` (só `main`) e `production` (só tags `v*`), fora do alcance de qualquer PR.
+- Staging e produção são **projetos Compose separados**, com redes e volumes próprios: o app de staging não alcança o banco de produção.
+- Dados sempre fictícios; o banco de staging nunca recebe cópia de produção.
 
 ## 11. Segredos e repositório público
 
 - **O repositório é público.** A segurança nunca depende de o código ser secreto.
-- Segredos só em env vars da Vercel, secrets do GitHub Actions e painel do Supabase. Nunca no código, em docs, seeds ou fixtures.
-- `.env*` no `.gitignore`; `.env.example` com nomes e sem valores.
-- Apenas `NEXT_PUBLIC_SUPABASE_URL` e a chave publishable/anon podem ter prefixo `NEXT_PUBLIC_`. A `SUPABASE_SERVICE_ROLE_KEY` **nunca**.
+- Segredos do app só nos arquivos `.env` **da VPS** (`/opt/orco/*.env`, legíveis só pelo usuário `deploy`) e no `.env.local` do desenvolvedor. O GitHub guarda só o acesso SSH e a chave **pública** do backup. Nunca no código, em docs, seeds, fixtures ou **na imagem Docker**.
+- `.env*` no `.gitignore`; `.env.example` e `deploy/*.env.example` com nomes e sem valores.
+- Prefixo `NEXT_PUBLIC_` (embutido no build e visível no navegador) só para valores públicos por natureza: versão do app, site key do Turnstile, chave pública VAPID. Senhas de banco, segredo do Better Auth, chaves SMTP/RustFS/VAPID privadas e `CRON_SECRET` **nunca**.
+- **VPS:** SSH só por chave (sem senha, sem root), firewall com só 22/80/443, atualizações de segurança automáticas; banco e RustFS sem porta publicada.
 - Seeds e testes usam dados fictícios (`@example.com`, CPFs de teste gerados).
 - GitHub: **secret scanning + push protection** ativos (ADR-0007).
 
 ## 12. Dependências e código
 
 - Lockfile (`package-lock.json`) commitado; CI com `npm ci` (instala exatamente o lockfile e falha se ele estiver desatualizado).
-- Dependabot (npm + github-actions) semanal; alertas e atualizações de segurança ativos.
+- Dependabot (npm, github-actions e imagens Docker) semanal; alertas e atualizações de segurança ativos. Imagens de terceiros (Postgres, RustFS, Node) com **versão fixa**.
 - `npm audit --audit-level=high` no CI.
 - **Scripts de instalação de dependências** (`preinstall`/`install`/`postinstall`) só rodam com aprovação explícita, registrada em `allowScripts` no `package.json` (npm 11). Padrão: **negar**, a menos que o pacote realmente precise do script. Cada aprovação é decidida no PR. Ex.: `unrs-resolver` negado (o binário nativo já vem pelas `optionalDependencies`).
 - CodeQL `security-extended` em todo PR (bloqueante).
@@ -160,17 +171,19 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 
 ## 14. Backups e continuidade
 
-- O plano Free do Supabase não inclui backups restauráveis. O workflow `backup.yml` (diário) gera um dump **só do banco de produção** (`supabase db dump`: roles, schema e dados, incluindo o schema `auth`), via Session Pooler (IPv4). Os logos do Storage não entram: o usuário pode reenviá-los.
-- O dump é **criptografado com `age`** usando uma **chave pública** (secret `BACKUP_AGE_PUBLIC_KEY`). A **chave privada nunca vai para o GitHub**: fica só com o dono do projeto, num gerenciador de senhas. Mesmo que o artifact seja baixado ou os secrets vazem, o backup permanece ilegível.
-- **Destino:** artifact do GitHub Actions com **retenção de 30 dias**. Em repo público, qualquer usuário logado pode baixar o arquivo, e é por isso que a criptografia é obrigatória. Risco aceito: os backups ficam vinculados ao repositório.
-- **Restauração:** baixar o artifact → `age -d -i <chave-privada>` → aplicar roles, schema e dados em um projeto novo (procedimento documentado em `docs/` na M7, com um **teste de restauração** antes do go-live).
-- Projetos Free pausam após 7 dias sem atividade: monitorar, ou manter atividade mínima pelo mesmo workflow.
+- O workflow `backup.yml` (diário) entra na VPS por SSH e gera, **só de produção**:
+  - o dump do Postgres (`pg_dump`: roles, schema e dados, incluindo o schema `auth`);
+  - uma cópia dos objetos do RustFS (logos).
+- O arquivo é **criptografado com `age`** usando uma **chave pública** (secret `BACKUP_AGE_PUBLIC_KEY`). A **chave privada nunca vai para o GitHub**: fica só com o dono do projeto, num gerenciador de senhas. Mesmo que o artifact seja baixado ou os secrets vazem, o backup permanece ilegível.
+- **Destino:** artifact do GitHub Actions com **retenção de 30 dias**, fora da VPS. Em repo público, qualquer usuário logado pode baixar o arquivo, e é por isso que a criptografia é obrigatória. Risco aceito: os backups ficam vinculados ao repositório.
+- **Restauração:** baixar o artifact → `age -d -i <chave-privada>` → `pg_restore` num banco novo → reenviar os objetos ao RustFS. Procedimento em `deploy/README.md`, com um **teste de restauração** antes do go-live (M7).
+- Reforço: snapshots da VPS na Hostinger, se o plano incluir.
 
 ## Checklist de segurança do PR
 
-- [ ] Tabela nova/alterada tem RLS + teste de RLS
+- [ ] Tabela nova/alterada tem RLS (`ENABLE` + `FORCE`) + teste de RLS contra Postgres real
+- [ ] Acesso a dados do produto só via `withUserDb`, com o usuário da sessão validada no servidor
+- [ ] O app não se conecta como `orco_owner`/superusuário; `app_auth` só nas tabelas de login
 - [ ] Entrada validada com Zod no servidor
-- [ ] Nenhum segredo, dado real ou PII em código, log ou teste
-- [ ] Nenhum uso de `getSession()` para autorização
-- [ ] Nenhuma importação de `lib/supabase/admin` fora dos pontos permitidos
+- [ ] Nenhum segredo, dado real ou PII em código, log, teste ou imagem Docker
 - [ ] Sem `dangerouslySetInnerHTML` com dado de usuário

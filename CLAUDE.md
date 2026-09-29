@@ -4,7 +4,7 @@
 
 > **Next.js 16:** antes de escrever código de Next, consulte `node_modules/next/dist/docs/`. Exemplo de mudança: o antigo `middleware.ts` agora se chama **`proxy.ts`** (`src/proxy.ts`).
 
-SaaS gratuito para freelancers criarem orçamentos (slug técnico `orco`). Next.js + Supabase + Vercel.
+SaaS gratuito para freelancers criarem orçamentos (slug técnico `orco`). Next.js + PostgreSQL (Drizzle, RLS) + Better Auth, numa **VPS própria com Docker Compose e Nginx** (ADR-0012 a 0016). Sem Supabase e sem Vercel desde 2026-09-29.
 Produção: https://orco.nbbrdev.com · Repo: `nbbrdev/orco` (público) · Linear: time "Nbbr dev" (chave `NBB`), projeto "Orçô".
 
 ## Fontes da verdade
@@ -13,8 +13,14 @@ Produção: https://orco.nbbrdev.com · Repo: `nbbrdev/orco` (público) · Linea
 - Mudou `docs/`? Atualize o Linear Doc correspondente na mesma sessão, e vice-versa.
 
 ## Fase atual
-**M1: Setup técnico** (M0 concluída em 2026-09-28). Meta: `v0.1.0` no ar. Sequência de PRs e issues no milestone M1 do Linear.
-Stack de ferramentas: **Node 24 LTS**, **npm**, Supabase CLI como devDependency (`npx supabase`), Vercel CLI isolado em `tools/deploy/` (só nos workflows de deploy).
+**M1: Setup técnico**, reestruturada em 2026-09-29 para a VPS. Sequência:
+1. NBB-66: docs/ADRs;
+2. NBB-67: remover Supabase/Vercel;
+3. NBB-68: Postgres/Drizzle/RLS;
+4. NBB-35: VPS + staging;
+5. NBB-63: produção + backups + `v0.1.0`.
+
+Stack de ferramentas: **Node 24 LTS**, **npm**, **Docker** (`compose.dev.yaml` local; `deploy/compose.yaml` na VPS), **Drizzle** (`drizzle-kit`), imagens no **GHCR**.
 
 ## Como trabalhar com o usuário
 - O usuário quer **participar das decisões técnicas e aprender**. Não decida sozinho: apresente opções com prós e contras e uma recomendação, e pergunte.
@@ -24,15 +30,21 @@ Stack de ferramentas: **Node 24 LTS**, **npm**, Supabase CLI como devDependency 
 - **Eu implemento, ele revisa:** um PR por issue, com explicação do que e por quê; merge (squash) só após o OK dele.
 
 ## Regras de trabalho (definidas pelo usuário)
-1. **Sempre use as ferramentas Write e Edit para criar ou editar arquivos.** Nada de scripts Python, `sed`, `awk`, heredocs ou redirecionamento de shell para modificar arquivos: o usuário acompanha as mudanças pelos diffs. Exceção: geradores/CLIs oficiais (`create-next-app`, `shadcn`, `supabase init/db diff/gen types`, `npm install`) podem criar arquivos, e o Prettier (`npm run format`) pode reformatar; tudo é revisado no PR.
+1. **Sempre use as ferramentas Write e Edit para criar ou editar arquivos.** Nada de scripts Python, `sed`, `awk`, heredocs ou redirecionamento de shell para modificar arquivos: o usuário acompanha as mudanças pelos diffs. Exceção: geradores/CLIs oficiais (`create-next-app`, `shadcn`, `drizzle-kit generate`, `npm install`) podem criar arquivos, e o Prettier (`npm run format`) pode reformatar; arquivos binários (ex.: PNG) só com autorização do usuário; tudo é revisado no PR.
 2. **Código sempre em inglês:** variáveis, funções, classes, tipos, arquivos de código, tabelas e colunas. Textos da UI, URLs e mensagens para o usuário final ficam em pt-BR.
 
 ## Regras inegociáveis
 - **Simplicidade:** nada adiciona passo, campo obrigatório ou tela ao fluxo principal sem justificativa (`docs/01-visao.md`).
-- **Segurança:** siga `docs/07-seguranca.md`. RLS em todas as tabelas; senhas só via Supabase Auth; autorização com `getUser()`/`getClaims()`, nunca `getSession()`; `service_role` só em `src/lib/supabase/admin.ts`; Zod no servidor.
+- **Segurança:** siga `docs/07-seguranca.md`:
+  - RLS (`ENABLE` + `FORCE`) em todas as tabelas do produto, com teste contra Postgres real;
+  - o app conecta **só** como `app_user` (produto) e `app_auth` (login), nunca como `orco_owner`/superusuário;
+  - todo acesso a dados do produto via `withUserDb(userId, …)`, com o usuário da **sessão validada no servidor**;
+  - senhas só via Better Auth;
+  - Zod no servidor;
+  - módulos de banco, auth, e-mail e arquivos com `server-only`.
 - **Dinheiro** em centavos inteiros; cálculo só em `src/lib/money.ts`.
-- **Portabilidade:** nada de `@vercel/*` ou recursos exclusivos da Vercel; o app vai migrar para uma VPS após o `1.0.0` (ADR-0011).
-- **Repo público:** nenhum segredo, dado real ou PII em código, docs, seeds ou testes.
+- **Portabilidade:** o app roda como container `next start`/standalone; nada de SDKs presos a provedor de hospedagem; arquivos via API S3 e e-mail via SMTP (ADR-0012/0015/0016).
+- **Repo público:** nenhum segredo, dado real ou PII em código, docs, seeds, testes ou imagem Docker. Segredos do app só nos `.env` da VPS.
 - Commits e **títulos de PR** em Conventional Commits, pt-BR, com o ID do Linear: viram o histórico da `main` e as notas das releases (ADR-0010).
-- Produção só recebe **versões criadas pelo usuário** (`gh release create vX.Y.Z --target main --generate-notes` → `production.yml`). O agente **nunca** cria tags ou releases (docs/06-regras-dev.md §4.1).
+- Produção só recebe **versões criadas pelo usuário** (`gh release create vX.Y.Z --target main --generate-notes` → `production.yml`). O agente **nunca** publica tags ou releases; só cria um **rascunho** se o usuário pedir, e a publicação é sempre dele (docs/06-regras-dev.md §4.1).
 - Regras numeradas (RN, RF, RNF, F, ADR) nunca são renumeradas.

@@ -1,6 +1,6 @@
 # 06 — Regras de desenvolvimento e processo
 
-> Status: rascunho para validação · Última atualização: 2026-09-27
+> Status: rascunho para validação · Última atualização: 2026-09-29
 
 ## 1. Fontes da verdade
 
@@ -22,7 +22,7 @@ Definidas pelo usuário e válidas para qualquer agente (ex.: Claude Code) que t
 
 | # | Regra |
 |---|---|
-| RT-01 | Criar e editar arquivos **somente** com as ferramentas de edição do agente (Write/Edit), para que cada mudança apareça como diff revisável. **Proibido** usar scripts Python, `sed`, `awk`, heredocs ou redirecionamento de shell para modificar arquivos. **Exceção (2026-09-28):** geradores e CLIs **oficiais** podem criar arquivos (`create-next-app`, `shadcn add`, `supabase init` / `db diff` / `gen types`, `npm install` para o lockfile) e o **Prettier** pode reformatar arquivos (`npm run format`, só forma, nunca lógica); tudo é revisado no diff do PR. |
+| RT-01 | Criar e editar arquivos **somente** com as ferramentas de edição do agente (Write/Edit), para que cada mudança apareça como diff revisável. **Proibido** usar scripts Python, `sed`, `awk`, heredocs ou redirecionamento de shell para modificar arquivos. **Exceção (2026-09-28):** geradores e CLIs **oficiais** podem criar arquivos (`create-next-app`, `shadcn add`, `drizzle-kit generate` para as migrations, `npm install` para o lockfile) e o **Prettier** pode reformatar arquivos (`npm run format`, só forma, nunca lógica); tudo é revisado no diff do PR. |
 | RT-02 | **Código sempre em inglês**: variáveis, funções, classes, tipos, nomes de arquivo de código, tabelas, colunas, enums. Textos de UI, URLs e mensagens ao usuário final ficam em pt-BR. |
 | RT-03 | O agente não decide sozinho questões técnicas ou de produto relevantes: apresenta opções com prós e contras e uma recomendação, e o usuário decide. O que o usuário não confirmou fica como "proposto". |
 
@@ -60,7 +60,7 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
 ## 4.1 Versionamento e releases (ADR-0010, revisado em 2026-09-28)
 
 - **Merge na `main` = deploy automático em staging** (`staging.yml`), nunca em produção.
-- **Produção só recebe versões criadas pelo usuário**, com uma tag `vX.Y.Z` no commit da `main`. O agente **nunca** cria tags ou releases.
+- **Produção só recebe versões criadas pelo usuário**, com uma tag `vX.Y.Z` no commit da `main`. O agente **nunca** publica tags ou releases; só cria um **rascunho** a pedido do usuário, que revisa e publica.
 - **Como lançar:**
   1. Conferir que o CI da `main` está verde.
   2. Escolher o número (**SemVer**) olhando os títulos dos PRs desde a última versão:
@@ -71,10 +71,11 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
   3. `gh release create vX.Y.Z --target main --generate-notes`. Cria a tag e a página da versão, com notas geradas dos títulos dos PRs.
   4. O workflow `production.yml` roda sozinho:
      - **verify**: a tag está na `main` e o CI daquele commit passou;
-     - **migrate**: migrations no `orco-prod`;
-     - **deploy**: Vercel `--prod`.
+     - **build**: imagem `vX.Y.Z` no GHCR;
+     - **migrate**: migrations no banco de produção da VPS;
+     - **deploy**: `docker compose up -d` no projeto `orco-production` (ADR-0012).
 - **Hotfix:** PR `fix:` → merge → nova versão patch.
-- **Rollback de código:** "Re-run all jobs" na execução do `production.yml` de uma versão anterior. Migrations **não voltam**: a correção vem numa migration nova, e por isso toda migration precisa ser compatível com a versão anterior do código.
+- **Rollback de código:** "Re-run all jobs" na execução do `production.yml` de uma versão anterior (a imagem antiga continua no GHCR). Migrations **não voltam**: a correção vem numa migration nova, e por isso toda migration precisa ser compatível com a versão anterior do código.
 - A versão é **a tag**. O `package.json` **não tem** o campo `version` (o app é `private`, nunca publicado no npm), para não existir um número desatualizado. O app mostra a versão via `NEXT_PUBLIC_APP_VERSION`, injetada no build. Não há `CHANGELOG.md`: as notas ficam nas GitHub Releases.
 - Meta de versões por fase: M1 → `0.1.0`, M2 → `0.2.0`, …, M6 → `0.6.0`, M7 (go-live) → `1.0.0`.
 
@@ -89,21 +90,25 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
 - Um schema Zod por entidade em `schemas.ts`, reutilizado no client (RHF) e no servidor.
 - Dinheiro: **sempre centavos (`bigint` no banco, `number` inteiro no TS)**, com cálculo apenas em `src/lib/money.ts` e formatação só na borda (ADR-0006).
 - Datas: `valid_until` como `date`; "hoje" sempre no fuso `America/Sao_Paulo` (`src/lib/dates.ts`).
-- **Portabilidade (ADR-0011):** proibido usar `@vercel/*` ou recursos exclusivos da Vercel; o código deve rodar em `next start`/standalone.
+- **Portabilidade (ADR-0012):** o app roda como `next start`/standalone num container; nada de SDKs presos a um provedor de hospedagem (ex.: `@vercel/*`). Arquivos via API S3 (ADR-0015) e e-mail via SMTP (ADR-0016), trocáveis por configuração.
+- **Server-only:** módulos com segredos ou acesso direto a banco, arquivos e e-mail (`src/lib/db`, `src/lib/auth`, `src/lib/storage`, `src/lib/email`) começam com `import "server-only"`.
 - Componentes de UI: shadcn/ui em `src/components/ui` (não editar sem motivo); componentes do produto fora dessa pasta.
 - Acessibilidade: todo input com label, todo botão-ícone com `aria-label`.
 - **Visual:** cores, tipografia, cantos e status só pelos tokens de [12-identidade-visual.md](12-identidade-visual.md) (variáveis CSS mapeadas no Tailwind/shadcn). Nada de cor literal em componente.
 
 ## 6. Banco
 
-- Acesso ao banco via `supabase-js` com tipos gerados, **sem ORM** (ADR-0008).
-- O Supabase CLI é **devDependency** do projeto (versão fixada no `package.json`) e roda com `npx supabase …`.
-- O schema é **declarativo** em `supabase/schemas/*.sql`. Toda mudança começa ali → `npm run db:diff -- <nome>` gera a migration → revisão manual da migration → `npm run db:reset` para testar do zero. Passo a passo em `supabase/schemas/README.md`.
-- Banco local: `npm run db:start` / `db:stop` (Docker). As chaves locais são as padrão do CLI e vão em `.env.local`.
-- Nunca alterar o banco pelo painel em staging ou produção; migrations chegam lá só pelo CI.
-- Uma migration aplicada nunca é editada; a correção vem em nova migration.
-- Depois de cada migration: `npm run db:types` → `src/types/database.ts` (commitado, formatado pelo Prettier).
-- Tabela nova = RLS + policies + teste de RLS no mesmo PR.
+- **PostgreSQL 17 + Drizzle** (ADR-0014). O schema fica em TypeScript em `src/lib/db/`, e os tipos vêm dele (sem arquivo de tipos gerado à parte).
+- **Fluxo de uma mudança:**
+  1. editar o schema;
+  2. `npm run db:generate -- <nome>` (o `drizzle-kit` gera o SQL em `db/migrations/`);
+  3. **revisar o SQL** (RLS, policies, grants, triggers e funções podem ser escritos à mão na migration);
+  4. `npm run db:reset` para testar do zero.
+- **Banco local:** `npm run db:start` / `db:stop` sobem e descem o `compose.dev.yaml` (Postgres, RustFS e Mailpit). As credenciais locais são fictícias e vão em `.env.local`.
+- **Três roles:** migrations com `orco_owner`; o app com `app_user` (produto) e `app_auth` (login). Nunca conectar o app com a role dona ou com superusuário.
+- Nunca alterar o banco de staging ou produção à mão: migrations chegam lá só pelo serviço `migrate`, disparado pelos workflows.
+- Uma migration aplicada nunca é editada; a correção vem em nova migration. Toda migration precisa ser compatível com a versão anterior do código (o banco muda antes do código no deploy).
+- Tabela nova = `ENABLE` + `FORCE ROW LEVEL SECURITY` + policies + grants + teste de RLS, no mesmo PR.
 - [05-dados.md](05-dados.md) atualizado no mesmo PR.
 
 ## 7. Testes
@@ -111,36 +116,41 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
 | Tipo | Ferramenta | Obrigatório para |
 |---|---|---|
 | Unitário | Vitest | `money.ts` (100%), `dates.ts`, schemas Zod, validação CPF/CNPJ, transições de status |
-| RLS/banco | Vitest + Supabase local (ou pgTAP) | toda tabela e função |
+| RLS/banco (integração) | Vitest contra um **Postgres real** (local: `compose.dev.yaml`; CI: service container) | toda tabela e função |
 | E2E | Playwright | F-01, F-05, F-06, F-07, F-08 (RNF-15) |
 
 Bug corrigido = teste que reproduz o bug.
 
 ## 8. Variáveis de ambiente
 
-| Variável | Onde | Pública? |
-|---|---|---|
-| `APP_ENV` (`development` \| `staging` \| `production`; ausente = `development`) | Vercel (Preview = `staging`, Production = `production`), local | Não é segredo |
-| `NEXT_PUBLIC_SUPABASE_URL` | Vercel, local | Sim |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (anon) | Vercel, local | Sim |
-| `SUPABASE_SERVICE_ROLE_KEY` (secret key) | Vercel (server), local | **Não** |
-| `NEXT_PUBLIC_SITE_URL` | Vercel, local | Sim |
-| `RESEND_API_KEY` | Vercel (server), local | **Não** |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Vercel, local | Sim |
-| `TURNSTILE_SECRET_KEY` | Vercel (server), local | **Não** |
-| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Vercel, local | Sim |
-| `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (`mailto:`) | Vercel (server), local | **Não** |
-| `CRON_SECRET` | Vercel (server) | **Não** |
-| Resend SMTP, Google OAuth secret | **Painel do Supabase** (não no app) | Não |
-| `SUPABASE_DB_URL` (connection string do **Session Pooler**, porta 5432) para `db push --db-url` e, no prod, para o backup | GitHub **Environments** `staging` e `production` (mesmo nome, valor por ambiente). **Sem** Access Token da conta Supabase no GitHub: ele daria acesso a todos os projetos da conta | Não |
-| `VERCEL_TOKEN` (deploys pelo Actions) | GitHub Environments `staging` e `production` | Não |
-| `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` | GitHub **Variables** do repositório (identificadores, não são segredo) | — |
-| `NEXT_PUBLIC_APP_VERSION` (injetada no build: tag `vX.Y.Z` em produção, `staging-<commit>` no staging; ausente = `dev`) | build (workflows) | Sim |
-| `STAGING_BASIC_AUTH_USER`, `STAGING_BASIC_AUTH_PASSWORD` | Vercel, **somente Preview** (= staging) | **Não** |
-| `BACKUP_AGE_PUBLIC_KEY` | GitHub Environment `production` | Não |
-| Chave **privada** do `age` (restauração de backups) | **Somente** com o dono do projeto (gerenciador de senhas), nunca no GitHub | Não |
+**Do app** (em `.env.local` localmente; em `/opt/orco/<ambiente>.env` na VPS):
 
-`.env.example` lista todas, sem valores.
+| Variável | Pública? |
+|---|---|
+| `APP_ENV` (`development` \| `staging` \| `production`; ausente = `development`) | não é segredo |
+| `SITE_URL` (ex.: `https://orco.nbbrdev.com`; base dos links de e-mail) | não é segredo |
+| `DATABASE_URL_APP` (role `app_user`), `DATABASE_URL_AUTH` (role `app_auth`) | **Não** |
+| `DATABASE_URL_OWNER` (role `orco_owner`; **só** no serviço `migrate`) | **Não** |
+| `POSTGRES_PASSWORD` e senhas das roles (usadas pelo container `db` e pela migration de roles) | **Não** |
+| `BETTER_AUTH_SECRET` (assina sessões e tokens) | **Não** |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | **Não** |
+| `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` (RustFS) | **Não** |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_FROM` | **Não** |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (build) / `TURNSTILE_SECRET_KEY` | Sim / **Não** |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (build) / `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Sim / **Não** |
+| `CRON_SECRET` | **Não** |
+| `STAGING_BASIC_AUTH_USER`, `STAGING_BASIC_AUTH_PASSWORD` (só no staging) | **Não** |
+| `NEXT_PUBLIC_APP_VERSION` (injetada no build: `vX.Y.Z`, `staging-<commit>`; ausente = `dev`) | Sim |
+
+**Do GitHub** (Environments `staging` = só `main`, `production` = só tags `v*`):
+
+| Segredo | Para quê |
+|---|---|
+| `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `VPS_KNOWN_HOSTS` | entrar na VPS por SSH para deploy e backup |
+| `BACKUP_AGE_PUBLIC_KEY` (production) | trancar os backups |
+
+- A chave **privada** do `age` (restauração de backups) fica **somente** com o dono do projeto (gerenciador de senhas), nunca no GitHub.
+- `.env.example` e `deploy/*.env.example` listam todas, sem valores.
 
 ## 9. Definição de pronto (DoD)
 

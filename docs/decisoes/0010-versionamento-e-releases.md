@@ -1,7 +1,9 @@
 # ADR-0010 — Versionamento semântico e releases com release-please
 
-- **Status:** aceito (validado pelo usuário em 2026-09-27)
+- **Status:** aceito; revisado em 2026-09-28 (release manual) e 2026-09-29 (deploy na VPS)
 - **Data:** 2026-09-27
+
+> **Revisão (2026-09-29):** o fluxo de versões continua: o usuário cria a release, e o `production.yml` roda verify → migrate → deploy. O **deploy** passa a ser na VPS: build da imagem `vX.Y.Z` → GHCR → SSH → `migrate` → `docker compose up -d` ([ADR-0012](0012-hospedagem-vps.md)). As menções à Vercel abaixo são histórico.
 
 > **Revisão (2026-09-28, NBB-63, decisão do usuário):** o **release-please foi abandonado** para reduzir a complexidade. Sem PR de release, sem `CHANGELOG.md`, sem `release.yml` e sem status update no Linear.
 >

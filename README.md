@@ -8,7 +8,9 @@ Orçamentos simples para freelancers: crie, envie por link ou PDF e receba a apr
 
 ## Rodando localmente
 
-Requisitos: **Node 24** (`.nvmrc`), npm e Docker (para o Supabase local, a partir da M1).
+Requisitos: **Node 24** (`.nvmrc`), npm e **Docker** (Postgres, RustFS e Mailpit locais pelo `compose.dev.yaml`).
+
+Arquitetura: VPS própria com Docker Compose, PostgreSQL + Drizzle com RLS, Better Auth, RustFS e e-mail por SMTP. Ver [`docs/04-arquitetura.md`](docs/04-arquitetura.md) e [`docs/08-infra-deploy.md`](docs/08-infra-deploy.md).
 
 ```bash
 npm install

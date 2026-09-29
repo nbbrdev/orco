@@ -1,7 +1,9 @@
 # ADR-0005 — Acesso público ao orçamento via RPC server-side
 
-- **Status:** aceito (validado pelo usuário em 2026-09-27)
+- **Status:** aceito; **mecânica revisada** pelo [ADR-0014](0014-banco-drizzle-rls-roles.md) (2026-09-29)
 - **Data:** 2026-09-27
+
+> **Revisão (2026-09-29):** o **princípio** continua (token de 256 bits, acesso só pelo servidor, funções `SECURITY DEFINER` com campos mínimos, respostas idênticas para token inválido). O que muda: não há mais `service_role` nem API pública do Supabase. As funções ficam no nosso Postgres (dono `orco_owner`), com `EXECUTE` para a role `app_user`, e são chamadas só pelo servidor do Next.js. O banco não tem porta pública. IP e user agent vêm dos headers do Nginx.
 
 ## Contexto
 O cliente final acessa o orçamento sem login, por um link. Abrir RLS para `anon` exporia tabelas inteiras a filtros arbitrários via API REST do Supabase. A resposta do cliente precisa registrar IP e user agent confiáveis.
