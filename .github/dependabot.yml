@@ -31,6 +31,43 @@ updates:
       - dependency-name: typescript
         update-types: ["version-update:semver-major"]
 
+  # Imagem base do Dockerfile (Node).
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Sao_Paulo
+    labels: [dependencies]
+    commit-message:
+      prefix: chore
+      include: scope
+    ignore:
+      # O projeto fica no Node 24 LTS (.nvmrc); troca de major é decisão própria.
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
+
+  # Imagens dos compose (Postgres, RustFS, Mailpit): local e VPS.
+  - package-ecosystem: docker-compose
+    directories: ["/", "/deploy"]
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Sao_Paulo
+    labels: [dependencies]
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      compose:
+        patterns: ["*"]
+    ignore:
+      # Major do Postgres (17 → 18) não é só trocar a imagem: exige dump e restauração dos dados.
+      - dependency-name: postgres
+        update-types: ["version-update:semver-major"]
+
   - package-ecosystem: github-actions
     directory: /
     schedule:

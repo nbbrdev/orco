@@ -144,8 +144,8 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 ## 11. Segredos e repositório público
 
 - **O repositório é público.** A segurança nunca depende de o código ser secreto.
-- Segredos do app só nos arquivos `.env` **da VPS** (`/opt/orco/*.env`, legíveis só pelo usuário `deploy`) e no `.env.local` do desenvolvedor. O GitHub guarda só o acesso SSH e a chave **pública** do backup. Nunca no código, em docs, seeds, fixtures ou **na imagem Docker**.
-- `.env*` no `.gitignore`; `.env.example` e `deploy/*.env.example` com nomes e sem valores.
+- Segredos do app só nos arquivos `.env` **da VPS** (`/opt/orco/<ambiente>/.env`, legíveis só pelo usuário `deploy`) e no `.env.local` do desenvolvedor. O GitHub guarda só o acesso SSH e a chave **pública** do backup. Nunca no código, em docs, seeds, fixtures ou **na imagem Docker**.
+- `.env*` no `.gitignore`; `.env.example` e `deploy/env.example` com nomes e sem valores.
 - Prefixo `NEXT_PUBLIC_` (embutido no build e visível no navegador) só para valores públicos por natureza: versão do app, site key do Turnstile, chave pública VAPID. Senhas de banco, segredo do Better Auth, chaves SMTP/RustFS/VAPID privadas e `CRON_SECRET` **nunca**.
 - **VPS:** SSH só por chave (sem senha, sem root), firewall com só 22/80/443, atualizações de segurança automáticas; banco e RustFS sem porta publicada.
 - Seeds e testes usam dados fictícios (`@example.com`, CPFs de teste gerados).
