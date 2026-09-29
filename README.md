@@ -14,20 +14,27 @@ Arquitetura: VPS própria com Docker Compose, PostgreSQL + Drizzle com RLS, Bett
 
 ```bash
 npm install
-cp .env.example .env.local   # preencha os valores
+cp .env.example .env.local   # os valores locais já vêm preenchidos
+npm run db:start             # Postgres, RustFS e Mailpit no Docker
+npm run db:migrate           # aplica as migrations
 npm run dev                  # http://localhost:3000
 ```
 
 ## Scripts
 
-| Comando             | O que faz                         |
-| ------------------- | --------------------------------- |
-| `npm run dev`       | servidor de desenvolvimento       |
-| `npm run build`     | build de produção                 |
-| `npm run lint`      | ESLint (falha com qualquer aviso) |
-| `npm run typecheck` | checagem de tipos do TypeScript   |
-| `npm test`          | testes unitários (Vitest)         |
-| `npm run format`    | formata o código com Prettier     |
+| Comando                         | O que faz                                       |
+| ------------------------------- | ----------------------------------------------- |
+| `npm run dev`                   | servidor de desenvolvimento                     |
+| `npm run build`                 | build de produção                               |
+| `npm run lint`                  | ESLint (falha com qualquer aviso)               |
+| `npm run typecheck`             | checagem de tipos do TypeScript                 |
+| `npm test`                      | testes unitários (Vitest)                       |
+| `npm run test:integration`      | testes contra o Postgres local (RLS)            |
+| `npm run db:start` / `db:stop`  | sobe / desce os serviços locais (Docker)        |
+| `npm run db:migrate`            | aplica as migrations (role `orco_owner`)        |
+| `npm run db:generate -- <nome>` | gera uma migration a partir do schema (Drizzle) |
+| `npm run db:reset`              | apaga os dados locais e recria do zero          |
+| `npm run format`                | formata o código com Prettier                   |
 
 ## Contribuindo
 
