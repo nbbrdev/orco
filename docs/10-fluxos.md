@@ -55,7 +55,7 @@
 2. Consentimento no Google → `/auth/callback`.
 3. Sempre vai para `/app/orcamentos`. No primeiro acesso, a lista vazia mostra **Criar primeiro orçamento**, igual ao F-01.
 
-**Erros:** o usuário cancelou no Google → volta a `/entrar` com "Login cancelado". Se o e-mail já tem conta por senha, o Supabase vincula as identidades.
+**Erros:** o usuário cancelou no Google → volta a `/entrar` com "Login cancelado". Se o e-mail já tem conta por senha, o Better Auth vincula as identidades (e-mail verificado nos dois lados).
 
 ## F-03 — Entrar com e-mail e senha · ✅
 

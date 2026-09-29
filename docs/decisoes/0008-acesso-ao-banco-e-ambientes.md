@@ -1,7 +1,9 @@
 # ADR-0008 — Acesso ao banco, schema e ambientes
 
-- **Status:** aceito (validado pelo usuário em 2026-09-27)
+- **Status:** **substituído** pelo [ADR-0014](0014-banco-drizzle-rls-roles.md) (2026-09-29)
 - **Data:** 2026-09-27
+
+> **Revisão (2026-09-29):** `supabase-js`, Supabase CLI e os projetos `orco-staging`/`orco-prod` na nuvem saem. Entram o Postgres próprio por ambiente na VPS, o Drizzle e a RLS com as roles `orco_owner`/`app_auth`/`app_user` ([ADR-0014](0014-banco-drizzle-rls-roles.md)). O texto abaixo fica como histórico.
 
 ## Contexto
 A segurança do Orçô se apoia na RLS do Postgres (ver [07-seguranca.md](../07-seguranca.md)). Foi avaliado usar um ORM (Prisma ou Drizzle) e definido como organizar schema, migrations e ambientes.

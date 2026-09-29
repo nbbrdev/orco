@@ -1,7 +1,9 @@
 # ADR-0001 — Stack principal
 
-- **Status:** aceito
+- **Status:** aceito; **parcialmente substituído** em 2026-09-29
 - **Data:** 2026-09-27
+
+> **Revisão (2026-09-29):** Supabase e Vercel saíram da stack. Hospedagem: [ADR-0012](0012-hospedagem-vps.md) (VPS + Docker). Login: [ADR-0013](0013-auth-better-auth.md) (Better Auth). Banco: [ADR-0014](0014-banco-drizzle-rls-roles.md) (Postgres + Drizzle + RLS). Arquivos: [ADR-0015](0015-arquivos-rustfs.md) (RustFS). E-mail: [ADR-0016](0016-email-smtp.md) (SMTP). O resto da stack continua: Next.js, TypeScript, Tailwind/shadcn, RHF + Zod, Vitest/Playwright.
 
 ## Contexto
 O Orçô é um SaaS público e gratuito, mantido por uma pessoa, hospedado na Vercel com Supabase. As prioridades são velocidade de desenvolvimento, custo zero no MVP, boa experiência mobile e segurança.

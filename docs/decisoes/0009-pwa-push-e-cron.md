@@ -1,7 +1,9 @@
 # ADR-0009 — PWA, notificações push e jobs agendados
 
-- **Status:** aceito (validado pelo usuário em 2026-09-27)
+- **Status:** aceito; **jobs e e-mail revisados** em 2026-09-29
 - **Data:** 2026-09-27
+
+> **Revisão (2026-09-29):** sem Vercel Cron e sem `pg_cron`. As tarefas diárias rodam por **agendamento na VPS** ([ADR-0012](0012-hospedagem-vps.md)). Os e-mails saem por **SMTP** com Nodemailer ([ADR-0016](0016-email-smtp.md)), e não pela API do Resend. PWA e push continuam como descritos abaixo.
 
 ## Contexto
 Na validação do escopo, o usuário incluiu no MVP: PWA instalável, lembrete de vencimento e notificações push (resposta do cliente, lembrete e visualização). É preciso definir como fazer isso sem serviços pagos e sem comprometer a simplicidade.

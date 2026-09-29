@@ -1,6 +1,8 @@
 # 04 — Arquitetura
 
-> Status: rascunho para validação · Última atualização: 2026-09-27 · Decisões em [decisoes/](decisoes/)
+> Status: rascunho para validação · Última atualização: 2026-09-29 · Decisões em [decisoes/](decisoes/)
+>
+> **2026-09-29:** arquitetura redefinida para **VPS própria com Postgres**, sem Supabase e sem Vercel (ADR-0012 a 0016).
 
 ## Stack
 
@@ -10,21 +12,23 @@
 | Linguagem / runtime | TypeScript `strict`, **Node 24 LTS**, **npm** | 0001 |
 | UI | Tailwind CSS 4 + shadcn/ui (base Radix, preset Nova, pacote `cn`) + lucide-react; tokens do doc 12 em `src/app/globals.css` | 0001 |
 | Formulários / validação | React Hook Form + Zod (schemas compartilhados client/server) | 0001 |
-| Banco / Auth / Storage | Supabase (Postgres, Auth, Storage) via `@supabase/supabase-js` + `@supabase/ssr` | 0001, 0002 |
-| Acesso ao banco | `supabase-js` + tipos gerados, **sem ORM** | 0008 |
-| Schema / migrações | Supabase CLI: schema declarativo + `db diff`; local no Docker, staging e prod na nuvem | 0008 |
+| Banco | **PostgreSQL 17** próprio, um por ambiente (container) | 0014 |
+| Acesso ao banco / migrações | **Drizzle** (schema em TS, consultas tipadas) + `drizzle-kit` (migrations SQL revisadas) | 0014 |
+| Autorização | **RLS** em todas as tabelas do produto, com as roles `orco_owner` (migrations), `app_auth` (login) e `app_user` (produto); `withUserDb(userId, fn)` | 0014 |
+| Autenticação | **Better Auth** (e-mail + senha, confirmação, recuperação, Google; sessões no Postgres) | 0013 |
+| Arquivos | **RustFS** (compatível com S3) via `@aws-sdk/client-s3` | 0015 |
 | PDF | `@react-pdf/renderer` em Route Handler (runtime Node) | 0003 |
-| E-mail transacional | Resend: SMTP do Supabase Auth + API no app para notificações (React Email) | 0002 |
+| E-mail transacional | **Nodemailer + SMTP**: Mailpit local, Resend em staging/produção | 0016 |
 | CAPTCHA | Cloudflare Turnstile no cadastro, validado pela Server Action (`siteverify`) | 0002 |
 | Rate limit | Tabela + função no Postgres | 0004 |
 | PWA | `app/manifest.ts` + service worker próprio (`public/sw.js`), sem cache offline | 0009 |
 | Push | Web Push padrão: lib `web-push` + chaves VAPID, sem serviço externo | 0009 |
-| Jobs agendados | Vercel Cron (1×/dia) → Route Handler protegido; `pg_cron` para manutenção no banco | 0009 |
+| Jobs agendados | Agendamento na VPS (cron do sistema ou container) → Route Handler protegido por `CRON_SECRET` | 0009, 0012 |
 | Tema | **next-themes** (classe `.dark` no `<html>`, escolha salva no navegador) + Tailwind `dark:`. Padrão "Automático" (segue o sistema); o usuário pode fixar Claro ou Escuro no perfil | 0001 |
 | Testes | Vitest (unitário) + Playwright (E2E) | 0001 |
 | Qualidade / segurança de código | ESLint, Prettier, GitHub Actions, CodeQL, Dependabot, secret scanning | 0007 |
-| Hosting | Vercel, com deploys pelo GitHub Actions (`main` = staging; produção em orco.nbbrdev.com só via release; sem preview por PR) | 0001, 0010, 0011 |
-| Versionamento / releases | SemVer escolhido pelo usuário; tag `vX.Y.Z` via `gh release create` → `production.yml` (verify → migrate → deploy) | 0010 |
+| Hosting | **VPS Hostinger** (Ubuntu) com **Docker Compose** (app + Postgres + RustFS por ambiente), **Nginx + Certbot** no Ubuntu; imagens no **GHCR**; deploy por SSH a partir do GitHub Actions (`main` = staging; produção só via release; sem preview por PR) | 0012 |
+| Versionamento / releases | SemVer escolhido pelo usuário; tag `vX.Y.Z` via `gh release create` → `production.yml` (verify → build → migrate → deploy) | 0010 |
 
 **Fora por ora:** Sentry, Upstash, magic link, MFA (reavaliar em M7).
 
@@ -36,26 +40,25 @@ flowchart LR
       F[Freelancer<br/>app logado]
       C[Cliente final<br/>/p/token]
     end
-    subgraph Vercel
-      MW[Proxy<br/>refresh de sessão + headers]
-      RSC[Server Components<br/>+ Server Actions]
-      RH[Route Handlers<br/>PDF]
+    subgraph VPS["VPS (Ubuntu)"]
+      NG[Nginx + Certbot<br/>HTTPS]
+      subgraph Compose["projeto Compose (por ambiente)"]
+        MW[Proxy do Next<br/>CSP, Basic Auth staging]
+        RSC[Server Components<br/>+ Server Actions<br/>+ Better Auth]
+        RH[Route Handlers<br/>PDF, logos, cron]
+        DB[(Postgres<br/>RLS + funções)]
+        ST[RustFS<br/>logos]
+      end
     end
-    subgraph Supabase
-      AUTH[Auth<br/>bcrypt, OAuth]
-      DB[(Postgres<br/>RLS + RPCs)]
-      ST[Storage<br/>logos]
-    end
-    RS[Resend<br/>SMTP + API]
+    RS[Resend<br/>SMTP]
     G[Google OAuth]
-    F --> MW --> RSC --> DB
-    C --> MW
-    RSC --> AUTH
+    F --> NG --> MW --> RSC --> DB
+    C --> NG
+    RSC --> ST
     RSC --> RS
+    RSC --> G
     RH --> DB
     RH --> ST
-    AUTH --> RS
-    AUTH --> G
 ```
 
 ## Estrutura de pastas (prevista)
@@ -63,17 +66,17 @@ flowchart LR
 ```
 /
 ├── docs/                      documentação (fonte da verdade de conteúdo)
-├── supabase/
-│   ├── schemas/               estado declarativo do banco (tabelas, RLS, funções)
-│   ├── migrations/            SQL versionado, gerado por `db diff` e revisado
-│   ├── seed.sql               dados fictícios de desenvolvimento
-│   └── config.toml
+├── db/
+│   └── migrations/            SQL gerado pelo drizzle-kit e revisado (roles, tabelas, RLS, funções)
+├── deploy/                    compose.yaml, nginx/orco.conf, *.env.example, README (preparar a VPS)
+├── Dockerfile                 imagem do app (standalone, não-root)
+├── compose.dev.yaml           local: Postgres, RustFS e Mailpit
 ├── src/
 │   ├── app/
 │   │   ├── (marketing)/       /, /termos, /privacidade
 │   │   ├── (auth)/            /entrar, /cadastro, /recuperar-senha, /redefinir-senha
-│   │   ├── auth/callback/     route handler do OAuth (Google, PKCE)
-│   │   ├── auth/confirm/      route handler dos links de e-mail (token_hash + verifyOtp)
+│   │   ├── api/auth/[...all]/ rotas do Better Auth (inclui o callback do Google)
+│   │   ├── auth/confirm/      links dos e-mails de conta (token de uso único)
 │   │   ├── app/               área logada (layout com navegação)
 │   │   │   ├── orcamentos/
 │   │   │   ├── clientes/
@@ -87,14 +90,16 @@ flowchart LR
 │   ├── features/              lógica por domínio: quotes/, clients/, catalog/, profile/
 │   │   └── <feature>/         actions.ts, queries.ts, schemas.ts (Zod), components/
 │   ├── lib/
-│   │   ├── supabase/          server.ts, client.ts, proxy.ts (refresh de sessão), admin.ts (server-only)
+│   │   ├── db/                schema Drizzle, clients app_user/app_auth, withUserDb (server-only)
+│   │   ├── auth/              configuração do Better Auth e helpers de sessão (server-only)
+│   │   ├── email/             Nodemailer + templates pt-BR (server-only)
+│   │   ├── storage/           cliente S3 do RustFS (server-only)
 │   │   ├── money.ts           centavos ↔ BRL, cálculo (RN-15–RN-18)
 │   │   ├── notify.ts          e-mail + push ao freelancer (ADR-0009)
 │   │   ├── whatsapp.ts        buildWhatsAppLink (click-to-chat)
 │   │   └── dates.ts           fuso America/Sao_Paulo
-│   ├── proxy.ts               Proxy do Next 16 (antigo middleware): sessão, headers/CSP, Basic Auth do staging
-│   ├── pdf/                   templates react-pdf
-│   └── types/database.ts      gerado pelo Supabase CLI
+│   ├── proxy.ts               Proxy do Next 16 (antigo middleware): CSP, Basic Auth do staging
+│   └── pdf/                   templates react-pdf
 ├── tests/
 │   ├── unit/                  Vitest
 │   └── e2e/                   Playwright
@@ -104,21 +109,21 @@ flowchart LR
 
 ## Padrões de fluxo
 
-**Leitura (área logada):** Server Component → client Supabase **server** (cookies do usuário) → a query passa pela RLS → renderiza. Nunca há fetch de dados sensíveis no client sem RLS.
+**Leitura (área logada):** Server Component → valida a sessão (Better Auth, no servidor) → `withUserDb(userId, …)` → a query passa pela RLS (role `app_user`) → renderiza. O navegador nunca fala com o banco.
 
-**Mutação:** formulário (RHF + Zod no client, só para UX) → **Server Action** → revalida com o mesmo schema Zod → `getUser()` → query com o client do usuário (RLS) → `revalidatePath`/retorno para a UI otimista.
+**Mutação:** formulário (RHF + Zod no client, só para UX) → **Server Action** → revalida com o mesmo schema Zod → sessão validada → `withUserDb(userId, …)` (RLS) → `revalidatePath`/retorno para a UI otimista.
 
 **Salvamento automático:** debounce (~800 ms) no editor → Server Action `saveQuoteDraft` → responde com a versão e o horário salvo. O conflito entre abas é resolvido por "última escrita vence" no MVP.
 
-**Página pública `/p/[token]` (ADR-0005):** Server Component → rate limit → client **admin** (`src/lib/supabase/admin.ts`, `server-only`) → RPC `get_public_quote(token)` (`SECURITY DEFINER`, retorna campos mínimos) → renderiza. O navegador do cliente final nunca fala com o Supabase. A resposta chama a RPC `respond_to_quote` via Server Action. Rate limit via RPC `check_rate_limit`. Depois do commit da resposta, a Server Action chama `notifyFreelancer` (e-mail + push) em `after()` do Next.js, para não atrasar a página do cliente. Uma falha no envio é logada sem PII e não afeta a resposta (RN-42).
+**Página pública `/p/[token]` (ADR-0005/0014):** Server Component → rate limit → função `get_public_quote(token)` (`SECURITY DEFINER`, executada pela role `app_user`, retorna campos mínimos) → renderiza. O navegador do cliente final nunca fala com o banco. A resposta chama a função `respond_to_quote` via Server Action. Rate limit via função `check_rate_limit`. Depois do commit da resposta, a Server Action chama `notifyFreelancer` (e-mail + push) em `after()` do Next.js, para não atrasar a página do cliente. Uma falha no envio é logada sem PII e não afeta a resposta (RN-42).
 
 **PDF:** Route Handler (runtime Node) → autentica (dono via sessão; cliente via token) → rate limit → busca os dados → `renderToBuffer` do react-pdf → `Content-Disposition: attachment` (download) ou `inline` (prévia do freelancer, RN-22a, que não muda o status).
 
 **Cálculo de totais:** uma única implementação em `src/lib/money.ts`, usada no client (tempo real), no servidor (persistência) e no PDF. O total é sempre recalculado no servidor, nunca confiado do client.
 
-**Notificações (ADR-0009):** um módulo `src/lib/notify.ts` com `notifyFreelancer(userId, event)` centraliza tudo: lê as preferências (`email_notifications`, assinaturas push), envia o e-mail (Resend) e o push (`web-push`) em paralelo, apaga assinaturas expiradas (404/410) e nunca lança erro para quem chamou (RN-42). É chamado em `after()` na resposta do cliente, na 1ª visualização e no cron de lembretes.
+**Notificações (ADR-0009):** um módulo `src/lib/notify.ts` com `notifyFreelancer(userId, event)` centraliza tudo: lê as preferências (`email_notifications`, assinaturas push), envia o e-mail (módulo SMTP, ADR-0016) e o push (`web-push`) em paralelo, apaga assinaturas expiradas (404/410) e nunca lança erro para quem chamou (RN-42). É chamado em `after()` na resposta do cliente, na 1ª visualização e no cron de lembretes.
 
-**Lembrete diário:** Vercel Cron (`vercel.json`, ex.: 12:00 UTC = 9h em São Paulo) → `GET /api/cron/lembretes` com `Authorization: Bearer $CRON_SECRET` → RPC `quotes_due_for_reminder()` → `notifyFreelancer` → marca `reminder_sent_at`.
+**Lembrete diário:** agendamento na VPS (ex.: 9h em São Paulo) → `GET /api/cron/lembretes` com `Authorization: Bearer $CRON_SECRET` → função `quotes_due_for_reminder()` → `notifyFreelancer` → marca `reminder_sent_at`.
 
 **Status `expirado`:** derivado na leitura (`status = 'sent' AND valid_until < hoje_SP`), exposto por uma view/função. Não depende de cron.
 

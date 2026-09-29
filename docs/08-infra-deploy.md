@@ -1,117 +1,162 @@
 # 08 — Infraestrutura e deploy
 
-> Status: rascunho para validação · Última atualização: 2026-09-28
+> Status: rascunho para validação · Última atualização: 2026-09-29
 >
-> Nada desta página é criado na M0; tudo é executado na **M1**.
+> Arquitetura redefinida em 2026-09-29: **VPS própria com Docker Compose**, sem Supabase e sem Vercel ([ADR-0012](decisoes/0012-hospedagem-vps.md)). Executado na **M1**.
 
 ## Ambientes
 
-| Ambiente | App | Banco | Gatilho |
+| Ambiente | App | Banco e arquivos | Gatilho |
 |---|---|---|---|
-| Local | `npm run dev` (`APP_ENV=development`) | Supabase CLI no **Docker** (`npm run db:start`) | — |
-| **Staging** | Deploy "Preview" da Vercel em **`https://staging.orco.nbbrdev.com`** (`APP_ENV=staging`) | Supabase **`orco-staging`** | merge na `main` com CI verde (`staging.yml`) |
-| Produção | Vercel Production em `https://orco.nbbrdev.com` (`APP_ENV=production`) | Supabase **`orco-prod`** | **versão criada pelo usuário** (`gh release create vX.Y.Z` → `production.yml`), ADR-0010 |
+| Local | `npm run dev` (`APP_ENV=development`) | `compose.dev.yaml`: Postgres, RustFS e Mailpit no Docker (`npm run db:start`) | — |
+| **Staging** | container `app` do projeto `orco-staging` na VPS, em **`https://staging.orco.nbbrdev.com`** (`APP_ENV=staging`) | Postgres e RustFS do próprio projeto | merge na `main` com CI verde (`staging.yml`) |
+| Produção | container `app` do projeto `orco-production`, em `https://orco.nbbrdev.com` (`APP_ENV=production`) | Postgres e RustFS do próprio projeto | **versão criada pelo usuário** (`gh release create vX.Y.Z` → `production.yml`), ADR-0010 |
 
-Os 2 projetos do plano Free são `orco-staging` e `orco-prod` (ADR-0008).
+**Não há preview por PR.** Um PR é revisado pelo código, pela explicação, pelo CI e rodando a branch localmente, inclusive no celular pelo endereço "Network" do `npm run dev` na mesma Wi-Fi (as faixas `192.168.*.*` e `10.*.*.*` estão liberadas em `allowedDevOrigins` no `next.config.ts`). Depois do merge, o teste acontece no staging.
 
-**Não há preview por PR** (decisão de 2026-09-28): um PR é revisado pelo código, pela explicação, pelo CI e rodando a branch localmente (inclusive no celular, pelo endereço "Network" do `npm run dev` na mesma Wi-Fi; as faixas privadas `192.168.*.*` e `10.*.*.*` estão liberadas em `allowedDevOrigins` no `next.config.ts`). Depois do merge, o teste acontece no staging. Motivos: um único endereço de teste, banco sempre coerente com o código, token da Vercel fora do alcance de PRs e pipeline igual ao da futura VPS (ADR-0011).
+## VPS
 
-## Vercel
+- **Hostinger KVM 1 ou KVM 2**, Ubuntu LTS. Contratada na NBB-35.
+- O build acontece no GitHub Actions; a VPS só roda os containers. Uso estimado de ~1,5 GB para os dois ambientes.
+- **Base da máquina** (passo a passo em `deploy/README.md`):
+  - usuário `deploy` sem senha, **SSH só por chave** (root e senha desligados);
+  - firewall `ufw` com só **22, 80 e 443** abertas;
+  - atualizações automáticas de segurança (`unattended-upgrades`);
+  - Docker Engine + plugin Compose;
+  - Nginx + Certbot.
+- **Pasta** `/opt/orco/`, com `compose.yaml` (cópia de `deploy/compose.yaml`), `production.env` e `staging.env`. Os segredos existem **só nesses arquivos**, com permissão restrita ao usuário `deploy`.
 
-- Projeto `orco` **sem integração Git**: a Vercel nunca publica sozinha. O `vercel.json` trava isso no repositório (`git.deploymentEnabled: false`). Framework Next.js, Node 24.
-- **Todos os deploys saem do GitHub Actions**, pela "receita" reutilizável `deploy-vercel.yml`: `vercel pull` (variáveis do ambiente) → `vercel build` → `vercel deploy --prebuilt` → `vercel alias set` (staging). É o único arquivo que conhece a Vercel; na VPS, só ele muda.
-  - Staging: `staging.yml` chama a receita com o ambiente Preview da Vercel e aponta `staging.orco.nbbrdev.com` para o novo deploy.
-  - Produção: `production.yml` chama a receita com `--prod` quando o usuário publica uma release.
-- **Vercel CLI isolado em `tools/deploy/`** (versão exata e lockfile próprio, vigiado pelo Dependabot). Fica fora do `package.json` do app porque traz centenas de pacotes com vulnerabilidades conhecidas (ex.: `undici`), que reprovariam o `npm audit` do app. Ele só roda no job de deploy.
-- Sem ambiente Development na Vercel: as chaves locais são as padrão do Supabase CLI e ficam no `.env.local`.
-- Plano **Hobby** no MVP (produto gratuito, não comercial). Após o `1.0.0`, o app migra para uma **VPS própria** (ADR-0011). Se houver monetização antes disso, a Vercel precisa ir para o Pro.
-- **Portabilidade:** nada de `@vercel/*` ou recursos exclusivos da Vercel; o código precisa rodar em `next start`/standalone (ADR-0011).
-- Env vars por ambiente da Vercel: **Preview = staging**, **Production = produção**, conforme [06-regras-dev.md](06-regras-dev.md) §8.
-- Domínio: `orco.nbbrdev.com` adicionado ao projeto. No painel de DNS da **Hostinger** (zona `nbbrdev.com`), criar um registro **CNAME** com nome `orco` apontando para o alvo que a Vercel indicar (normalmente `cname.vercel-dns.com`). O certificado TLS é emitido automaticamente pela Vercel. O domínio raiz e os outros subdomínios não são afetados.
-- Nome ASCII: o slug `orco` é usado na URL porque domínios com acento (IDN) viram *punycode* (`xn--…`) em vários contextos. A marca **Orçô** aparece só na interface.
-- **Staging com domínio fixo:** `staging.orco.nbbrdev.com` é um *alias* movido pelo `staging.yml` para cada novo deploy da `main`. CNAME `staging.orco` na Hostinger → alvo da Vercel. É a URL usada para testar no celular, instalar o PWA de teste e testar push.
-- **Proteção do staging (no app, não na Vercel):** a Deployment Protection da Vercel fica **desligada**, senão ela pediria o login da Vercel até no link público do orçamento. Em seu lugar, o proxy (`src/proxy.ts`) exige **HTTP Basic Auth** quando `APP_ENV=staging`, **exceto** em `/p/*`, `/api/p/*`, `/sw.js` e `/manifest.webmanifest`. Assim, um "cliente de teste" consegue abrir o link público de um orçamento de staging. As credenciais ficam em `STAGING_BASIC_AUTH_USER`/`STAGING_BASIC_AUTH_PASSWORD`, só no ambiente Preview. Sem elas, o staging responde **503** (fica fechado, nunca aberto por esquecimento). O staging também envia `X-Robots-Tag: noindex, nofollow` em todas as rotas.
-- **Vercel Cron** (`vercel.json`): `/api/cron/lembretes` 1× por dia às 12:00 UTC (9h em São Paulo). No Hobby, o horário tem precisão de ± 1 h e há limite de jobs diários, o que é suficiente. `CRON_SECRET` configurado em Production.
+## Nginx e HTTPS
+
+- **Nginx instalado no Ubuntu** (fora do Docker), como proxy reverso. Configuração versionada em `deploy/nginx/orco.conf`:
+  - `orco.nbbrdev.com` → `127.0.0.1:3000`;
+  - `staging.orco.nbbrdev.com` → `127.0.0.1:3001`.
+- **Certbot** (`certbot --nginx -d orco.nbbrdev.com -d staging.orco.nbbrdev.com`) emite os certificados do Let's Encrypt, adiciona o HTTPS à configuração e instala a **renovação automática** (timer do systemd).
+- O Nginx repassa ao app os headers `X-Forwarded-For`, `X-Forwarded-Proto` e `Host`. O IP e o user agent do cliente (ADR-0005) vêm daí.
+- **DNS na Hostinger** (zona `nbbrdev.com`): registros **A** `orco` e `staging.orco` → IP da VPS.
+- Nome ASCII: o slug `orco` é usado na URL porque domínios com acento viram *punycode*. A marca **Orçô** aparece só na interface.
+
+## Docker Compose
+
+Um único `deploy/compose.yaml`, usado por dois **projetos** (`orco-production` e `orco-staging`). Cada projeto tem **rede e volumes próprios**: o staging não alcança o banco de produção.
+
+| Serviço | Imagem | Papel |
+|---|---|---|
+| `app` | `ghcr.io/nbbrdev/orco:<tag>` | o Orçô; porta `127.0.0.1:3000` (prod) ou `:3001` (staging), alcançada só pelo Nginx |
+| `migrate` | a mesma do app | tarefa avulsa (`profiles: [tools]`): aplica as migrations do Drizzle com a role `orco_owner` |
+| `db` | `postgres:17-alpine` (versão fixa) | banco; volume `dbdata`; **sem porta publicada**; `healthcheck` com `pg_isready` |
+| `rustfs` | RustFS (versão fixa) | arquivos (logos), compatível com S3; volume próprio; **sem porta publicada** ([ADR-0015](decisoes/0015-arquivos-rustfs.md)) |
+
+- **Hardening do `app`:** imagem com usuário não-root, `read_only: true` + `tmpfs` para `/tmp`, `security_opt: no-new-privileges`, `restart: unless-stopped`.
+- **Logs** limitados (`json-file`, 10 MB × 3 arquivos) em todos os serviços, para não encher o disco.
+- O app só liga depois que o banco responde (`depends_on: condition: service_healthy`).
+
+**Deploy de um ambiente** (o que os workflows rodam por SSH):
+
+```bash
+cd /opt/orco
+docker compose -p orco-production --env-file production.env pull
+docker compose -p orco-production --env-file production.env run --rm migrate
+docker compose -p orco-production --env-file production.env up -d
+```
+
+Primeiro o banco muda, depois o código. As migrations precisam ser compatíveis com a versão anterior do código.
+
+## Imagens (GHCR)
+
+- `Dockerfile` na raiz:
+  - build multi-stage, com Next `output: 'standalone'`;
+  - Node 24 Alpine, usuário não-root;
+  - `LABEL org.opencontainers.image.source=https://github.com/nbbrdev/orco`.
+- **Nenhum segredo entra na imagem.** Os segredos chegam na hora de rodar, pelo `.env` da VPS. As variáveis `NEXT_PUBLIC_*` (versão do app, site key do Turnstile) são públicas por natureza e são embutidas no build. Por isso staging e produção têm **imagens separadas**.
+- Publicada em `ghcr.io/nbbrdev/orco`, **pública** (a VPS baixa sem login). O envio usa o `GITHUB_TOKEN` com `packages: write`.
+- Etiquetas: `staging-<commit>` e `vX.Y.Z`. As antigas ficam guardadas para rollback.
+
+## Workflows (`.github/workflows/`)
+
+| Arquivo | Gatilho | Passos |
+|---|---|---|
+| `ci.yml` | PR e push em `main` | checkout → Node do `.nvmrc` → `npm ci` → Prettier → lint → typecheck → Vitest (unitários + integração com Postgres em service container) → build → `npm audit --audit-level=high` |
+| `codeql.yml` | PR, push em `main`, semanal | CodeQL `javascript-typescript`, suite `security-extended` |
+| `pr-title.yml` | PR aberto/editado | título em Conventional Commits com `[NBB-xx]` |
+| `staging.yml` | **CI concluído com sucesso** num push na `main` (ou manual) | build da imagem `staging-<commit>` → GHCR → SSH na VPS → `pull` → `migrate` → `up -d` no projeto `orco-staging`. Nunca roda para PR ou fork; um de cada vez |
+| `production.yml` | release publicada pelo usuário (`gh release create vX.Y.Z --target main --generate-notes`) | `verify` (formato `vX.Y.Z`, commit na `main`, check `ci` verde) → build `vX.Y.Z` → GHCR → SSH → `pull` → `migrate` → `up -d` no projeto `orco-production`. Rollback de código: "Re-run" da execução de uma versão anterior |
+| `backup.yml` | diário 06:00 UTC (03:00 SP) | SSH → `pg_dump` do banco de produção + conteúdo do RustFS → criptografa com `age` (chave **pública**) → artifact de **30 dias** |
+
+- **Segredos do GitHub:** só o acesso SSH, nos environments `staging` (só `main`) e `production` (só tags `v*`):
+  - `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` e `VPS_KNOWN_HOSTS`;
+  - `BACKUP_AGE_PUBLIC_KEY` (production).
+- Regras de workflow: `permissions:` mínimas por job, actions fixadas por SHA, inputs passados por variável de ambiente, secrets nunca impressos.
+
+## Backups e restauração
+
+- **Diário e automático** (`backup.yml`). O arquivo `orco-backup-AAAA-MM-DD.tar.age` contém:
+  - o dump do Postgres (`pg_dump -Fc`, com roles, schema e dados);
+  - os objetos do RustFS.
+- **Criptografia com `age`:**
+  - a chave **pública** fica no GitHub e só serve para trancar;
+  - a chave **privada** fica **só com o dono do projeto**, no gerenciador de senhas;
+  - artifacts de repositório público podem ser baixados por qualquer pessoa logada, por isso a criptografia é obrigatória.
+- **Acesso:** GitHub → Actions → Backup → execução do dia → Artifacts; ou `gh run download <id>`.
+- **Restauração** (documentada em `deploy/README.md`):
+  1. `age -d -i <chave-privada>`;
+  2. `pg_restore` num banco novo;
+  3. reenviar os objetos ao RustFS.
+- **Teste de restauração** numa máquina limpa antes do go-live (M7, NBB-58).
+- **Reforço:** snapshots da VPS na Hostinger, se o plano incluir.
+
+## Agendamentos
+
+- Sem Vercel Cron e sem `pg_cron`. Tarefas diárias (lembrete de vencimento, RN-43; anonimização de IPs, RN-37) rodam por **agendamento na VPS**: cron do sistema chamando a rota protegida por `CRON_SECRET`, ou um container agendado. A forma é decidida na issue de cada tarefa (NBB-62).
 
 ## Web Push (VAPID)
 
-- Par de chaves VAPID gerado uma vez (`npx web-push generate-vapid-keys`): a pública vai em `NEXT_PUBLIC_VAPID_PUBLIC_KEY` e a privada só no servidor. Um par por ambiente (staging e prod), já que as assinaturas ficam presas à chave.
+- Par de chaves VAPID gerado uma vez (`npx web-push generate-vapid-keys`): a pública vai em `NEXT_PUBLIC_VAPID_PUBLIC_KEY` e a privada só no servidor. Um par por ambiente.
 - `VAPID_SUBJECT = mailto:<e-mail de contato do projeto>`.
-- Trocar as chaves invalida todas as assinaturas, e os usuários precisariam reativar o push.
+- Trocar as chaves invalida todas as assinaturas.
 - PWA e push são testados **no staging** (URL fixa com HTTPS). Localmente pelo celular não dá: falta HTTPS.
-- **Risco a verificar na fase do PWA:** no iPhone, o push exige o app instalado na tela inicial, e o app instalado pode não repassar a senha do Basic Auth. Se acontecer, trocar o Basic Auth do staging por um login próprio.
+- **Risco a verificar na fase do PWA:** no iPhone, o app instalado na tela inicial pode não repassar a senha do Basic Auth do staging. Se acontecer, trocar por um login próprio do staging.
 
-## Supabase
+## Proteção do staging
 
-- Região: `sa-east-1` (São Paulo), pela latência e por manter os dados no Brasil.
-- Auth:
-  - Site URL = URL de produção (no projeto staging: `https://staging.orco.nbbrdev.com`). Redirect URLs: no `orco-prod`, `https://orco.nbbrdev.com/**`; no `orco-staging`, `https://staging.orco.nbbrdev.com/**` e `http://localhost:3000/**`. Sem previews, não há domínios `*.vercel.app`.
-  - Provedores: e-mail (confirmação ligada) e Google.
-  - Política de senha: mínimo 8, sem exigência de tipos.
-  - CAPTCHA nativo: **desligado** (o Turnstile é validado pela Server Action de cadastro; ver 07-seguranca §1).
-  - SMTP customizado: Resend.
-  - Templates de e-mail em pt-BR com a marca Orçô.
-- Storage: bucket `logos` ([05-dados.md](05-dados.md)).
-- Extensões: `pgcrypto` (tokens), `pg_cron` (RN-37).
-- Migrations aplicadas em prod **somente pelo workflow de release** (`supabase db push`), junto com o deploy da versão. Nunca pelo painel.
+- O proxy do app (`src/proxy.ts`) exige **HTTP Basic Auth** quando `APP_ENV=staging`, **exceto** em `/p/*`, `/api/p/*`, `/sw.js` e `/manifest.webmanifest`. Assim, um "cliente de teste" consegue abrir o link público de um orçamento de staging.
+- Credenciais em `STAGING_BASIC_AUTH_USER`/`STAGING_BASIC_AUTH_PASSWORD`, só no `staging.env`. Sem elas, o staging responde **503**.
+- `X-Robots-Tag: noindex, nofollow` em todas as rotas do staging.
 
-## Google OAuth
-
-- Projeto no Google Cloud com tela de consentimento (nome Orçô, logo, links de privacidade/termos, domínio autorizado).
-- Client OAuth Web com redirect `https://<projeto>.supabase.co/auth/v1/callback`.
-- Client ID/secret configurados no painel do Supabase.
-
-## Resend
+## Resend (e-mail)
 
 - Domínio de envio `orco.nbbrdev.com` **verificado** (2026-09-28), com registros na Hostinger:
   - DKIM `resend._domainkey.orco`;
   - SPF/MX em `send.orco`;
   - DMARC herdado do domínio raiz (`_dmarc.nbbrdev.com`, `p=none`).
+- **Remetente:** `Orçô <nao-responda@orco.nbbrdev.com>`, sem Reply-To.
+- O **app** envia tudo por **SMTP** ([ADR-0016](decisoes/0016-email-smtp.md)):
+  - localmente para o **Mailpit** (`compose.dev.yaml`);
+  - em staging e produção para `smtp.resend.com:465`, usuário `resend`, senha = API key com só *Sending access* e só o domínio `orco.nbbrdev.com` (`supabase-smtp-staging` e `supabase-smtp-prod`, já criadas).
+- Plano Free: 3.000 e-mails/mês, 100/dia, para todos os e-mails somados.
 
-  Usar o subdomínio isola a reputação de envio do domínio principal. O domínio raiz `nbbrdev.com` também está no Resend, para outros usos.
-- **Remetente:** `Orçô <nao-responda@orco.nbbrdev.com>`, sem Reply-To. Os e-mails avisam no rodapé que a caixa não recebe respostas.
-- Dois usos:
-  1. **SMTP do Supabase Auth** (confirmação, recuperação, troca de e-mail, link de acesso e aviso de senha alterada), configurado no **painel de cada projeto**:
-     - SMTP: `smtp.resend.com:465`, usuário `resend`;
-     - senha: API key `supabase-smtp` com só *Sending access* e só o domínio `orco.nbbrdev.com`.
+## Google OAuth
 
-     Os **templates** em pt-BR são versionados em `supabase/templates/` (usados direto pelo Supabase local) e colados no painel, conforme o checklist em `supabase/templates/README.md`. Os links usam `token_hash` → `/auth/confirm`.
-  2. **API do Resend no app** (notificação de resposta ao freelancer, RN-40): `RESEND_API_KEY` na Vercel, só no servidor. Templates com React Email.
-- Plano Free: 3.000 e-mails/mês, 100/dia, compartilhados entre os dois usos.
+- Projeto no Google Cloud com tela de consentimento (nome Orçô, logo, links de privacidade e termos, domínio autorizado).
+- Client OAuth Web com redirects para o **Better Auth** do app:
+  - `https://orco.nbbrdev.com/api/auth/callback/google`;
+  - `https://staging.orco.nbbrdev.com/api/auth/callback/google`;
+  - `http://localhost:3000/api/auth/callback/google`.
+- Client ID/secret nos `.env` da VPS (e no `.env.local`), só no servidor. Configurado na M2 (NBB-40).
 
 ## Cloudflare Turnstile
 
 - Widget em modo "managed/invisible" para os hostnames de produção, `staging.orco.nbbrdev.com` e localhost.
-- Site key no app (pública, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`); secret key na Vercel, só no servidor (`TURNSTILE_SECRET_KEY`).
+- Site key pública (`NEXT_PUBLIC_TURNSTILE_SITE_KEY`, embutida no build); secret key só no servidor (`TURNSTILE_SECRET_KEY`).
 
 ## GitHub (ADR-0007)
 
-- Repositório **público** [`nbbrdev/orco`](https://github.com/nbbrdev/orco) (remote SSH `git@github-indie:nbbrdev/orco.git`, usando um alias de host do `~/.ssh/config`), branch `main` protegida ([06-regras-dev.md](06-regras-dev.md) §4).
-- Configurações de segurança: Dependabot alerts + security updates, secret scanning + push protection, CodeQL (code scanning).
-- Integrações: Linear (vincula PRs e issues). A Vercel **não** é integrada ao GitHub: ela só recebe deploys enviados pelo Actions.
-
-### Workflows (`.github/workflows/`)
-
-| Arquivo | Gatilho | Passos |
-|---|---|---|
-| `ci.yml` | PR e push em `main` | checkout → Node do `.nvmrc` (cache do npm) → `npm ci` → Prettier (`format:check`) → lint → typecheck → Vitest → build → `npm audit --audit-level=high` |
-| `codeql.yml` | PR, push em `main`, semanal | CodeQL `javascript-typescript`, suite `security-extended` |
-| `e2e.yml` | a partir da M2; a definir (local no CI ou contra o staging após o deploy) | Playwright |
-| `pr-title.yml` | PR aberto/editado | valida o título em Conventional Commits |
-| `staging.yml` | **CI concluído com sucesso** num push na `main` (ou manual) | 1) `migrate`: `supabase db push --db-url` no **orco-staging** (Session Pooler, environment `staging`, sem Access Token); 2) `deploy`: chama `deploy-vercel.yml` no **mesmo commit** que o CI validou e move o alias `staging.orco.nbbrdev.com`. Nunca roda para PR ou fork; um de cada vez, sem cancelar no meio. Sem a variable `VERCEL_PROJECT_ID`, o `deploy` fica "skipped" |
-| `deploy-vercel.yml` | só quando chamado (`workflow_call`) | receita de publicar: `npm ci` (app + `tools/deploy`) → `vercel pull` → `build` → `deploy --prebuilt` → `alias set` (opcional). Registra a URL no environment do GitHub |
-| `production.yml` | release publicada pelo usuário (`gh release create vX.Y.Z --target main --generate-notes`) | 1. `verify`: tag no formato `vX.Y.Z`, commit na `main` e check `ci` verde nele; 2. `migrate`: `supabase db push` no **orco-prod** (environment `production`, só tags `v*`); 3. `deploy`: `deploy-vercel.yml` com `--prod` e a versão da tag ("skipped" sem a Vercel). Republicar/rollback: "Re-run all jobs" na execução da versão |
-| `backup.yml` | diário 06:00 UTC (03:00 SP) | `supabase db dump` do **orco-prod** via Session Pooler (roles + schema + dados) → criptografa com `age` (chave **pública**) → `upload-artifact` com retenção de **30 dias** |
-
-Regras de workflow: `permissions:` mínimas por job, actions de terceiros fixadas por SHA, secrets nunca impressos.
-
-### `dependabot.yml`
-
-- Ecossistemas `npm` (/) e `github-actions` (/), semanal.
-- Grupos: `minor-and-patch` agrupados; majors em PR separado.
-- Label `dependencies`.
-
-### Templates
-
-- `.github/PULL_REQUEST_TEMPLATE.md`: issue do Linear, o que mudou, como testar, checklist de segurança, checklist de simplicidade, docs atualizados.
-- `.github/CODEOWNERS`: `* @nbbrdev`.
+- Repositório **público** [`nbbrdev/orco`](https://github.com/nbbrdev/orco) (remote SSH `git@github-indie:nbbrdev/orco.git`), com a branch `main` protegida ([06-regras-dev.md](06-regras-dev.md) §4).
+- Dependabot alerts + security updates, secret scanning + push protection, CodeQL.
+- Integração com o Linear (vincula PRs e issues).
+- **`dependabot.yml`:**
+  - ecossistemas `npm`, `github-actions` e `docker` (imagens do `Dockerfile` e do compose), semanal;
+  - `minor-and-patch` agrupados; label `dependencies`.
+- **Templates:**
+  - `.github/PULL_REQUEST_TEMPLATE.md`: issue do Linear, o que mudou, como testar, checklists de segurança e de simplicidade, docs atualizados;
+  - `.github/CODEOWNERS`: `* @nbbrdev`.

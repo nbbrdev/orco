@@ -1,7 +1,9 @@
 # ADR-0011 — Hospedagem: Vercel no MVP, VPS após o lançamento
 
-- **Status:** aceito (validado pelo usuário em 2026-09-27)
+- **Status:** **substituído** pelo [ADR-0012](0012-hospedagem-vps.md) (2026-09-29)
 - **Data:** 2026-09-27
+
+> **Revisão (2026-09-29):** a VPS foi **antecipada**: o Orçô nasce nela, sem Vercel, com o próprio Postgres (sem Supabase). Ver [ADR-0012](0012-hospedagem-vps.md). O texto abaixo fica como histórico.
 
 ## Contexto
 O plano Hobby da Vercel é gratuito, mas restrito a uso não comercial. O usuário quer começar na Vercel e **migrar o app para uma VPS própria após o lançamento (`1.0.0`)**. Foi avaliado também trocar o Supabase por um Postgres puro na VPS.

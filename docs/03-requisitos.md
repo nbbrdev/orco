@@ -73,7 +73,7 @@
 ### Notificações (M6)
 | # | Requisito | Refs |
 |---|---|---|
-| RF-37 | Lembrete diário de vencimento (e-mail + push) via Vercel Cron. | RN-43 |
+| RF-37 | Lembrete diário de vencimento (e-mail + push) por agendamento na VPS (revisado em 2026-09-29; antes, Vercel Cron). | RN-43 |
 | RF-38 | Notificações push (Web Push): pedido de permissão após o 1º envio, ativação por aparelho, eventos de resposta, lembrete e visualização. | F-18, RN-45 |
 
 ### Plataforma (M7)
@@ -113,7 +113,7 @@
 ### Operação e qualidade
 | # | Requisito |
 |---|---|
-| RNF-12 | Operação dentro dos planos gratuitos (Vercel Hobby, Supabase Free, Resend Free) no MVP. |
+| RNF-12 | Custo mínimo no MVP: uma VPS pequena (Hostinger KVM 1/2) e serviços em plano gratuito (Resend Free, Turnstile, GHCR público). Revisado em 2026-09-29 (antes: Vercel Hobby + Supabase Free). |
 | RNF-13 | CI verde (lint, typecheck, testes, build, CodeQL) obrigatório para merge. |
 | RNF-14 | Regras de cálculo (RN-15–RN-18) com 100% de cobertura em testes unitários. |
 | RNF-15 | Fluxos F-01, F-05, F-06, F-07 e F-08 cobertos por testes E2E (Playwright). |
