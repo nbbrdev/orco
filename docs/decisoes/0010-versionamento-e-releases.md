@@ -10,7 +10,7 @@
 > - o workflow `production.yml` (gatilho: release publicada) confere a tag (formato, commit na `main`, CI verde), aplica as migrations no `orco-prod` e publica via `deploy-vercel.yml --prod`;
 > - staging continua automático a cada merge (`staging.yml`);
 > - "produção = tag" continua valendo;
-> - a versão exibida no app vem da tag (`NEXT_PUBLIC_APP_VERSION`), e o `package.json` fica `0.0.0`;
+> - a versão exibida no app vem da tag (`NEXT_PUBLIC_APP_VERSION`), e o `package.json` não tem o campo `version`;
 > - o agente nunca cria tags.
 >
 > **Motivo técnico adicional:** PRs e releases criados pelo release-please com o `GITHUB_TOKEN` não disparam outros workflows. O CI não rodaria no PR de release e o deploy não seria disparado, e resolver isso exigiria um token pessoal ou um GitHub App. Releases criadas pela conta do usuário disparam normalmente.

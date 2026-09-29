@@ -75,7 +75,7 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
      - **deploy**: Vercel `--prod`.
 - **Hotfix:** PR `fix:` → merge → nova versão patch.
 - **Rollback de código:** "Re-run all jobs" na execução do `production.yml` de uma versão anterior. Migrations **não voltam**: a correção vem numa migration nova, e por isso toda migration precisa ser compatível com a versão anterior do código.
-- A versão é **a tag**. A `version` do `package.json` fica `0.0.0` e não é usada; o app mostra a versão via `NEXT_PUBLIC_APP_VERSION`, injetada no build. Não há `CHANGELOG.md`: as notas ficam nas GitHub Releases.
+- A versão é **a tag**. O `package.json` **não tem** o campo `version` (o app é `private`, nunca publicado no npm), para não existir um número desatualizado. O app mostra a versão via `NEXT_PUBLIC_APP_VERSION`, injetada no build. Não há `CHANGELOG.md`: as notas ficam nas GitHub Releases.
 - Meta de versões por fase: M1 → `0.1.0`, M2 → `0.2.0`, …, M6 → `0.6.0`, M7 (go-live) → `1.0.0`.
 
 ## 5. Código
