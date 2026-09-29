@@ -1,0 +1,50 @@
+# Serviços locais de desenvolvimento (docs/06-regras-dev.md §6). Só em 127.0.0.1: nada fica
+# acessível pela rede. Senhas fictícias, só deste ambiente local.
+#   npm run db:start  → sobe tudo      npm run db:reset → apaga os dados e recria do zero
+name: orco-dev
+
+services:
+  db:
+    image: postgres:17.11-alpine
+    environment:
+      # Superusuário só para o script de inicialização criar as roles (db/bootstrap/roles.sql).
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: orco
+      ORCO_OWNER_PASSWORD: orco_owner_dev
+      APP_USER_PASSWORD: app_user_dev
+      APP_AUTH_PASSWORD: app_auth_dev
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+      # Roda uma única vez, com o volume vazio: cria as roles orco_owner, app_user e app_auth.
+      - ./db/bootstrap/init.sh:/docker-entrypoint-initdb.d/10-roles.sh:ro
+      - ./db/bootstrap/roles.sql:/bootstrap/roles.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d orco"]
+      interval: 2s
+      retries: 30
+
+  # Arquivos compatíveis com S3 (ADR-0015). API em :9000, console em :9001.
+  rustfs:
+    image: rustfs/rustfs:1.0.0
+    environment:
+      RUSTFS_ACCESS_KEY: orco_dev
+      RUSTFS_SECRET_KEY: orco_dev_secret
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - rustfsdata:/data
+
+  # Caixa de entrada de mentira (ADR-0016): SMTP em :1025, página em http://localhost:8025.
+  mailpit:
+    image: axllent/mailpit:v1.31.3
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+
+volumes:
+  dbdata:
+  rustfsdata:

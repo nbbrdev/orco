@@ -18,6 +18,24 @@ jobs:
     name: ci
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Postgres temporário, só para os testes de integração (RLS). Senhas fictícias: o banco
+    # existe apenas durante este job e some com a máquina.
+    services:
+      postgres:
+        image: postgres:17.11-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: orco
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d orco"
+          --health-interval 2s
+          --health-retries 30
+    env:
+      DATABASE_URL_OWNER: postgres://orco_owner:orco_owner_ci@localhost:5432/orco
+      DATABASE_URL_APP: postgres://app_user:app_user_ci@localhost:5432/orco
+      DATABASE_URL_AUTH: postgres://app_auth:app_auth_ci@localhost:5432/orco
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -44,6 +62,21 @@ jobs:
 
       - name: Testes com cobertura (Vitest; 100% em money.ts e dates.ts)
         run: npm run test:coverage
+
+      # Mesmo roteiro da VPS: roles (superusuário) → migrations (orco_owner) → testes de RLS.
+      - name: Banco de teste - roles
+        run: >-
+          psql "postgres://postgres:postgres@localhost:5432/orco"
+          -v owner_password=orco_owner_ci
+          -v app_user_password=app_user_ci
+          -v app_auth_password=app_auth_ci
+          -f db/bootstrap/roles.sql
+
+      - name: Banco de teste - migrations
+        run: npm run db:migrate
+
+      - name: Testes de integração (RLS contra Postgres real)
+        run: npm run test:integration
 
       - name: Build
         run: npm run build

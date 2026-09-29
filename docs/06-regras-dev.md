@@ -104,7 +104,15 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
   2. `npm run db:generate -- <nome>` (o `drizzle-kit` gera o SQL em `db/migrations/`);
   3. **revisar o SQL** (RLS, policies, grants, triggers e funções podem ser escritos à mão na migration);
   4. `npm run db:reset` para testar do zero.
-- **Banco local:** `npm run db:start` / `db:stop` sobem e descem o `compose.dev.yaml` (Postgres, RustFS e Mailpit). As credenciais locais são fictícias e vão em `.env.local`.
+- **Banco local:** `npm run db:start` / `db:stop` sobem e descem o `compose.dev.yaml`:
+  - Postgres em `127.0.0.1:55432`;
+  - RustFS em `:9000`, com console em `:9001`;
+  - Mailpit em `:8025`.
+
+  As credenciais locais são fictícias (as mesmas do `.env.example`). `npm run db:reset` apaga os dados e recria tudo do zero (roles + migrations).
+- **Roles:** nascem uma vez por banco novo, pelo `db/bootstrap/roles.sql`, executado como superusuário pelo `init.sh` do container, pelo CI e, na VPS, pelo mesmo `init.sh`. Schemas, permissões automáticas e funções auxiliares ficam nas migrations (`0000_base_security.sql`).
+- **Aplicar migrations:** `npm run db:migrate` (role `orco_owner`, pelo `scripts/migrate.mts`).
+- **Testes de integração:** `npm run test:integration` (precisa do `db:start` + `db:migrate`). No CI, rodam dentro do check `ci`, com um Postgres temporário.
 - **Três roles:** migrations com `orco_owner`; o app com `app_user` (produto) e `app_auth` (login). Nunca conectar o app com a role dona ou com superusuário.
 - Nunca alterar o banco de staging ou produção à mão: migrations chegam lá só pelo serviço `migrate`, disparado pelos workflows.
 - Uma migration aplicada nunca é editada; a correção vem em nova migration. Toda migration precisa ser compatível com a versão anterior do código (o banco muda antes do código no deploy).
