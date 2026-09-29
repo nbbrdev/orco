@@ -4,6 +4,9 @@ import type { NextConfig } from "next";
 import { securityHeaders } from "./src/lib/security/headers";
 
 const nextConfig: NextConfig = {
+  // Build enxuto para a imagem Docker (Dockerfile, ADR-0012): `.next/standalone` leva só os arquivos
+  // e pacotes que o app realmente usa, mais um `server.js` que substitui o `next start`.
+  output: "standalone",
   reactCompiler: true,
   // Não anuncia "X-Powered-By: Next.js" (só ajudaria um atacante a mirar).
   poweredByHeader: false,

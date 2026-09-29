@@ -1,0 +1,23 @@
+# O que NÃO entra no contexto do build (Dockerfile). Menos arquivos = build mais rápido e nenhum
+# segredo local (.env.local) indo parar numa imagem pública.
+.git
+.github
+.claude
+node_modules
+.next
+out
+coverage
+tests
+docs
+*.tsbuildinfo
+next-env.d.ts
+
+# Variáveis de ambiente: nunca na imagem
+.env
+.env.*
+
+# Arquivos de trabalho locais
+*.log
+Dockerfile
+.dockerignore
+compose.dev.yaml

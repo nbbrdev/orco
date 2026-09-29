@@ -24,7 +24,12 @@
   - atualizações automáticas de segurança (`unattended-upgrades`);
   - Docker Engine + plugin Compose;
   - Nginx + Certbot.
-- **Pasta** `/opt/orco/`, com `compose.yaml` (cópia de `deploy/compose.yaml`), `production.env` e `staging.env`. Os segredos existem **só nesses arquivos**, com permissão restrita ao usuário `deploy`.
+- **Uma pasta por ambiente** (decidido em 2026-09-29, NBB-35): `/opt/orco/staging/` e `/opt/orco/production/`. Cada uma tem:
+  - `.env`: os segredos do ambiente, criado à mão (modelo `deploy/env.example`), `chmod 600`. Os segredos existem **só nesses arquivos**;
+  - `compose.yaml`, `init.sh` e `roles.sql`, copiados **de dentro da imagem** da versão no ar a cada deploy;
+  - `image.env`: a imagem no ar (`ORCO_IMAGE=…:<tag>@sha256:<digest>`).
+- Pastas separadas porque os ambientes rodam versões diferentes: o `compose.yaml` da produção só muda quando uma release é lançada, nunca num deploy de staging.
+- `/opt/orco/bin/deploy.sh` (dono root): o único comando que as chaves de deploy do GitHub conseguem rodar (seção **Deploy por SSH**).
 
 ## Nginx e HTTPS
 
@@ -51,23 +56,33 @@ Um único `deploy/compose.yaml`, usado por dois **projetos** (`orco-production` 
 - **Logs** limitados (`json-file`, 10 MB × 3 arquivos) em todos os serviços, para não encher o disco.
 - O app só liga depois que o banco responde (`depends_on: condition: service_healthy`).
 
-**Deploy de um ambiente** (o que os workflows rodam por SSH):
+- O app recebe **só as variáveis que usa**, listadas no `compose.yaml` (nunca a senha do superusuário do banco). As URLs de conexão são montadas pelo compose com as senhas do `.env`.
 
-```bash
-cd /opt/orco
-docker compose -p orco-production --env-file production.env pull
-docker compose -p orco-production --env-file production.env run --rm migrate
-docker compose -p orco-production --env-file production.env up -d
+## Deploy por SSH
+
+Decidido em 2026-09-29 (NBB-35). O GitHub guarda uma chave SSH **por ambiente**, e cada uma fica presa a um único comando no `authorized_keys` do usuário `deploy`:
+
+```
+command="/opt/orco/bin/deploy.sh staging",restrict ssh-ed25519 AAAA... orco-staging-deploy
 ```
 
-Primeiro o banco muda, depois o código. As migrations precisam ser compatíveis com a versão anterior do código.
+- O workflow manda só `<tag>@sha256:<digest>`, que chega ao script em `$SSH_ORIGINAL_COMMAND`.
+- O `deploy.sh`:
+  1. aceita só `staging-<commit>` no staging e `vX.Y.Z` na produção, sempre com o digest (a impressão digital exata da imagem construída naquela execução);
+  2. baixa a imagem e copia de dentro dela o `compose.yaml` e o bootstrap do banco para a pasta do ambiente;
+  3. grava `image.env`;
+  4. roda `migrate` e depois `up -d`.
+- **Primeiro o banco muda, depois o código.** As migrations precisam ser compatíveis com a versão anterior do código.
+- **Se uma chave vazar**, o máximo possível é subir de novo uma imagem nossa que já existe naquele ambiente: sem terminal, sem ler os `.env`, sem mandar arquivos. A administração da VPS usa a chave pessoal do dono.
+- O `deploy.sh` é instalado à mão e não se atualiza sozinho, de propósito. Passo a passo em `deploy/README.md`.
 
 ## Imagens (GHCR)
 
 - `Dockerfile` na raiz:
   - build multi-stage, com Next `output: 'standalone'`;
-  - Node 24 Alpine, usuário não-root;
+  - Node 24 Alpine, usuário não-root; os arquivos do app ficam com dono root (só leitura para o app);
   - `LABEL org.opencontainers.image.source=https://github.com/nbbrdev/orco`.
+- **Uma imagem leva tudo de uma versão:** o app, as migrations com o script que as aplica (`/app/migrator`) e os arquivos de deploy (`/app/deploy`). Rollback volta tudo junto.
 - **Nenhum segredo entra na imagem.** Os segredos chegam na hora de rodar, pelo `.env` da VPS. As variáveis `NEXT_PUBLIC_*` (versão do app, site key do Turnstile) são públicas por natureza e são embutidas no build. Por isso staging e produção têm **imagens separadas**.
 - Publicada em `ghcr.io/nbbrdev/orco`, **pública** (a VPS baixa sem login). O envio usa o `GITHUB_TOKEN` com `packages: write`.
 - Etiquetas: `staging-<commit>` e `vX.Y.Z`. As antigas ficam guardadas para rollback.
@@ -79,12 +94,12 @@ Primeiro o banco muda, depois o código. As migrations precisam ser compatíveis
 | `ci.yml` | PR e push em `main` | checkout → Node do `.nvmrc` → `npm ci` → Prettier → lint → typecheck → Vitest (unitários + integração com Postgres em service container) → build → `npm audit --audit-level=high` |
 | `codeql.yml` | PR, push em `main`, semanal | CodeQL `javascript-typescript`, suite `security-extended` |
 | `pr-title.yml` | PR aberto/editado | título em Conventional Commits com `[NBB-xx]` |
-| `staging.yml` | **CI concluído com sucesso** num push na `main` (ou manual) | build da imagem `staging-<commit>` → GHCR → SSH na VPS → `pull` → `migrate` → `up -d` no projeto `orco-staging`. Nunca roda para PR ou fork; um de cada vez |
-| `production.yml` | release publicada pelo usuário (`gh release create vX.Y.Z --target main --generate-notes`) | `verify` (formato `vX.Y.Z`, commit na `main`, check `ci` verde) → build `vX.Y.Z` → GHCR → SSH → `pull` → `migrate` → `up -d` no projeto `orco-production`. Rollback de código: "Re-run" da execução de uma versão anterior |
+| `staging.yml` | **CI concluído com sucesso** num push na `main` (ou manual) | build da imagem `staging-<commit>` → GHCR → SSH com a chave do staging → `deploy.sh staging`. Nunca roda para PR ou fork; um de cada vez. Sem os secrets da VPS, publica a imagem e pula o deploy com um aviso |
+| `production.yml` | release publicada pelo usuário (`gh release create vX.Y.Z --target main --generate-notes`) | `verify` (formato `vX.Y.Z`, commit na `main`, check `ci` verde) → build `vX.Y.Z` → GHCR → SSH com a chave da produção → `deploy.sh production` (NBB-63). Rollback de código: "Re-run" da execução de uma versão anterior |
 | `backup.yml` | diário 06:00 UTC (03:00 SP) | SSH → `pg_dump` do banco de produção + conteúdo do RustFS → criptografa com `age` (chave **pública**) → artifact de **30 dias** |
 
 - **Segredos do GitHub:** só o acesso SSH, nos environments `staging` (só `main`) e `production` (só tags `v*`):
-  - `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` e `VPS_KNOWN_HOSTS`;
+  - `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` (a chave **daquele** ambiente) e `VPS_KNOWN_HOSTS`;
   - `BACKUP_AGE_PUBLIC_KEY` (production).
 - Regras de workflow: `permissions:` mínimas por job, actions fixadas por SHA, inputs passados por variável de ambiente, secrets nunca impressos.
 
@@ -120,7 +135,7 @@ Primeiro o banco muda, depois o código. As migrations precisam ser compatíveis
 ## Proteção do staging
 
 - O proxy do app (`src/proxy.ts`) exige **HTTP Basic Auth** quando `APP_ENV=staging`, **exceto** em `/p/*`, `/api/p/*`, `/sw.js` e `/manifest.webmanifest`. Assim, um "cliente de teste" consegue abrir o link público de um orçamento de staging.
-- Credenciais em `STAGING_BASIC_AUTH_USER`/`STAGING_BASIC_AUTH_PASSWORD`, só no `staging.env`. Sem elas, o staging responde **503**.
+- Credenciais em `STAGING_BASIC_AUTH_USER`/`STAGING_BASIC_AUTH_PASSWORD`, só no `/opt/orco/staging/.env`. Sem elas, o staging responde **503**.
 - `X-Robots-Tag: noindex, nofollow` em todas as rotas do staging.
 
 ## Resend (e-mail)
@@ -155,7 +170,7 @@ Primeiro o banco muda, depois o código. As migrations precisam ser compatíveis
 - Dependabot alerts + security updates, secret scanning + push protection, CodeQL.
 - Integração com o Linear (vincula PRs e issues).
 - **`dependabot.yml`:**
-  - ecossistemas `npm`, `github-actions` e `docker` (imagens do `Dockerfile` e do compose), semanal;
+  - ecossistemas `npm`, `github-actions`, `docker` (`Dockerfile`) e `docker-compose` (`compose.dev.yaml` e `deploy/compose.yaml`), semanal. Majors do Node e do Postgres ignorados: trocar o major do Postgres exige dump e restauração;
   - `minor-and-patch` agrupados; label `dependencies`.
 - **Templates:**
   - `.github/PULL_REQUEST_TEMPLATE.md`: issue do Linear, o que mudou, como testar, checklists de segurança e de simplicidade, docs atualizados;

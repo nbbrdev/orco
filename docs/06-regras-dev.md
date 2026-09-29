@@ -131,7 +131,7 @@ Bug corrigido = teste que reproduz o bug.
 
 ## 8. Variáveis de ambiente
 
-**Do app** (em `.env.local` localmente; em `/opt/orco/<ambiente>.env` na VPS):
+**Do app** (em `.env.local` localmente; em `/opt/orco/<ambiente>/.env` na VPS):
 
 | Variável | Pública? |
 |---|---|
@@ -158,7 +158,7 @@ Bug corrigido = teste que reproduz o bug.
 | `BACKUP_AGE_PUBLIC_KEY` (production) | trancar os backups |
 
 - A chave **privada** do `age` (restauração de backups) fica **somente** com o dono do projeto (gerenciador de senhas), nunca no GitHub.
-- `.env.example` e `deploy/*.env.example` listam todas, sem valores.
+- `.env.example` e `deploy/env.example` listam todas, sem valores. Variável nova do app também entra na lista `environment:` do serviço `app` em `deploy/compose.yaml`.
 
 ## 9. Definição de pronto (DoD)
 

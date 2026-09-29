@@ -1,0 +1,112 @@
+# Um ambiente do Orçô na VPS (ADR-0012, docs/08-infra-deploy.md). O mesmo arquivo serve ao staging e
+# à produção, cada um na sua pasta (/opt/orco/staging, /opt/orco/production) e no seu projeto do
+# Compose (orco-staging, orco-production): redes e volumes separados, um não alcança o outro.
+#
+# Quem roda é o deploy.sh, que copia este arquivo de dentro da imagem de cada versão:
+#   docker compose -p orco-<ambiente> --env-file .env --env-file image.env run --rm migrate
+#   docker compose -p orco-<ambiente> --env-file .env --env-file image.env up -d
+# .env       segredos do ambiente, criado à mão na VPS (modelo: deploy/env.example)
+# image.env  ORCO_IMAGE=ghcr.io/nbbrdev/orco:<tag>@sha256:<digest>, escrito pelo deploy.sh
+
+# Logs limitados (10 MB × 3 por container) para não encher o disco.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "3"
+
+services:
+  app:
+    image: ${ORCO_IMAGE:?defina ORCO_IMAGE (image.env)}
+    restart: unless-stopped
+    # Só o Nginx da própria VPS alcança o app (127.0.0.1). Produção: 3000; staging: 3001.
+    ports:
+      - "127.0.0.1:${APP_PORT:?defina APP_PORT}:3000"
+    # Lista explícita: o app recebe só o que usa (nunca a senha do superusuário do banco).
+    # Variável nova do app? Adicione aqui e no deploy/env.example.
+    environment:
+      APP_ENV: ${APP_ENV:?defina APP_ENV}
+      SITE_URL: ${SITE_URL:?defina SITE_URL}
+      DATABASE_URL_APP: postgres://app_user:${APP_USER_PASSWORD}@db:5432/orco
+      DATABASE_URL_AUTH: postgres://app_auth:${APP_AUTH_PASSWORD}@db:5432/orco
+      S3_ENDPOINT: http://rustfs:9000
+      S3_BUCKET: ${S3_BUCKET:-logos}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?defina S3_ACCESS_KEY_ID}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?defina S3_SECRET_ACCESS_KEY}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      STAGING_BASIC_AUTH_USER: ${STAGING_BASIC_AUTH_USER:-}
+      STAGING_BASIC_AUTH_PASSWORD: ${STAGING_BASIC_AUTH_PASSWORD:-}
+    # Hardening: sistema de arquivos só de leitura (menos o cache do Next e o /tmp, em memória),
+    # nenhuma capacidade especial do Linux e sem ganhar privilégios depois de iniciar.
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.next/cache:uid=1000,gid=1000
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    depends_on:
+      db:
+        condition: service_healthy
+      rustfs:
+        condition: service_started
+    logging: *logging
+
+  # Tarefa avulsa (profile "tools": o `up` não a liga). Aplica as migrations com a role dona.
+  migrate:
+    image: ${ORCO_IMAGE:?defina ORCO_IMAGE (image.env)}
+    profiles: [tools]
+    working_dir: /app/migrator
+    command: ["node", "scripts/migrate.mts"]
+    environment:
+      DATABASE_URL_OWNER: postgres://orco_owner:${ORCO_OWNER_PASSWORD}@db:5432/orco
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    depends_on:
+      db:
+        condition: service_healthy
+    logging: *logging
+
+  db:
+    image: postgres:17.11-alpine
+    restart: unless-stopped
+    # Sem `ports`: só os containers deste projeto alcançam o banco.
+    environment:
+      # Superusuário só para a inicialização e a manutenção (backups). O app nunca o usa.
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
+      POSTGRES_DB: orco
+      # Lidas pelo init.sh na primeira inicialização (volume vazio) para criar as roles.
+      ORCO_OWNER_PASSWORD: ${ORCO_OWNER_PASSWORD:?defina ORCO_OWNER_PASSWORD}
+      APP_USER_PASSWORD: ${APP_USER_PASSWORD:?defina APP_USER_PASSWORD}
+      APP_AUTH_PASSWORD: ${APP_AUTH_PASSWORD:?defina APP_AUTH_PASSWORD}
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+      - ./init.sh:/docker-entrypoint-initdb.d/10-roles.sh:ro
+      - ./roles.sql:/bootstrap/roles.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d orco"]
+      interval: 5s
+      retries: 20
+    security_opt: [no-new-privileges:true]
+    logging: *logging
+
+  # Arquivos compatíveis com S3 (ADR-0015). Sem `ports`: só o app deste projeto alcança.
+  rustfs:
+    image: rustfs/rustfs:1.0.0
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY_ID:?defina S3_ACCESS_KEY_ID}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_ACCESS_KEY:?defina S3_SECRET_ACCESS_KEY}
+    volumes:
+      - rustfsdata:/data
+    security_opt: [no-new-privileges:true]
+    logging: *logging
+
+volumes:
+  dbdata:
+  rustfsdata:
