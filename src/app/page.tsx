@@ -1,5 +1,8 @@
 import { LogoIcon } from "@/components/brand/logo-icon";
 
+// Versão no ar: tag vX.Y.Z em produção, staging-<commit> no staging, "dev" localmente (ADR-0010).
+const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
+
 export default function HomePage() {
   return (
     <main className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center gap-6 px-4 py-16">
@@ -12,6 +15,7 @@ export default function HomePage() {
         Crie um orçamento em menos de 2 minutos, envie por link ou PDF e receba a aprovação do
         cliente com um toque. Estamos construindo, e em breve você poderá usar.
       </p>
+      <p className="text-xs text-muted-foreground">{APP_VERSION}</p>
     </main>
   );
 }

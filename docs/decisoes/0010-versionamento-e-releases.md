@@ -3,6 +3,20 @@
 - **Status:** aceito (validado pelo usuário em 2026-09-27)
 - **Data:** 2026-09-27
 
+> **Revisão (2026-09-28, NBB-63, decisão do usuário):** o **release-please foi abandonado** para reduzir a complexidade. Sem PR de release, sem `CHANGELOG.md`, sem `release.yml` e sem status update no Linear.
+>
+> **Como fica:**
+> - o **usuário** escolhe o número (SemVer, pelos títulos dos PRs) e cria a versão com `gh release create vX.Y.Z --target main --generate-notes`, que gera a tag e as notas a partir dos títulos dos PRs;
+> - o workflow `production.yml` (gatilho: release publicada) confere a tag (formato, commit na `main`, CI verde), aplica as migrations no `orco-prod` e publica via `deploy-vercel.yml --prod`;
+> - staging continua automático a cada merge (`staging.yml`);
+> - "produção = tag" continua valendo;
+> - a versão exibida no app vem da tag (`NEXT_PUBLIC_APP_VERSION`), e o `package.json` não tem o campo `version`;
+> - o agente nunca cria tags.
+>
+> **Motivo técnico adicional:** PRs e releases criados pelo release-please com o `GITHUB_TOKEN` não disparam outros workflows. O CI não rodaria no PR de release e o deploy não seria disparado, e resolver isso exigiria um token pessoal ou um GitHub App. Releases criadas pela conta do usuário disparam normalmente.
+>
+> O texto original segue abaixo como histórico.
+
 ## Contexto
 O usuário quer controle de versão (major/minor/patch) e que **toda versão em produção corresponda a uma tag** no commit publicado. Por padrão, a Vercel publica em produção a cada push na `main`, o que deixaria produção e versões descasadas.
 
@@ -28,7 +42,7 @@ O usuário quer controle de versão (major/minor/patch) e que **toda versão em 
 - Changelog em **`CHANGELOG.md`** (repo) + **GitHub Releases** + **Linear** (status update).
 
 ### Vercel
-> **Revisão (2026-09-28, NBB-35, validada pelo usuário):** a integração Git da Vercel foi **desligada** e **todos** os deploys saem do GitHub Actions pela receita reutilizável `deploy-vercel.yml`: o staging via `staging.yml` (após o CI verde na `main`, com as migrations antes do código) e a produção via `release.yml`. **Não há preview por PR.** Sem ambiente *Development* na Vercel: as chaves locais ficam no `.env.local`. O texto original está abaixo, riscado.
+> **Revisão (2026-09-28, NBB-35, validada pelo usuário):** a integração Git da Vercel foi **desligada** e **todos** os deploys saem do GitHub Actions pela receita reutilizável `deploy-vercel.yml`: o staging via `staging.yml` (após o CI verde na `main`, com as migrations antes do código) e a produção via `production.yml` (revisão NBB-63, acima). **Não há preview por PR.** Sem ambiente *Development* na Vercel: as chaves locais ficam no `.env.local`. O texto original está abaixo, riscado.
 
 - ~~A integração Git **continua ligada** para previews (PRs e `main`, com env vars de staging).~~
 - A **promoção automática da `main` para produção fica desligada**: produção só via CLI no workflow de release.

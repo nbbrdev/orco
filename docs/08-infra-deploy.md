@@ -10,7 +10,7 @@
 |---|---|---|---|
 | Local | `npm run dev` (`APP_ENV=development`) | Supabase CLI no **Docker** (`npm run db:start`) | — |
 | **Staging** | Deploy "Preview" da Vercel em **`https://staging.orco.nbbrdev.com`** (`APP_ENV=staging`) | Supabase **`orco-staging`** | merge na `main` com CI verde (`staging.yml`) |
-| Produção | Vercel Production em `https://orco.nbbrdev.com` (`APP_ENV=production`) | Supabase **`orco-prod`** | **release** (merge do PR do release-please → tag `vX.Y.Z`), ADR-0010 |
+| Produção | Vercel Production em `https://orco.nbbrdev.com` (`APP_ENV=production`) | Supabase **`orco-prod`** | **versão criada pelo usuário** (`gh release create vX.Y.Z` → `production.yml`), ADR-0010 |
 
 Os 2 projetos do plano Free são `orco-staging` e `orco-prod` (ADR-0008).
 
@@ -21,7 +21,7 @@ Os 2 projetos do plano Free são `orco-staging` e `orco-prod` (ADR-0008).
 - Projeto `orco` **sem integração Git**: a Vercel nunca publica sozinha. O `vercel.json` trava isso no repositório (`git.deploymentEnabled: false`). Framework Next.js, Node 24.
 - **Todos os deploys saem do GitHub Actions**, pela "receita" reutilizável `deploy-vercel.yml`: `vercel pull` (variáveis do ambiente) → `vercel build` → `vercel deploy --prebuilt` → `vercel alias set` (staging). É o único arquivo que conhece a Vercel; na VPS, só ele muda.
   - Staging: `staging.yml` chama a receita com o ambiente Preview da Vercel e aponta `staging.orco.nbbrdev.com` para o novo deploy.
-  - Produção: `release.yml` (NBB-63) chama a receita com `--prod`.
+  - Produção: `production.yml` chama a receita com `--prod` quando o usuário publica uma release.
 - **Vercel CLI isolado em `tools/deploy/`** (versão exata e lockfile próprio, vigiado pelo Dependabot). Fica fora do `package.json` do app porque traz centenas de pacotes com vulnerabilidades conhecidas (ex.: `undici`), que reprovariam o `npm audit` do app. Ele só roda no job de deploy.
 - Sem ambiente Development na Vercel: as chaves locais são as padrão do Supabase CLI e ficam no `.env.local`.
 - Plano **Hobby** no MVP (produto gratuito, não comercial). Após o `1.0.0`, o app migra para uma **VPS própria** (ADR-0011). Se houver monetização antes disso, a Vercel precisa ir para o Pro.
@@ -100,8 +100,7 @@ Os 2 projetos do plano Free são `orco-staging` e `orco-prod` (ADR-0008).
 | `pr-title.yml` | PR aberto/editado | valida o título em Conventional Commits |
 | `staging.yml` | **CI concluído com sucesso** num push na `main` (ou manual) | 1) `migrate`: `supabase db push --db-url` no **orco-staging** (Session Pooler, environment `staging`, sem Access Token); 2) `deploy`: chama `deploy-vercel.yml` no **mesmo commit** que o CI validou e move o alias `staging.orco.nbbrdev.com`. Nunca roda para PR ou fork; um de cada vez, sem cancelar no meio. Sem a variable `VERCEL_PROJECT_ID`, o `deploy` fica "skipped" |
 | `deploy-vercel.yml` | só quando chamado (`workflow_call`) | receita de publicar: `npm ci` (app + `tools/deploy`) → `vercel pull` → `build` → `deploy --prebuilt` → `alias set` (opcional). Registra a URL no environment do GitHub |
-| `release-please.yml` | push em `main` | mantém o PR de release (versão + `CHANGELOG.md`); no merge dele, cria a tag `vX.Y.Z` e o GitHub Release |
-| `release.yml` | release publicado | `supabase db push` no **orco-prod** → `deploy-vercel.yml` com `--prod` → status update no Linear |
+| `production.yml` | release publicada pelo usuário (`gh release create vX.Y.Z --target main --generate-notes`) | 1. `verify`: tag no formato `vX.Y.Z`, commit na `main` e check `ci` verde nele; 2. `migrate`: `supabase db push` no **orco-prod** (environment `production`, só tags `v*`); 3. `deploy`: `deploy-vercel.yml` com `--prod` e a versão da tag ("skipped" sem a Vercel). Republicar/rollback: "Re-run all jobs" na execução da versão |
 | `backup.yml` | diário 06:00 UTC (03:00 SP) | `supabase db dump` do **orco-prod** via Session Pooler (roles + schema + dados) → criptografa com `age` (chave **pública**) → `upload-artifact` com retenção de **30 dias** |
 
 Regras de workflow: `permissions:` mínimas por job, actions de terceiros fixadas por SHA, secrets nunca impressos.

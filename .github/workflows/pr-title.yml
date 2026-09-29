@@ -1,4 +1,4 @@
-# Valida o título do PR em Conventional Commits (vira o commit na main e define a versão, ADR-0010).
+# Valida o título do PR em Conventional Commits: vira o commit na main e as notas da release (ADR-0010).
 name: PR title
 
 on:
@@ -35,7 +35,6 @@ jobs:
           subjectPatternError: |
             O título "{title}" precisa terminar com o ID da issue do Linear, ex.:
             feat(quotes): adiciona desconto por item [NBB-47]
-          # PRs de robôs (Dependabot e release-please) não têm issue no Linear.
+          # PRs do Dependabot não têm issue no Linear.
           ignoreLabels: |
             dependencies
-            autorelease: pending

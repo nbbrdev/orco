@@ -1,5 +1,5 @@
 # "Receita de publicar" reutilizável: único arquivo que conhece a Vercel (docs/08-infra-deploy.md).
-# Chamado pelo staging.yml (e pelo release.yml na NBB-63). Na migração para a VPS (ADR-0011), só
+# Chamado pelo staging.yml e pelo production.yml. Na migração para a VPS (ADR-0011), só
 # este arquivo muda.
 name: Deploy (Vercel)
 
@@ -22,6 +22,10 @@ on:
         description: Domínio fixo apontado para o novo deploy (opcional)
         type: string
         default: ""
+      version:
+        description: Versão exibida no app (tag vX.Y.Z em produção, staging-<commit> no staging)
+        type: string
+        required: true
     outputs:
       url:
         description: Endereço publicado
@@ -50,6 +54,8 @@ jobs:
       # Inputs passados por variável de ambiente, nunca interpolados no script (evita injeção).
       TARGET: ${{ inputs.vercel-environment }}
       ALIAS: ${{ inputs.alias }}
+      # Embutida no build (NEXT_PUBLIC_*): o app mostra qual versão está no ar.
+      NEXT_PUBLIC_APP_VERSION: ${{ inputs.version }}
     steps:
       - name: Checkout do commit validado
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

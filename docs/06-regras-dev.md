@@ -52,16 +52,31 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
   Tipos: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `ci`, `perf`, `security`.
 - PR: título igual ao do commit squash; o template traz a issue do Linear, o que mudou, como testar, os checklists de segurança ([07-seguranca.md](07-seguranca.md)) e de simplicidade, e o impacto em `/docs`.
 - Um PR resolve uma issue. PRs pequenos.
-- O **título do PR** segue Conventional Commits e é validado no CI (`pr-title.yml`), porque é ele que vira o commit no squash merge e alimenta o versionamento.
+- O **título do PR** segue Conventional Commits e é validado no CI (`pr-title.yml`). É ele que vira o commit no squash merge, e o padrão serve para três coisas:
+  - histórico da `main` legível (novidade, correção, manutenção);
+  - vínculo com a issue do Linear;
+  - **notas das releases**, que o GitHub gera a partir dos títulos dos PRs.
 
-## 4.1 Versionamento e releases (ADR-0010)
+## 4.1 Versionamento e releases (ADR-0010, revisado em 2026-09-28)
 
-- **SemVer** calculado dos commits: `fix:` → patch · `feat:` → minor · `feat!:` / `BREAKING CHANGE:` → major. Fase `0.x` até o go-live; `1.0.0` no lançamento.
-- Merge na `main` = deploy em **staging**, nunca em produção.
-- O **release-please** mantém um PR de release (`chore(main): release X.Y.Z`). **Lançar = fazer merge desse PR**: gera a tag `vX.Y.Z`, o GitHub Release e o `CHANGELOG.md`, e o workflow `release.yml` aplica as migrations e publica em produção.
-- Nunca criar tags ou editar o `CHANGELOG.md` / a versão do `package.json` à mão.
+- **Merge na `main` = deploy automático em staging** (`staging.yml`), nunca em produção.
+- **Produção só recebe versões criadas pelo usuário**, com uma tag `vX.Y.Z` no commit da `main`. O agente **nunca** cria tags ou releases.
+- **Como lançar:**
+  1. Conferir que o CI da `main` está verde.
+  2. Escolher o número (**SemVer**) olhando os títulos dos PRs desde a última versão:
+     - algum `feat` → sobe o **minor** (0.1.0 → 0.**2**.0);
+     - só `fix`/`perf`/`security` → sobe o **patch** (0.1.0 → 0.1.**1**);
+     - na fase `0.x`, mudança que quebra (`feat!`) também sobe só o minor;
+     - `1.0.0` no go-live.
+  3. `gh release create vX.Y.Z --target main --generate-notes`. Cria a tag e a página da versão, com notas geradas dos títulos dos PRs.
+  4. O workflow `production.yml` roda sozinho:
+     - **verify**: a tag está na `main` e o CI daquele commit passou;
+     - **migrate**: migrations no `orco-prod`;
+     - **deploy**: Vercel `--prod`.
+- **Hotfix:** PR `fix:` → merge → nova versão patch.
+- **Rollback de código:** "Re-run all jobs" na execução do `production.yml` de uma versão anterior. Migrations **não voltam**: a correção vem numa migration nova, e por isso toda migration precisa ser compatível com a versão anterior do código.
+- A versão é **a tag**. O `package.json` **não tem** o campo `version` (o app é `private`, nunca publicado no npm), para não existir um número desatualizado. O app mostra a versão via `NEXT_PUBLIC_APP_VERSION`, injetada no build. Não há `CHANGELOG.md`: as notas ficam nas GitHub Releases.
 - Meta de versões por fase: M1 → `0.1.0`, M2 → `0.2.0`, …, M6 → `0.6.0`, M7 (go-live) → `1.0.0`.
-- Notas de cada versão também são publicadas como status update do projeto no Linear.
 
 ## 5. Código
 
@@ -120,8 +135,7 @@ Bug corrigido = teste que reproduz o bug.
 | `SUPABASE_DB_URL` (connection string do **Session Pooler**, porta 5432) para `db push --db-url` e, no prod, para o backup | GitHub **Environments** `staging` e `production` (mesmo nome, valor por ambiente). **Sem** Access Token da conta Supabase no GitHub: ele daria acesso a todos os projetos da conta | Não |
 | `VERCEL_TOKEN` (deploys pelo Actions) | GitHub Environments `staging` e `production` | Não |
 | `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` | GitHub **Variables** do repositório (identificadores, não são segredo) | — |
-| `LINEAR_API_KEY` (status update do projeto no release) | GitHub Secrets | Não |
-| `NEXT_PUBLIC_APP_VERSION` (injetada no build a partir do `package.json`) | build | Sim |
+| `NEXT_PUBLIC_APP_VERSION` (injetada no build: tag `vX.Y.Z` em produção, `staging-<commit>` no staging; ausente = `dev`) | build (workflows) | Sim |
 | `STAGING_BASIC_AUTH_USER`, `STAGING_BASIC_AUTH_PASSWORD` | Vercel, **somente Preview** (= staging) | **Não** |
 | `BACKUP_AGE_PUBLIC_KEY` | GitHub Environment `production` | Não |
 | Chave **privada** do `age` (restauração de backups) | **Somente** com o dono do projeto (gerenciador de senhas), nunca no GitHub | Não |
