@@ -20,34 +20,13 @@ const eslintConfig = defineConfig([
 
       // Compensa a menor rigidez do npm: só importar pacotes declarados no package.json (ADR-0001).
       "import/no-extraneous-dependencies": "error",
-
-      // O client service_role só pode ser usado nos pontos permitidos (ADR-0005).
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              group: ["@/lib/supabase/admin", "**/lib/supabase/admin"],
-              message:
-                "O client admin (service_role) só pode ser importado pela página pública, pelo PDF público, pelo cron e pela exclusão de conta. Veja docs/07-seguranca.md §4.",
-            },
-          ],
-        },
-      ],
     },
   },
 
   // Desliga regras de formatação que conflitam com o Prettier (deve ser o último bloco de regras).
   prettier,
 
-  globalIgnores([
-    ".next/**",
-    "out/**",
-    "build/**",
-    "coverage/**",
-    "next-env.d.ts",
-    "src/types/database.ts",
-  ]),
+  globalIgnores([".next/**", "out/**", "build/**", "coverage/**", "next-env.d.ts"]),
 ]);
 
 export default eslintConfig;

@@ -30,11 +30,11 @@ PWA e push só no staging (precisam de HTTPS).
 
 ## Checklist de segurança
 
-- [ ] Tabela nova/alterada tem RLS + teste de RLS
+- [ ] Tabela nova/alterada tem RLS (`ENABLE` + `FORCE`) + teste de RLS contra Postgres real
+- [ ] Acesso a dados do produto só via `withUserDb`, com o usuário da sessão validada no servidor
+- [ ] O app não se conecta como `orco_owner`/superusuário; `app_auth` só nas tabelas de login
 - [ ] Entrada validada com Zod no servidor
-- [ ] Nenhum segredo, dado real ou PII em código, log ou teste
-- [ ] Nenhum uso de `getSession()` para autorização
-- [ ] Nenhuma importação de `lib/supabase/admin` fora dos pontos permitidos
+- [ ] Nenhum segredo, dado real ou PII em código, log, teste ou imagem Docker
 - [ ] Sem `dangerouslySetInnerHTML` com dado de usuário
 
 ## Documentação

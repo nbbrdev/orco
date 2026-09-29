@@ -1,13 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { updateSession } from "@/lib/supabase/proxy";
 import { proxy } from "@/proxy";
-
-// A renovação de sessão do Supabase é testada à parte; aqui importam o "porteiro" e a CSP.
-vi.mock("@/lib/supabase/proxy", () => ({
-  updateSession: vi.fn(async () => NextResponse.next()),
-}));
 
 function nonceOf(csp: string | null): string | undefined {
   return csp?.match(/'nonce-([^']+)'/)?.[1];
@@ -25,13 +19,10 @@ describe("proxy", () => {
   beforeEach(() => {
     vi.stubEnv("STAGING_BASIC_AUTH_USER", "tester");
     vi.stubEnv("STAGING_BASIC_AUTH_PASSWORD", "s3nha");
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://abcdefghijklmnopqrst.supabase.co");
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_test");
   });
 
   afterEach(() => {
     vi.unstubAllEnvs();
-    vi.mocked(updateSession).mockClear();
   });
 
   describe("content security policy", () => {
@@ -49,10 +40,10 @@ describe("proxy", () => {
       vi.stubEnv("APP_ENV", "production");
       const response = await proxy(request("/"));
 
-      const forwarded = vi.mocked(updateSession).mock.calls[0]?.[0];
+      // O Next repassa os headers alterados da requisição por "x-middleware-request-<nome>".
       const responseNonce = nonceOf(response.headers.get("Content-Security-Policy"));
-      expect(forwarded?.headers.get("x-nonce")).toBe(responseNonce);
-      expect(nonceOf(forwarded?.headers.get("Content-Security-Policy") ?? null)).toBe(
+      expect(response.headers.get("x-middleware-request-x-nonce")).toBe(responseNonce);
+      expect(nonceOf(response.headers.get("x-middleware-request-content-security-policy"))).toBe(
         responseNonce,
       );
     });

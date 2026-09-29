@@ -13,17 +13,8 @@ export function createNonce(): string {
   return randomBytes(16).toString("base64");
 }
 
-export function buildCsp({
-  nonce,
-  appEnv,
-  supabaseUrl,
-}: {
-  nonce: string;
-  appEnv: AppEnv;
-  supabaseUrl: string;
-}): string {
+export function buildCsp({ nonce, appEnv }: { nonce: string; appEnv: AppEnv }): string {
   const isDev = appEnv === "development";
-  const supabase = new URL(supabaseUrl).origin;
 
   const directives: string[] = [
     "default-src 'self'",
@@ -32,9 +23,11 @@ export function buildCsp({
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${TURNSTILE_ORIGIN}${isDev ? " 'unsafe-eval'" : ""}`,
     // Atributos style="" (React, Radix) não aceitam nonce; CSS injetado não executa código.
     "style-src 'self' 'unsafe-inline'",
-    `img-src 'self' data: blob: ${supabase}`,
+    // Logos vêm de uma rota do próprio app (RustFS atrás do servidor, ADR-0015).
+    "img-src 'self' data: blob:",
     "font-src 'self'",
-    `connect-src 'self' ${supabase}`,
+    // O navegador só fala com o próprio app; banco e arquivos nunca são acessados direto.
+    "connect-src 'self'",
     `frame-src ${TURNSTILE_ORIGIN}`,
     "worker-src 'self'",
     "manifest-src 'self'",

@@ -1,5 +1,5 @@
-// Ambiente do app, definido por nós (e não pela plataforma) para funcionar igual na Vercel e na
-// futura VPS (ADR-0011). Veja docs/06-regras-dev.md §8.
+// Ambiente do app, definido por nós (e não pela plataforma), igual em qualquer hospedagem
+// (ADR-0012). Veja docs/06-regras-dev.md §8.
 export const APP_ENVS = ["development", "staging", "production"] as const;
 
 export type AppEnv = (typeof APP_ENVS)[number];

@@ -132,7 +132,7 @@ Primeiro o banco muda, depois o código. As migrations precisam ser compatíveis
 - **Remetente:** `Orçô <nao-responda@orco.nbbrdev.com>`, sem Reply-To.
 - O **app** envia tudo por **SMTP** ([ADR-0016](decisoes/0016-email-smtp.md)):
   - localmente para o **Mailpit** (`compose.dev.yaml`);
-  - em staging e produção para `smtp.resend.com:465`, usuário `resend`, senha = API key com só *Sending access* e só o domínio `orco.nbbrdev.com` (`supabase-smtp-staging` e `supabase-smtp-prod`, já criadas).
+  - em staging e produção para `smtp.resend.com:465`, usuário `resend`, senha = API key com só *Sending access* e só o domínio `orco.nbbrdev.com`, uma por ambiente. As chaves antigas do SMTP do Supabase foram apagadas em 2026-09-29; as novas são criadas na M2 (NBB-39).
 - Plano Free: 3.000 e-mails/mês, 100/dia, para todos os e-mails somados.
 
 ## Google OAuth

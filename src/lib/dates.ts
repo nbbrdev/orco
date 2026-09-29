@@ -3,7 +3,7 @@
  *
  * Datas de calendário (ex.: validade) são texto ISO `AAAA-MM-DD`, igual à coluna `date`
  * do Postgres. "Hoje" é sempre o dia em America/Sao_Paulo, independente do fuso do
- * servidor (a Vercel roda em UTC) ou do navegador.
+ * servidor (containers costumam rodar em UTC) ou do navegador.
  */
 
 export const APP_TIME_ZONE = "America/Sao_Paulo";
