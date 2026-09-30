@@ -23,7 +23,7 @@ Produção: https://orco.nbbrdev.com · Repo: `nbbrdev/orco` (público) · Linea
 Stack de ferramentas: **Node 24 LTS**, **npm**, **Docker** (`compose.dev.yaml` local; `deploy/compose.yaml` na VPS), **Drizzle** (`drizzle-kit`), imagens no **GHCR**.
 
 ## Como trabalhar com o usuário
-- O usuário quer **participar das decisões técnicas e aprender**. Não decida sozinho: apresente opções com prós e contras e uma recomendação, e pergunte.
+- O usuário quer **participar das decisões técnicas e aprender**. **Nenhuma decisão sozinho, nem as pequenas** (valores, limites, fusos, nomes, labels, regras novas, configurações extras): para cada uma, explique o problema, as soluções com prós e contras e uma recomendação, e pergunte **antes** de escrever. Se algo foi decidido sem ele, aponte antes do merge. Na dúvida, pergunte (RT-03).
 - Decisão que ele não confirmou fica como **proposto** nos ADRs.
 - Explicações de uma decisão vão **no chat**, num turno que termina com a pergunta em texto. Nada de explicação longa dentro do AskUserQuestion (fica difícil de ler), nem texto antes dele no mesmo turno (pode não aparecer).
 - Responda sempre em **pt-BR**.
