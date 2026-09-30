@@ -24,7 +24,7 @@ Definidas pelo usuário e válidas para qualquer agente (ex.: Claude Code) que t
 |---|---|
 | RT-01 | Criar e editar arquivos **somente** com as ferramentas de edição do agente (Write/Edit), para que cada mudança apareça como diff revisável. **Proibido** usar scripts Python, `sed`, `awk`, heredocs ou redirecionamento de shell para modificar arquivos. **Exceção (2026-09-28):** geradores e CLIs **oficiais** podem criar arquivos (`create-next-app`, `shadcn add`, `drizzle-kit generate` para as migrations, `npm install` para o lockfile) e o **Prettier** pode reformatar arquivos (`npm run format`, só forma, nunca lógica); tudo é revisado no diff do PR. |
 | RT-02 | **Código sempre em inglês**: variáveis, funções, classes, tipos, nomes de arquivo de código, tabelas, colunas, enums. Textos de UI, URLs e mensagens ao usuário final ficam em pt-BR. |
-| RT-03 | O agente não decide sozinho questões técnicas ou de produto relevantes: apresenta opções com prós e contras e uma recomendação, e o usuário decide. O que o usuário não confirmou fica como "proposto". |
+| RT-03 | O agente **não toma nenhuma decisão sozinho, nem as que parecem pequenas** (valores, limites, fusos, nomes, labels, regras novas, configurações extras). Para cada uma, explica **o problema**, apresenta as soluções possíveis com prós e contras e uma recomendação, e o usuário decide **antes** de o agente escrever. Algo decidido sem o usuário é apontado antes do merge. Só o que é puramente mecânico (ex.: formatação, seguir um padrão já decidido) dispensa a pergunta; na dúvida, pergunta. O que o usuário não confirmou fica como "proposto". Revisado em 2026-09-30 (NBB-74). |
 
 Novas regras de trabalho são adicionadas aqui (RT-xx) e em `CLAUDE.md`.
 
