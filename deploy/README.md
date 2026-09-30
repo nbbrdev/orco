@@ -13,7 +13,7 @@ Como preparar a VPS do Orçô e como os deploys funcionam. Decisões em [ADR-001
 
 ## Como um deploy acontece
 
-1. Merge na `main` → CI verde → `staging.yml` constrói a imagem `ghcr.io/nbbrdev/orco:staging-<commit>` e envia ao GHCR.
+1. Merge na `main` → CI verde → `staging.yml` chama a receita comum `deploy-vps.yml`, que constrói a imagem `ghcr.io/nbbrdev/orco:staging-<commit>` e envia ao GHCR.
 2. O workflow conecta por SSH com a **chave do staging** e manda só `staging-<commit>@sha256:<digest>`.
 3. Na VPS, essa chave só consegue rodar `/opt/orco/bin/deploy.sh staging`, que:
    - valida o pedido (formato da etiqueta + digest);
@@ -21,7 +21,7 @@ Como preparar a VPS do Orçô e como os deploys funcionam. Decisões em [ADR-001
    - grava a versão em `image.env`;
    - aplica as migrations e sobe a nova versão.
 
-A produção segue o mesmo caminho a partir de uma release `vX.Y.Z` (NBB-63), com a sua própria chave e a pasta `/opt/orco/production/`.
+A produção segue o mesmo caminho a partir de uma release `vX.Y.Z` (`production.yml` → `deploy-vps.yml`), com a sua própria chave e a pasta `/opt/orco/production/`. Passo a passo em **Produção**, abaixo.
 
 Na VPS:
 
@@ -228,6 +228,53 @@ Depois:
 3. **Pacote público:** depois do primeiro build, em github.com/nbbrdev → **Packages** → `orco` → _Package settings_ → _Change visibility_ → **Public**. Sem isso, a VPS não consegue baixar a imagem. Rode o workflow de novo.
 
 4. Abra `https://staging.orco.nbbrdev.com`: pede a senha do Basic Auth e mostra `staging-<commit>` no rodapé.
+
+---
+
+## Produção
+
+Com o staging funcionando, a produção reaproveita a mesma VPS, o mesmo `deploy.sh` e o mesmo Nginx. Muda a pasta, o `.env`, a chave e o environment.
+
+### 1. `.env` da produção
+
+A partir de `deploy/env.example`, com **senhas diferentes das do staging** (gere cada uma com `openssl rand -hex 32`):
+
+```bash
+sudo -u deploy nano /opt/orco/production/.env
+sudo chmod 600 /opt/orco/production/.env
+```
+
+Valores que mudam em relação ao staging:
+
+```
+APP_ENV=production
+SITE_URL=https://orco.nbbrdev.com
+APP_PORT=3000
+STAGING_BASIC_AUTH_USER=
+STAGING_BASIC_AUTH_PASSWORD=
+```
+
+A linha da chave `orco-production-deploy` já está no `authorized_keys` (passo 6).
+
+### 2. Environment `production` no GitHub
+
+**Settings → Environments → New environment** `production`, com _Deployment branches and tags_ → **Selected branches and tags** → **Add deployment branch or tag rule** → _Ref type_ **Tag**, padrão `v*`. Assim, só releases (tags `vX.Y.Z`) conseguem usar a chave da produção. Sem aprovação manual: criar a release já é a aprovação.
+
+Secrets: os mesmos quatro do staging (`VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `VPS_KNOWN_HOSTS`), mas com o `VPS_SSH_KEY` = conteúdo da chave **privada** `orco-production-deploy`.
+
+> Sem esses secrets, o `production.yml` fica **vermelho** (no staging, ele só avisa e pula). Uma release precisa chegar ao ar.
+
+### 3. Primeira versão
+
+Com o CI da `main` verde:
+
+```bash
+gh release create v0.1.0 --target main --generate-notes
+```
+
+O `production.yml` confere a tag, constrói a imagem `v0.1.0`, aplica as migrations no banco da produção e sobe o app. Abra `https://orco.nbbrdev.com`: a página mostra `v0.1.0`.
+
+Próximas versões: ver `docs/06-regras-dev.md` §4.1 (como escolher o número).
 
 ---
 

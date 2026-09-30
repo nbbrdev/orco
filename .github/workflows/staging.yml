@@ -1,6 +1,5 @@
-# Publica o STAGING a cada merge na main com CI verde (docs/08-infra-deploy.md, ADR-0012):
-#   build da imagem staging-<commit> → GHCR → SSH na VPS → deploy.sh (pull → migrate → up)
-# A chave SSH do environment `staging` só consegue rodar `/opt/orco/bin/deploy.sh staging` na VPS.
+# Publica o STAGING a cada merge na main com CI verde (docs/08-infra-deploy.md, ADR-0012).
+# Confere o commit e chama a receita comum (deploy-vps.yml) com a etiqueta staging-<commit>.
 name: Staging
 
 on:
@@ -19,8 +18,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    name: build
+  prepare:
+    name: prepare
     # Só depois de um CI verde num push na main deste repositório (nunca PR ou fork), ou manual na main.
     if: >-
       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
@@ -28,24 +27,18 @@ jobs:
        github.event.workflow_run.event == 'push' &&
        github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 5
     permissions:
-      contents: read
       checks: read
-      packages: write
     outputs:
-      image-ref: ${{ steps.tag.outputs.tag }}@${{ steps.push.outputs.digest }}
+      sha: ${{ steps.tag.outputs.sha }}
+      tag: ${{ steps.tag.outputs.tag }}
+      version: ${{ steps.tag.outputs.version }}
     env:
       SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
       GH_TOKEN: ${{ github.token }}
       REPO: ${{ github.repository }}
     steps:
-      - name: Checkout do commit testado pelo CI
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ env.SHA }}
-          persist-credentials: false
-
       # No disparo manual não há CI "anterior": confere se o commit já passou.
       - name: CI verde nesse commit
         run: |
@@ -59,73 +52,21 @@ jobs:
       - name: Etiqueta e versão
         id: tag
         run: |
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
           echo "tag=staging-$SHA" >> "$GITHUB_OUTPUT"
           echo "version=staging-${SHA:0:7}" >> "$GITHUB_OUTPUT"
 
-      - name: Docker Buildx
-        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-
-      - name: Login no GHCR (token automático do Actions)
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
-
-      - name: Build e envio da imagem
-        id: push
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: .
-          push: true
-          tags: ghcr.io/${{ github.repository }}:${{ steps.tag.outputs.tag }}
-          build-args: NEXT_PUBLIC_APP_VERSION=${{ steps.tag.outputs.version }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
   deploy:
     name: deploy
-    needs: build
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    # Os secrets VPS_* existem só no environment `staging`, que aceita apenas a branch main.
-    environment:
-      name: staging
+    needs: prepare
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/deploy-vps.yml
+    with:
+      environment: staging
+      ref: ${{ needs.prepare.outputs.sha }}
+      image-tag: ${{ needs.prepare.outputs.tag }}
+      app-version: ${{ needs.prepare.outputs.version }}
       url: https://staging.orco.nbbrdev.com
-    permissions: {}
-    env:
-      IMAGE_REF: ${{ needs.build.outputs.image-ref }}
-      VPS_HOST: ${{ secrets.VPS_HOST }}
-      VPS_USER: ${{ secrets.VPS_USER }}
-    steps:
-      # Enquanto a VPS não estiver configurada, o deploy é pulado com um aviso (a imagem já foi publicada).
-      - name: VPS configurada?
-        id: check
-        run: |
-          if [ -z "$VPS_HOST" ] || [ -z "$VPS_USER" ]; then
-            echo "::warning::Secrets VPS_* ausentes no environment staging: deploy pulado. Veja deploy/README.md."
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Chave SSH e host conhecido
-        if: steps.check.outputs.ready == 'true'
-        env:
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
-        run: |
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
-
-      # O texto enviado vira $SSH_ORIGINAL_COMMAND no deploy.sh, que valida o formato.
-      - name: Deploy na VPS
-        if: steps.check.outputs.ready == 'true'
-        run: >-
-          ssh -i ~/.ssh/deploy_key
-          -o IdentitiesOnly=yes
-          -o StrictHostKeyChecking=yes
-          -o BatchMode=yes
-          "$VPS_USER@$VPS_HOST" "$IMAGE_REF"
+      require-vps: false

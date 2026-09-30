@@ -94,8 +94,9 @@ command="/opt/orco/bin/deploy.sh staging",restrict ssh-ed25519 AAAA... orco-stag
 | `ci.yml` | PR e push em `main` | checkout → Node do `.nvmrc` → `npm ci` → Prettier → lint → typecheck → Vitest (unitários + integração com Postgres em service container) → build → `npm audit --audit-level=high` |
 | `codeql.yml` | PR, push em `main`, semanal | CodeQL `javascript-typescript`, suite `security-extended` |
 | `pr-title.yml` | PR aberto/editado | título em Conventional Commits com `[NBB-xx]` |
-| `staging.yml` | **CI concluído com sucesso** num push na `main` (ou manual) | build da imagem `staging-<commit>` → GHCR → SSH com a chave do staging → `deploy.sh staging`. Nunca roda para PR ou fork; um de cada vez. Sem os secrets da VPS, publica a imagem e pula o deploy com um aviso |
-| `production.yml` | release publicada pelo usuário (`gh release create vX.Y.Z --target main --generate-notes`) | `verify` (formato `vX.Y.Z`, commit na `main`, check `ci` verde) → build `vX.Y.Z` → GHCR → SSH com a chave da produção → `deploy.sh production` (NBB-63). Rollback de código: "Re-run" da execução de uma versão anterior |
+| `deploy-vps.yml` | **nunca sozinho**: chamado pelo `staging.yml` e pelo `production.yml` (`workflow_call`) | receita comum: build da imagem (`NEXT_PUBLIC_APP_VERSION`) → GHCR → SSH com a chave do environment → `deploy.sh <ambiente>` com `<tag>@<digest>`. Sem os secrets da VPS: aviso e deploy pulado no staging; erro na produção |
+| `staging.yml` | **CI concluído com sucesso** num push na `main` (ou manual) | confere o CI do commit → chama o `deploy-vps.yml` com `staging-<commit>`. Nunca roda para PR ou fork; um de cada vez |
+| `production.yml` | release publicada pelo usuário (`gh release create vX.Y.Z --target main --generate-notes`) | `verify` (formato `vX.Y.Z`, commit na `main`, check `ci` verde) → chama o `deploy-vps.yml` com `vX.Y.Z`. Rollback de código: "Re-run all jobs" na execução de uma versão anterior |
 | `backup.yml` | diário 06:00 UTC (03:00 SP) | SSH → `pg_dump` do banco de produção + conteúdo do RustFS → criptografa com `age` (chave **pública**) → artifact de **30 dias** |
 
 - **Segredos do GitHub:** só o acesso SSH, nos environments `staging` (só `main`) e `production` (só tags `v*`):

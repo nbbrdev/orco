@@ -1,7 +1,7 @@
 # Publica em PRODUÇÃO quando o usuário cria uma release (docs/06-regras-dev.md §4.1, ADR-0010):
 #   gh release create vX.Y.Z --target main --generate-notes
-# Hoje só verifica a tag (formato, commit na main, CI verde). O build da imagem, as migrations e o
-# deploy na VPS entram na NBB-63 (ADR-0012).
+# Confere a tag (formato, commit na main, CI verde) e chama a receita comum (deploy-vps.yml) com a
+# etiqueta vX.Y.Z (ADR-0012). Rollback de código: "Re-run all jobs" na execução de uma versão anterior.
 name: Production
 
 on:
@@ -58,3 +58,18 @@ jobs:
             echo "::error::O check \"ci\" do commit $SHA não passou (ou ainda não terminou). Espere o CI da main ficar verde e rode de novo."
             exit 1
           fi
+
+  deploy:
+    name: deploy
+    needs: verify
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/deploy-vps.yml
+    with:
+      environment: production
+      ref: ${{ github.sha }}
+      image-tag: ${{ github.event.release.tag_name }}
+      app-version: ${{ github.event.release.tag_name }}
+      url: https://orco.nbbrdev.com
+      require-vps: true
