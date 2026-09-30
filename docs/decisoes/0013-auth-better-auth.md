@@ -2,7 +2,7 @@
 
 - **Status:** aceito (decidido pelo usuário em 2026-09-29)
 - **Data:** 2026-09-29
-- **Substitui:** ADR-0002 na parte do provedor (Supabase Auth). Continuam valendo as regras de produto do ADR-0002: e-mail + senha com confirmação, Google, senha mínima de 8 sem exigência de tipos, Turnstile só no cadastro, sem magic link nem MFA.
+- **Substitui:** ADR-0002 na parte do provedor (Supabase Auth). Continuam valendo as regras de produto do ADR-0002: e-mail + senha com confirmação, Google, senha mínima de 8 sem exigência de tipos, sem magic link nem MFA. O Turnstile foi removido em 2026-09-29 (NBB-70): ver RN-46.
 
 ## Contexto
 Sem Supabase (ADR-0012), o Orçô precisa de um componente de autenticação próprio. Autenticação é a área em que erros pequenos viram falhas graves:
@@ -20,7 +20,7 @@ Sem Supabase (ADR-0012), o Orçô precisa de um componente de autenticação pr�
 - **Tabelas de login** (usuários, contas, sessões, verificações): acessadas **só pela role `app_auth`** (ADR-0014). As tabelas do produto referenciam o usuário pelo `id`.
 - **Links dos e-mails de conta** (confirmação, recuperação, troca de e-mail): token de **uso único**, com validade de 1 hora, conferido no servidor. Funcionam em qualquer aparelho.
 - **Aviso de senha alterada** por e-mail (doc 02), enviado pelo nosso módulo de e-mail (ADR-0016).
-- **Turnstile** validado na Server Action de cadastro antes de criar a conta (sem mudança).
+- **Anti-abuso do cadastro** conferido na Server Action antes de criar a conta: limite por IP, honeypot e teto diário de e-mails (RN-46). Substituiu o Turnstile em 2026-09-29 (NBB-70).
 - Implementado na **M2**, junto das telas (NBB-39/40/41).
 
 ## Alternativas descartadas

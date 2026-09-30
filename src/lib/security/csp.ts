@@ -3,10 +3,8 @@ import { randomBytes } from "node:crypto";
 import type { AppEnv } from "@/lib/app-env";
 
 // Content Security Policy com nonce (docs/07-seguranca.md §7). Montada a cada requisição no proxy:
-// o navegador só executa scripts que trazem o nonce daquela resposta.
-
-// Cloudflare Turnstile (CAPTCHA do cadastro): script e iframe.
-const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
+// o navegador só executa scripts que trazem o nonce daquela resposta. Nenhum script ou iframe de
+// terceiros: o cadastro se protege sem CAPTCHA externo (RN-46).
 
 /** Valor aleatório e imprevisível, novo a cada requisição (128 bits). */
 export function createNonce(): string {
@@ -20,7 +18,7 @@ export function buildCsp({ nonce, appEnv }: { nonce: string; appEnv: AppEnv }): 
     "default-src 'self'",
     // 'strict-dynamic': scripts com o nonce podem carregar outros scripts (chunks do Next).
     // 'unsafe-eval' só em desenvolvimento: o React usa eval para detalhar erros.
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${TURNSTILE_ORIGIN}${isDev ? " 'unsafe-eval'" : ""}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
     // Atributos style="" (React, Radix) não aceitam nonce; CSS injetado não executa código.
     "style-src 'self' 'unsafe-inline'",
     // Logos vêm de uma rota do próprio app (RustFS atrás do servidor, ADR-0015).
@@ -28,7 +26,8 @@ export function buildCsp({ nonce, appEnv }: { nonce: string; appEnv: AppEnv }): 
     "font-src 'self'",
     // O navegador só fala com o próprio app; banco e arquivos nunca são acessados direto.
     "connect-src 'self'",
-    `frame-src ${TURNSTILE_ORIGIN}`,
+    // O app não incorpora páginas de outros sites.
+    "frame-src 'none'",
     "worker-src 'self'",
     "manifest-src 'self'",
     "object-src 'none'",

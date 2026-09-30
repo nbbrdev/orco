@@ -144,7 +144,6 @@ Bug corrigido = teste que reproduz o bug.
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | **Não** |
 | `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` (RustFS) | **Não** |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_FROM` | **Não** |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (build) / `TURNSTILE_SECRET_KEY` | Sim / **Não** |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (build) / `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Sim / **Não** |
 | `CRON_SECRET` | **Não** |
 | `STAGING_BASIC_AUTH_USER`, `STAGING_BASIC_AUTH_PASSWORD` (só no staging) | **Não** |

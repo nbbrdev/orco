@@ -37,7 +37,7 @@
 **Orçamento de simplicidade:** 2 campos obrigatórios · 1 tela + 1 e-mail.
 
 1. Landing `/` → **Começar grátis** → `/cadastro`.
-2. Informa e-mail e senha (RN-03), com o requisito da senha visível enquanto digita. O Turnstile roda invisível.
+2. Informa e-mail e senha (RN-03), com o requisito da senha visível enquanto digita. A proteção contra robôs (RN-46) não aparece para a pessoa.
 3. **Criar conta** → a tela mostra "Enviamos um link para *email*. Abra para ativar sua conta." com botão **Reenviar**.
 4. Abre o e-mail (remetente Orçô, domínio próprio) → clica no link → `/auth/confirm` (o servidor confere o código do link; funciona mesmo se o e-mail for aberto em outro aparelho) → já entra logado em `/app/orcamentos`, que está vazia e mostra o botão grande **Criar primeiro orçamento** (F-09).
 
@@ -45,7 +45,9 @@
 - E-mail já cadastrado: mensagem genérica "Se este e-mail puder ser usado, você receberá um link", para não revelar quais contas existem.
 - Senha fraca: validação inline, antes do envio.
 - Link expirado: página com botão **Reenviar link**.
-- CAPTCHA falhou: "Não conseguimos verificar. Tente novamente."
+- Muitos cadastros do mesmo IP (RN-46): "Muitas tentativas. Tente de novo em alguns minutos."
+- Teto diário de e-mails atingido (RN-46): "Estamos com muitos cadastros hoje. Tente amanhã ou use **Continuar com Google**." (F-02 continua disponível).
+- Campo "isca" preenchido (robô): mostra a mesma tela do passo 3, sem criar conta nem enviar e-mail.
 
 ## F-02 — Entrar/cadastrar com Google · ✅
 

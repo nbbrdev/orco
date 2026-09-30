@@ -19,7 +19,7 @@
 | Arquivos | **RustFS** (compatível com S3) via `@aws-sdk/client-s3` | 0015 |
 | PDF | `@react-pdf/renderer` em Route Handler (runtime Node) | 0003 |
 | E-mail transacional | **Nodemailer + SMTP**: Mailpit local, Resend em staging/produção | 0016 |
-| CAPTCHA | Cloudflare Turnstile no cadastro, validado pela Server Action (`siteverify`) | 0002 |
+| Anti-abuso do cadastro | Sem CAPTCHA externo: limite por IP, honeypot e teto diário de e-mails, validados pela Server Action (RN-46) | 0002 |
 | Rate limit | Tabela + função no Postgres | 0004 |
 | PWA | `app/manifest.ts` + service worker próprio (`public/sw.js`), sem cache offline | 0009 |
 | Push | Web Push padrão: lib `web-push` + chaves VAPID, sem serviço externo | 0009 |

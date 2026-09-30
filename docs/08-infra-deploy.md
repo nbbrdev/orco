@@ -83,7 +83,7 @@ command="/opt/orco/bin/deploy.sh staging",restrict ssh-ed25519 AAAA... orco-stag
   - Node 24 Alpine, usuário não-root; os arquivos do app ficam com dono root (só leitura para o app);
   - `LABEL org.opencontainers.image.source=https://github.com/nbbrdev/orco`.
 - **Uma imagem leva tudo de uma versão:** o app, as migrations com o script que as aplica (`/app/migrator`) e os arquivos de deploy (`/app/deploy`). Rollback volta tudo junto.
-- **Nenhum segredo entra na imagem.** Os segredos chegam na hora de rodar, pelo `.env` da VPS. As variáveis `NEXT_PUBLIC_*` (versão do app, site key do Turnstile) são públicas por natureza e são embutidas no build. Por isso staging e produção têm **imagens separadas**.
+- **Nenhum segredo entra na imagem.** Os segredos chegam na hora de rodar, pelo `.env` da VPS. As variáveis `NEXT_PUBLIC_*` (versão do app, chave pública VAPID) são públicas por natureza e são embutidas no build. Por isso staging e produção têm **imagens separadas**.
 - Publicada em `ghcr.io/nbbrdev/orco`, **pública** (a VPS baixa sem login). O envio usa o `GITHUB_TOKEN` com `packages: write`.
 - Etiquetas: `staging-<commit>` e `vX.Y.Z`. As antigas ficam guardadas para rollback.
 
@@ -158,11 +158,6 @@ command="/opt/orco/bin/deploy.sh staging",restrict ssh-ed25519 AAAA... orco-stag
   - `https://staging.orco.nbbrdev.com/api/auth/callback/google`;
   - `http://localhost:3000/api/auth/callback/google`.
 - Client ID/secret nos `.env` da VPS (e no `.env.local`), só no servidor. Configurado na M2 (NBB-40).
-
-## Cloudflare Turnstile
-
-- Widget em modo "managed/invisible" para os hostnames de produção, `staging.orco.nbbrdev.com` e localhost.
-- Site key pública (`NEXT_PUBLIC_TURNSTILE_SITE_KEY`, embutida no build); secret key só no servidor (`TURNSTILE_SECRET_KEY`).
 
 ## GitHub (ADR-0007)
 
