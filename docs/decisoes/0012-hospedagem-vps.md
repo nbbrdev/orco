@@ -48,6 +48,7 @@ Como ainda não existiam telas nem tabelas, o usuário decidiu **antecipar a VPS
   ```
 
   Primeiro o banco, depois o código.
+- Os passos de build e deploy ficam num **workflow comum** (`deploy-vps.yml`), chamado pelo `staging.yml` e pelo `production.yml`: staging e produção publicam exatamente do mesmo jeito (decidido pelo usuário em 2026-09-30, NBB-63).
 - A imagem leva **tudo de uma versão**: o app, as migrations e os arquivos de deploy (`compose.yaml` e bootstrap do banco).
 - O GitHub guarda só o acesso SSH (`VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `VPS_KNOWN_HOSTS`) nos environments `staging` e `production`.
 - **Chaves de deploy restritas** (decidido pelo usuário em 2026-09-29, NBB-35):
@@ -93,5 +94,5 @@ Como ainda não existiam telas nem tabelas, o usuário decidiu **antecipar a VPS
   - `Dockerfile`, `compose.dev.yaml`;
   - `deploy/compose.yaml`, `deploy/deploy.sh`, `deploy/nginx/orco.conf`, `deploy/env.example`, `deploy/README.md`;
   - `backup.yml`.
-- `staging.yml`/`production.yml` passam a publicar na VPS.
+- `staging.yml`/`production.yml` passam a publicar na VPS, pelo `deploy-vps.yml`.
 - As variáveis `NEXT_PUBLIC_*` são embutidas no build, por isso staging e produção têm **imagens separadas**.

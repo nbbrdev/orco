@@ -70,10 +70,10 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
      - `1.0.0` no go-live.
   3. `gh release create vX.Y.Z --target main --generate-notes`. Cria a tag e a página da versão, com notas geradas dos títulos dos PRs.
   4. O workflow `production.yml` roda sozinho:
-     - **verify**: a tag está na `main` e o CI daquele commit passou;
-     - **build**: imagem `vX.Y.Z` no GHCR;
-     - **migrate**: migrations no banco de produção da VPS;
-     - **deploy**: `docker compose up -d` no projeto `orco-production` (ADR-0012).
+     - **verify**: a tag está no formato `vX.Y.Z`, está na `main` e o CI daquele commit passou;
+     - **build**: imagem `vX.Y.Z` no GHCR (receita comum `deploy-vps.yml`, a mesma do staging);
+     - **deploy**: SSH com a chave da produção → `deploy.sh production` → migrations no banco de produção → `docker compose up -d` no projeto `orco-production` (ADR-0012).
+  5. Conferir `https://orco.nbbrdev.com`: a versão nova aparece na página.
 - **Hotfix:** PR `fix:` → merge → nova versão patch.
 - **Rollback de código:** "Re-run all jobs" na execução do `production.yml` de uma versão anterior (a imagem antiga continua no GHCR). Migrations **não voltam**: a correção vem numa migration nova, e por isso toda migration precisa ser compatível com a versão anterior do código.
 - A versão é **a tag**. O `package.json` **não tem** o campo `version` (o app é `private`, nunca publicado no npm), para não existir um número desatualizado. O app mostra a versão via `NEXT_PUBLIC_APP_VERSION`, injetada no build. Não há `CHANGELOG.md`: as notas ficam nas GitHub Releases.
@@ -126,7 +126,8 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
 | **Unitário** | Uma função isolada, sem banco nem rede | Vitest, `tests/unit/` | `money.ts` (100%), `dates.ts`, schemas Zod, validação CPF/CNPJ, transições de status, segurança (CSP, headers, proxy, Basic Auth) | ✅ em uso |
 | **Integração** | O código junto com um **Postgres real** (RLS, roles, funções) | Vitest, `tests/integration/` (local: `compose.dev.yaml`; CI: service container) | toda tabela e função (docs/07 §3) | ✅ em uso |
 | **E2E** | Um fluxo inteiro no navegador, como o usuário faria | Playwright, `tests/e2e/` | F-01, F-05, F-06, F-07, F-08 (RNF-15) | ⏳ entra na M2 (NBB-72) |
-| **Smoke test (sistema)** | O ambiente já publicado: HTTPS, status, headers de segurança e versão | passo final dos workflows de deploy | todo deploy de staging e produção | ⏳ entra na NBB-63 |
+
+**Sem smoke test automático** (decidido em 2026-09-30: projeto pequeno, simplicidade). Depois de cada release, a conferência do ambiente publicado é manual: abrir o site, ver a versão e o HTTPS. O E2E testa o código antes do merge, não o ambiente no ar.
 
 **Como rodar:**
 
