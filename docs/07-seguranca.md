@@ -13,7 +13,12 @@
 - Confirmação de e-mail obrigatória para cadastro por senha (RN-02).
 - Política de senha: mínimo de 8 caracteres, sem exigência de tipos (RN-03), aplicada pelo Zod no servidor e pela configuração do Better Auth. Risco aceito (ADR-0002/0013).
 - Proteção contra senhas vazadas (HaveIBeenPwned): **não** no MVP. Risco aceito, a reavaliar na M7.
-- **CAPTCHA** Cloudflare Turnstile **somente no cadastro**: a Server Action valida o token no `siteverify` da Cloudflare **antes** de criar a conta. Se houver abuso, estender a login e recuperação.
+- **Cadastro protegido sem CAPTCHA externo** (RN-46, decidido em 2026-09-29): a Server Action de cadastro, **antes** de criar a conta, confere:
+  - o **limite por IP** (3 por hora);
+  - o **campo "isca" (honeypot)**: escondido por CSS, `aria-hidden`, `tabindex="-1"` e `autocomplete="off"`, com um nome que não pareça e-mail nem senha, para gerenciadores de senha e leitores de tela não o preencherem. Preenchido = robô: responde com a tela de sucesso, sem criar conta nem enviar e-mail;
+  - o **teto diário de e-mails de cadastro** (60/dia), que protege a cota do Resend Free para recuperação de senha e avisos.
+
+  Risco aceito: um ataque vindo de muitos IPs ainda passa. Se houver abuso, reavaliar um CAPTCHA que rode no nosso servidor (ex.: ALTCHA), sem conta em terceiros.
 - **Limite de tentativas** de login e de envio de e-mails: o do Better Auth, somado ao nosso rate limit (§10).
 - Mensagens que não revelam se uma conta existe (F-01, F-03, F-04).
 - **Links dos e-mails de conta:** token de **uso único**, com validade de 1 hora, conferido **no servidor** em `/auth/confirm`. Funcionam em qualquer aparelho.
@@ -76,12 +81,12 @@
 - **Nonce:** 16 bytes aleatórios (`randomBytes`), novo a cada requisição. Vai nos headers da **requisição** (`x-nonce` e a CSP), de onde o Next extrai o nonce e o coloca nos próprios scripts, e na **resposta**, que o navegador aplica.
 - **Diretivas:**
   - `default-src 'self'`;
-  - `script-src 'self' 'nonce-…' 'strict-dynamic'` + Turnstile (`https://challenges.cloudflare.com`), **nunca** `'unsafe-inline'`;
+  - `script-src 'self' 'nonce-…' 'strict-dynamic'`, sem nenhuma origem de terceiros e **nunca** `'unsafe-inline'`;
   - `style-src 'self' 'unsafe-inline'`;
   - `img-src 'self' data: blob:` (os logos vêm de uma rota do próprio app);
   - `font-src 'self'`;
   - `connect-src 'self'`;
-  - `frame-src` só Turnstile;
+  - `frame-src 'none'` (o app não incorpora páginas de outros sites);
   - `worker-src 'self'` e `manifest-src 'self'`;
   - `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`, `frame-ancestors 'none'`.
 - **Só em desenvolvimento:** `'unsafe-eval'`, que o React usa para detalhar erros.
@@ -122,6 +127,8 @@
 | PDF (dono) | user_id | 20/min |
 | PDF (público) | IP | 10/min |
 | Criação de orçamentos | user_id | ver RN-38 |
+| Cadastro por e-mail | IP | 3/hora (RN-46) |
+| E-mails de cadastro (confirmação + reenvio) | global | 60/dia (RN-46) |
 
 A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 
@@ -146,7 +153,7 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 - **O repositório é público.** A segurança nunca depende de o código ser secreto.
 - Segredos do app só nos arquivos `.env` **da VPS** (`/opt/orco/<ambiente>/.env`, legíveis só pelo usuário `deploy`) e no `.env.local` do desenvolvedor. O GitHub guarda só o acesso SSH e a chave **pública** do backup. Nunca no código, em docs, seeds, fixtures ou **na imagem Docker**.
 - `.env*` no `.gitignore`; `.env.example` e `deploy/env.example` com nomes e sem valores.
-- Prefixo `NEXT_PUBLIC_` (embutido no build e visível no navegador) só para valores públicos por natureza: versão do app, site key do Turnstile, chave pública VAPID. Senhas de banco, segredo do Better Auth, chaves SMTP/RustFS/VAPID privadas e `CRON_SECRET` **nunca**.
+- Prefixo `NEXT_PUBLIC_` (embutido no build e visível no navegador) só para valores públicos por natureza: versão do app e chave pública VAPID. Senhas de banco, segredo do Better Auth, chaves SMTP/RustFS/VAPID privadas e `CRON_SECRET` **nunca**.
 - **VPS:** SSH só por chave (sem senha, sem root), firewall com só 22/80/443, atualizações de segurança automáticas; banco e RustFS sem porta publicada.
 - Seeds e testes usam dados fictícios (`@example.com`, CPFs de teste gerados).
 - GitHub: **secret scanning + push protection** ativos (ADR-0007).

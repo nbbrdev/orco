@@ -83,7 +83,7 @@ Como ainda não existiam telas nem tabelas, o usuário decidiu **antecipar a VPS
 - **Imagem separada para as migrations:** dois builds e duas etiquetas para manter em sincronia a cada versão.
 
 ## Consequências
-- Somem as contas e os painéis de Supabase e Vercel. Os únicos terceiros são o Resend (e-mail), a Cloudflare (Turnstile) e o Google (OAuth).
+- Somem as contas e os painéis de Supabase e Vercel. Os únicos terceiros são o Resend (e-mail) e o Google (OAuth). O Cloudflare Turnstile saiu em 2026-09-29 (NBB-70, RN-46).
 - Surgem responsabilidades de operação:
   - atualizações de segurança do Ubuntu (`unattended-upgrades`);
   - firewall (`ufw`: 22, 80 e 443);

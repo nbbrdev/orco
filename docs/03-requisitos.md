@@ -13,7 +13,7 @@
 | RF-02 | Cadastro/login com Google OAuth. | F-02 |
 | RF-03 | Login por e-mail + senha. | F-03 |
 | RF-04 | Recuperação de senha por e-mail. | F-04 |
-| RF-05 | CAPTCHA Turnstile no cadastro. | F-01 |
+| RF-05 | Proteção do cadastro contra robôs sem CAPTCHA externo: limite por IP, campo "isca" (honeypot) e teto diário de e-mails de cadastro (RN-46). Revisado em 2026-09-29 (antes: CAPTCHA Turnstile). | F-01 |
 | RF-06 | Logout. | — |
 | RF-07 | Exclusão de conta com confirmação e remoção de todos os dados. | F-17, RN-06 |
 
@@ -113,7 +113,7 @@
 ### Operação e qualidade
 | # | Requisito |
 |---|---|
-| RNF-12 | Custo mínimo no MVP: uma VPS pequena (Hostinger KVM 1/2) e serviços em plano gratuito (Resend Free, Turnstile, GHCR público). Revisado em 2026-09-29 (antes: Vercel Hobby + Supabase Free). |
+| RNF-12 | Custo mínimo no MVP: uma VPS pequena (Hostinger KVM 1/2) e serviços em plano gratuito (Resend Free, GHCR público). Revisado em 2026-09-29 (antes: Vercel Hobby + Supabase Free; Turnstile removido pela RN-46). |
 | RNF-13 | CI verde (lint, typecheck, testes, build, CodeQL) obrigatório para merge. |
 | RNF-14 | Regras de cálculo (RN-15–RN-18) com 100% de cobertura em testes unitários. |
 | RNF-15 | Fluxos F-01, F-05, F-06, F-07 e F-08 cobertos por testes E2E (Playwright). |

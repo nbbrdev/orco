@@ -24,6 +24,8 @@ describe("buildCsp", () => {
     expect(scriptSrc).toContain("'nonce-abc123'");
     expect(scriptSrc).toContain("'strict-dynamic'");
     expect(scriptSrc).not.toContain("'unsafe-inline'");
+    // Nenhuma origem de terceiros (ex.: CAPTCHA externo), só o próprio app.
+    expect(scriptSrc).not.toMatch(/https?:/);
   });
 
   it("allows eval only in development", () => {
@@ -38,6 +40,7 @@ describe("buildCsp", () => {
 
   it("blocks framing, plugins and foreign form targets", () => {
     expect(directive(production, "frame-ancestors")).toBe("frame-ancestors 'none'");
+    expect(directive(production, "frame-src")).toBe("frame-src 'none'");
     expect(directive(production, "object-src")).toBe("object-src 'none'");
     expect(directive(production, "form-action")).toBe("form-action 'self'");
     expect(directive(production, "base-uri")).toBe("base-uri 'self'");
