@@ -112,7 +112,7 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
   As credenciais locais são fictícias (as mesmas do `.env.example`). `npm run db:reset` apaga os dados e recria tudo do zero (roles + migrations).
 - **Roles:** nascem uma vez por banco novo, pelo `db/bootstrap/roles.sql`, executado como superusuário pelo `init.sh` do container, pelo CI e, na VPS, pelo mesmo `init.sh`. Schemas, permissões automáticas e funções auxiliares ficam nas migrations (`0000_base_security.sql`).
 - **Aplicar migrations:** `npm run db:migrate` (role `orco_owner`, pelo `scripts/migrate.mts`).
-- **Testes de integração:** `npm run test:integration` (precisa do `db:start` + `db:migrate`). No CI, rodam dentro do check `ci`, com um Postgres temporário.
+- **Testes de integração:** `npm run test:integration` (precisa do `db:start` + `db:migrate`). No CI, rodam dentro do check `ci`, com um Postgres temporário (ver §7).
 - **Três roles:** migrations com `orco_owner`; o app com `app_user` (produto) e `app_auth` (login). Nunca conectar o app com a role dona ou com superusuário.
 - Nunca alterar o banco de staging ou produção à mão: migrations chegam lá só pelo serviço `migrate`, disparado pelos workflows.
 - Uma migration aplicada nunca é editada; a correção vem em nova migration. Toda migration precisa ser compatível com a versão anterior do código (o banco muda antes do código no deploy).
@@ -121,13 +121,32 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
 
 ## 7. Testes
 
-| Tipo | Ferramenta | Obrigatório para |
-|---|---|---|
-| Unitário | Vitest | `money.ts` (100%), `dates.ts`, schemas Zod, validação CPF/CNPJ, transições de status |
-| RLS/banco (integração) | Vitest contra um **Postgres real** (local: `compose.dev.yaml`; CI: service container) | toda tabela e função |
-| E2E | Playwright | F-01, F-05, F-06, F-07, F-08 (RNF-15) |
+| Tipo | O que testa | Ferramenta e pasta | Obrigatório para | Situação |
+|---|---|---|---|---|
+| **Unitário** | Uma função isolada, sem banco nem rede | Vitest, `tests/unit/` | `money.ts` (100%), `dates.ts`, schemas Zod, validação CPF/CNPJ, transições de status, segurança (CSP, headers, proxy, Basic Auth) | ✅ em uso |
+| **Integração** | O código junto com um **Postgres real** (RLS, roles, funções) | Vitest, `tests/integration/` (local: `compose.dev.yaml`; CI: service container) | toda tabela e função (docs/07 §3) | ✅ em uso |
+| **E2E** | Um fluxo inteiro no navegador, como o usuário faria | Playwright, `tests/e2e/` | F-01, F-05, F-06, F-07, F-08 (RNF-15) | ⏳ entra na M2 (NBB-72) |
+| **Smoke test (sistema)** | O ambiente já publicado: HTTPS, status, headers de segurança e versão | passo final dos workflows de deploy | todo deploy de staging e produção | ⏳ entra na NBB-63 |
 
-Bug corrigido = teste que reproduz o bug.
+**Como rodar:**
+
+| Comando | Roda | Precisa do Docker? |
+|---|---|---|
+| `npm test` | só os unitários (o do dia a dia) | não |
+| `npm run test:watch` | unitários, repetindo a cada alteração | não |
+| `npm run test:integration` | só a integração | sim (`db:start` + `db:migrate`) |
+| `npm run test:coverage` | unitários + integração numa execução só, com relatório de cobertura (terminal e `coverage/index.html`) | sim |
+
+**Cobertura:**
+- Mede quais linhas de `src/lib/` os testes executaram. Unitários e integração rodam **juntos** para o relatório somar os dois: código que só roda com banco (ex.: `src/lib/db/`) aparece com a cobertura real, e não com 0%.
+- Todo arquivo de `src/lib/` aparece no relatório, mesmo sem teste nenhum, para nada ficar escondido.
+- **Trava no CI:** 100% em `money.ts` e `dates.ts` (RNF-14). O resto aparece no relatório sem trava; a trava para o código de banco é reavaliada na M2 (NBB-73).
+- No CI, os testes rodam depois das roles e das migrations no Postgres temporário, num passo só (`npm run test:coverage`).
+
+**Regras:**
+- Bug corrigido = teste que reproduz o bug.
+- Dados sempre fictícios (`@example.com`, CPFs de teste gerados), nunca reais (docs/07 §11).
+- Testes de integração criam e apagam o que usam; não dependem da ordem nem de dados deixados por outro teste.
 
 ## 8. Variáveis de ambiente
 

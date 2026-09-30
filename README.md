@@ -28,8 +28,9 @@ npm run dev                  # http://localhost:3000
 | `npm run build`                 | build de produção                               |
 | `npm run lint`                  | ESLint (falha com qualquer aviso)               |
 | `npm run typecheck`             | checagem de tipos do TypeScript                 |
-| `npm test`                      | testes unitários (Vitest)                       |
+| `npm test`                      | testes unitários (Vitest), sem Docker           |
 | `npm run test:integration`      | testes contra o Postgres local (RLS)            |
+| `npm run test:coverage`         | unitários + integração com cobertura (Docker)   |
 | `npm run db:start` / `db:stop`  | sobe / desce os serviços locais (Docker)        |
 | `npm run db:migrate`            | aplica as migrations (role `orco_owner`)        |
 | `npm run db:generate -- <nome>` | gera uma migration a partir do schema (Drizzle) |

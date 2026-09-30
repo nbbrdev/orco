@@ -60,10 +60,7 @@ jobs:
       - name: Tipos (TypeScript)
         run: npm run typecheck
 
-      - name: Testes com cobertura (Vitest; 100% em money.ts e dates.ts)
-        run: npm run test:coverage
-
-      # Mesmo roteiro da VPS: roles (superusuário) → migrations (orco_owner) → testes de RLS.
+      # Mesmo roteiro da VPS: roles (superusuário) → migrations (orco_owner) → testes.
       - name: Banco de teste - roles
         run: >-
           psql "postgres://postgres:postgres@localhost:5432/orco"
@@ -75,8 +72,10 @@ jobs:
       - name: Banco de teste - migrations
         run: npm run db:migrate
 
-      - name: Testes de integração (RLS contra Postgres real)
-        run: npm run test:integration
+      # Uma execução só (unitários + integração/RLS contra o Postgres real), para a cobertura medir
+      # também o código que só roda com banco. 100% obrigatório em money.ts e dates.ts.
+      - name: Testes com cobertura (Vitest)
+        run: npm run test:coverage
 
       - name: Build
         run: npm run build
