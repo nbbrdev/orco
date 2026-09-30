@@ -100,9 +100,11 @@ flowchart LR
 │   │   └── dates.ts           fuso America/Sao_Paulo
 │   ├── proxy.ts               Proxy do Next 16 (antigo middleware): CSP, Basic Auth do staging
 │   └── pdf/                   templates react-pdf
-├── tests/
-│   ├── unit/                  Vitest
-│   └── e2e/                   Playwright
+├── tests/                     como rodar: docs/06-regras-dev.md §7
+│   ├── unit/                  Vitest, sem banco
+│   ├── integration/           Vitest contra Postgres real (RLS)
+│   ├── stubs/                 substitutos de módulos só do Next (ex.: server-only)
+│   └── e2e/                   Playwright (a partir da M2, NBB-72)
 ├── .github/                   workflows, dependabot, templates (M1)
 └── CLAUDE.md
 ```

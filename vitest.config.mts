@@ -28,8 +28,11 @@ export default defineConfig({
         },
       },
     ],
+    // `npm run test:coverage` roda os dois projetos juntos: o relatório soma o que os unitários e a
+    // integração executaram (o código de banco só roda na integração). Precisa do banco local ligado.
     coverage: {
       provider: "v8",
+      // Todos os arquivos entram no relatório, mesmo sem teste nenhum (aparecem com 0%).
       include: ["src/lib/**/*.ts"],
       reporter: ["text", "html"],
       // Regras de cálculo e datas exigem 100% de cobertura (RNF-14).
