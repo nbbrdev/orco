@@ -106,7 +106,7 @@ command="/opt/orco/bin/deploy.sh staging",restrict ssh-ed25519 AAAA... orco-stag
 
 - **Sem backup automático** (decidido pelo usuário em 2026-09-30, NBB-75). O dono faz o backup **pelo DBeaver, antes de cada release** (passo 0 de `docs/06-regras-dev.md` §4.1). Passo a passo em `deploy/README.md`, "Backup pelo DBeaver".
 - O `db` de cada ambiente publica o Postgres **só em `127.0.0.1`** da VPS (`DB_PORT` no `.env`: **5433** produção, **5434** staging). O DBeaver entra por **túnel SSH** com a chave de administração, como `postgres`.
-- Formato custom (`pg_dump`), só o banco; os logos do RustFS ficam fora. Restauração: banco novo (roles pelo bootstrap) → **Tools → Restore** no DBeaver.
+- Formato custom (`pg_dump`), só o banco; os logos do RustFS ficam fora. Restauração: banco novo (roles pelo bootstrap) → **Tools → Restore** no DBeaver. Teste de restauração no banco local uma vez antes do go-live (M7, NBB-58).
 - **Reforço opcional:** snapshots da VPS no painel da Hostinger.
 
 ## Agendamentos
