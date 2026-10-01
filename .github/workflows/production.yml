@@ -66,6 +66,9 @@ jobs:
       contents: read
       packages: write
     uses: ./.github/workflows/deploy-vps.yml
+    # Sem isto, o workflow chamado não enxerga nenhum secret, nem os do environment em que o job
+    # dele entra. O repositório não tem secrets próprios: só os do environment production chegam lá.
+    secrets: inherit
     with:
       environment: production
       ref: ${{ github.sha }}
