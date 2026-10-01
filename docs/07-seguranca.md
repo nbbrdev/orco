@@ -70,7 +70,7 @@
 | Onde | Como |
 |---|---|
 | Em trânsito | TLS em tudo que sai da VPS: Nginx + Let's Encrypt; SMTP do Resend com TLS. Dentro da VPS, o app fala com o banco e o RustFS pela rede privada do Docker, sem sair da máquina. HSTS com `max-age=63072000; includeSubDomains; preload`. |
-| Em repouso | Disco da VPS (proteção física do provedor). **Backups sempre criptografados** com `age` (§14). Criptografia do disco da VPS: reavaliar na M7. |
+| Em repouso | Disco da VPS (proteção física do provedor). Backups manuais guardados só no computador do dono, em pasta protegida (§14). Criptografia do disco da VPS: reavaliar na M7. |
 | Senhas | Hash lento (scrypt/argon2) pelo Better Auth. |
 | Tokens públicos | Aleatórios (CSPRNG), 256 bits. |
 | Por coluna | **Não** no MVP: não guardamos dados de pagamento nem dados sensíveis (art. 5º, II, da LGPD). O CPF/CNPJ é opcional (minimização). Reavaliar se o escopo mudar. |
@@ -151,7 +151,7 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 ## 11. Segredos e repositório público
 
 - **O repositório é público.** A segurança nunca depende de o código ser secreto.
-- Segredos do app só nos arquivos `.env` **da VPS** (`/opt/orco/<ambiente>/.env`, legíveis só pelo usuário `deploy`) e no `.env.local` do desenvolvedor. O GitHub guarda só o acesso SSH e a chave **pública** do backup. Nunca no código, em docs, seeds, fixtures ou **na imagem Docker**.
+- Segredos do app só nos arquivos `.env` **da VPS** (`/opt/orco/<ambiente>/.env`, legíveis só pelo usuário `deploy`) e no `.env.local` do desenvolvedor. O GitHub guarda só o acesso SSH de deploy. Nunca no código, em docs, seeds, fixtures ou **na imagem Docker**.
 - `.env*` no `.gitignore`; `.env.example` e `deploy/env.example` com nomes e sem valores.
 - Prefixo `NEXT_PUBLIC_` (embutido no build e visível no navegador) só para valores públicos por natureza: versão do app e chave pública VAPID. Senhas de banco, segredo do Better Auth, chaves SMTP/RustFS/VAPID privadas e `CRON_SECRET` **nunca**.
 - **VPS:** SSH só por chave (sem senha, sem root), firewall com só 22/80/443, atualizações de segurança automáticas; banco e RustFS sem porta publicada.
@@ -178,13 +178,12 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 
 ## 14. Backups e continuidade
 
-- O workflow `backup.yml` (diário) entra na VPS por SSH e gera, **só de produção**:
-  - o dump do Postgres (`pg_dump`: roles, schema e dados, incluindo o schema `auth`);
-  - uma cópia dos objetos do RustFS (logos).
-- O arquivo é **criptografado com `age`** usando uma **chave pública** (secret `BACKUP_AGE_PUBLIC_KEY`). A **chave privada nunca vai para o GitHub**: fica só com o dono do projeto, num gerenciador de senhas. Mesmo que o artifact seja baixado ou os secrets vazem, o backup permanece ilegível.
-- **Destino:** artifact do GitHub Actions com **retenção de 30 dias**, fora da VPS. Em repo público, qualquer usuário logado pode baixar o arquivo, e é por isso que a criptografia é obrigatória. Risco aceito: os backups ficam vinculados ao repositório.
-- **Restauração:** baixar o artifact → `age -d -i <chave-privada>` → `pg_restore` num banco novo → reenviar os objetos ao RustFS. Procedimento em `deploy/README.md`, com um **teste de restauração** antes do go-live (M7).
-- Reforço: snapshots da VPS na Hostinger, se o plano incluir.
+- **Sem backup automático** (decidido pelo usuário em 2026-09-30, NBB-75: projeto pequeno, simplicidade). O backup é **manual, pelo DBeaver, obrigatório antes de cada release** (que aplica migrations na produção). Passo a passo em `deploy/README.md`.
+- **Acesso:** o Postgres de cada ambiente escuta só em `127.0.0.1` da VPS (5433 produção, 5434 staging), sem porta liberada no firewall. O DBeaver entra por **túnel SSH** com a chave de administração e usa o superusuário `postgres`.
+- **Conteúdo:** só o banco (`pg_dump`, formato custom: schema e dados, incluindo `auth`). O `pg_dump` não leva as roles: na restauração, elas nascem pelo bootstrap (`init.sh`/`roles.sql`) antes do `pg_restore`. O RustFS (logos) fica fora: se a VPS for perdida, os logos são enviados de novo (risco aceito).
+- **Guarda:** o arquivo contém dados pessoais reais. Fica só no computador do dono, numa pasta protegida (ex.: disco com BitLocker), nunca no repositório nem em nuvem pública.
+- **Riscos aceitos:** perda dos dados desde o último backup manual se a VPS for perdida entre duas releases; depende de o dono lembrar do backup (o passo 0 da release, `docs/06-regras-dev.md` §4.1).
+- Reforço opcional: snapshots da VPS no painel da Hostinger.
 
 ## Checklist de segurança do PR
 

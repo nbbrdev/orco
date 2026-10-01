@@ -74,9 +74,13 @@ services:
   db:
     image: postgres:17.11-alpine
     restart: unless-stopped
-    # Sem `ports`: só os containers deste projeto alcançam o banco.
+    # Porta só em 127.0.0.1 da VPS: a internet não alcança (e o ufw nem precisa liberar). Serve para o
+    # backup manual pelo DBeaver, que entra por um túnel SSH (deploy/README.md, "Backup pelo DBeaver").
+    # Produção: 5433; staging: 5434.
+    ports:
+      - "127.0.0.1:${DB_PORT:?defina DB_PORT}:5432"
     environment:
-      # Superusuário só para a inicialização e a manutenção (backups). O app nunca o usa.
+      # Superusuário só para a inicialização e a manutenção (backup pelo DBeaver). O app nunca o usa.
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
       POSTGRES_DB: orco

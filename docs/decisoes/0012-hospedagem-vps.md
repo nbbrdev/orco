@@ -34,7 +34,7 @@ Como ainda não existiam telas nem tabelas, o usuário decidiu **antecipar a VPS
   - `db` (Postgres 17);
   - `rustfs` (arquivos, ADR-0015).
 - Cada projeto tem rede e volumes próprios: o staging **não alcança** o banco de produção.
-- O **banco e o RustFS não publicam portas**; só o app do mesmo projeto os alcança. O app escuta só em `127.0.0.1`, e apenas o Nginx o alcança.
+- O **RustFS não publica portas**; só o app do mesmo projeto o alcança. O app escuta só em `127.0.0.1`, e apenas o Nginx o alcança. O **banco** também fica só em `127.0.0.1` da VPS (5433 produção, 5434 staging), para o backup manual pelo DBeaver via túnel SSH (revisão de 2026-10-01, NBB-75); a internet não o alcança.
 - Hardening do app: usuário não-root na imagem, `read_only`, `no-new-privileges`, logs limitados (10 MB × 3).
 - Os segredos de cada ambiente ficam **só na VPS**, nunca no repositório nem na imagem.
 - **Uma pasta por ambiente** (`/opt/orco/staging/`, `/opt/orco/production/`), cada uma com seu `.env` e seu `compose.yaml`. Os ambientes rodam versões diferentes, e o deploy de um nunca altera os arquivos do outro (decidido pelo usuário em 2026-09-29, NBB-35).
@@ -60,12 +60,8 @@ Como ainda não existiam telas nem tabelas, o usuário decidiu **antecipar a VPS
   O usuário `deploy` está no grupo `docker`, o que equivale a root. Com a restrição, uma chave vazada só consegue subir de novo uma imagem nossa já existente naquele ambiente.
 
 ### Backups
-- Workflow **diário** (03:00 SP):
-  1. SSH na VPS → `pg_dump` do banco de produção + cópia do RustFS;
-  2. criptografia com **`age`** (chave pública no GitHub; a privada só com o usuário);
-  3. **artifact de 30 dias**.
-- Restauração documentada em `deploy/README.md` e testada antes do go-live (M7).
-- Snapshots da Hostinger, se o plano incluir, como reforço.
+- **Revisão (2026-09-30/10-01, decisão do usuário, NBB-75):** o workflow diário de backup (com `age` e artifact de 30 dias) foi **descartado** para simplificar. O backup é **manual, pelo DBeaver, antes de cada release**, só do banco (o RustFS fica fora). Passo a passo em `deploy/README.md`.
+- Snapshots da Hostinger como reforço opcional.
 
 ### Agendamentos
 - Tarefas diárias (lembrete de vencimento, RN-43; anonimização de IPs, RN-37) rodam por **agendamento na VPS** (cron do sistema ou container agendado), sem Vercel Cron e sem `pg_cron`. A forma exata é decidida na issue de cada tarefa.
@@ -90,10 +86,9 @@ Como ainda não existiam telas nem tabelas, o usuário decidiu **antecipar a VPS
   - atualizações de segurança do Ubuntu (`unattended-upgrades`);
   - firewall (`ufw`: 22, 80 e 443);
   - SSH só por chave;
-  - monitorar o disco e os backups.
+  - monitorar o disco e fazer o backup manual antes de cada release.
 - Novos arquivos:
   - `Dockerfile`, `compose.dev.yaml`;
-  - `deploy/compose.yaml`, `deploy/deploy.sh`, `deploy/nginx/orco.nbbrdev.com.conf`, `deploy/env.example`, `deploy/README.md`;
-  - `backup.yml`.
+  - `deploy/compose.yaml`, `deploy/deploy.sh`, `deploy/nginx/orco.nbbrdev.com.conf`, `deploy/env.example`, `deploy/README.md`.
 - `staging.yml`/`production.yml` passam a publicar na VPS, pelo `deploy-vps.yml`.
 - As variáveis `NEXT_PUBLIC_*` são embutidas no build, por isso staging e produção têm **imagens separadas**.

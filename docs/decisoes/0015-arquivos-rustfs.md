@@ -22,7 +22,7 @@ O único arquivo enviado pelos usuários no MVP é o **logo** do freelancer (RN-
 - **Serviço externo (R2/S3):** mais uma conta e mais chaves. Continua possível no futuro sem mudar o código.
 
 ## Consequências
-- O **backup** (ADR-0012) inclui o conteúdo do RustFS, além do `pg_dump`. Banco e arquivos precisam ser restaurados juntos.
+- **Revisão (2026-09-30, decisão do usuário):** o RustFS **fica fora do backup**, que é manual e só do banco (ADR-0012). Risco aceito: poucos clientes; se a VPS for perdida, os logos são enviados de novo. Como o app trata um logo que não existe mais fica para a NBB-42.
 - A **exclusão de conta** apaga explicitamente `logos/{user_id}/` no RustFS, porque o armazenamento não participa da cascata do banco.
 - Novas variáveis de ambiente: endpoint, bucket e chaves do RustFS (só no servidor).
-- Risco aceito: RustFS é recente. Mitigação: versão fixa, backups e a portabilidade garantida pelo S3.
+- Risco aceito: RustFS é recente. Mitigação: versão fixa e a portabilidade garantida pelo S3.

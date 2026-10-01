@@ -17,4 +17,4 @@
 
 ## Consequências
 - O código é visível publicamente: a segurança não pode depender de sigilo do código, e segredos ou dados reais nunca vão para o repositório (ver [07-seguranca.md](../07-seguranca.md) §11).
-- Artifacts de Actions podem ser baixados por qualquer usuário logado, então backups são sempre criptografados.
+- Artifacts de Actions podem ser baixados por qualquer usuário logado: nada sensível vira artifact. (Os backups do banco não passam pelo GitHub: são manuais, pelo DBeaver, desde 2026-09-30.)
