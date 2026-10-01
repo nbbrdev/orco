@@ -252,11 +252,13 @@ Use o superusuário `postgres`: o backup precisa ler tudo (produto, login, funç
 
 O DBeaver usa o `pg_dump` **do seu PC**. Na primeira vez, ele pede o "local client": aponte para (ou deixe o DBeaver baixar) as ferramentas do **PostgreSQL 17**, a mesma versão do servidor.
 
-> O arquivo contém **dados de usuários reais**. Guarde numa pasta protegida (ex.: com o BitLocker ligado), nunca no repositório nem em nuvem pública.
+> O arquivo contém **dados de usuários reais**. Fica só no seu PC, nunca no repositório nem em nuvem. A criptografia desses arquivos será decidida depois (decisão de 2026-10-01).
 
 ### Restaurar
 
 Num banco **novo** (ex.: depois de recriar o ambiente): as roles nascem pelo bootstrap (`init.sh`/`roles.sql`) na primeira subida do container, e só então **Tools → Restore** no banco `orco`, com o arquivo do backup. O `pg_dump` não leva as roles, por isso elas vêm do bootstrap, com as senhas do `.env`.
+
+**Teste de restauração** (uma vez antes do go-live, M7, NBB-58): restaurar um backup da produção no banco **local** do PC (`npm run db:reset` cria um banco vazio com as roles → DBeaver **Tools → Restore** nele) e conferir as tabelas, os dados e o app local. Prova que o backup funciona antes do dia em que ele for necessário.
 
 ---
 
