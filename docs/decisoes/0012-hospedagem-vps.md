@@ -23,7 +23,8 @@ Como ainda não existiam telas nem tabelas, o usuário decidiu **antecipar a VPS
   - `orco.nbbrdev.com` → `127.0.0.1:3000` (produção);
   - `staging.orco.nbbrdev.com` → `127.0.0.1:3001`.
 - **Certbot** (`certbot --nginx`) emite e renova os certificados do Let's Encrypt automaticamente.
-- A configuração do site é versionada em `deploy/nginx/orco.conf`.
+- A configuração do site é versionada em `deploy/nginx/orco.nbbrdev.com.conf`.
+- **Revisão (2026-10-01, decisão do usuário):** a VPS (Hostinger KVM 2, Ubuntu 26.04) é **compartilhada entre projetos**. A base da máquina (SSH, firewall, Docker, usuário `deploy`, Nginx geral com site padrão que recusa IP/domínio desconhecido, Certbot) fica no repositório privado `nbbrdev/vps`; cada projeto traz o seu site no Nginx, a sua pasta em `/opt/` e as suas portas.
 
 ### Execução
 - **Docker Compose**: um único `deploy/compose.yaml` usado por **dois projetos**, `orco-production` e `orco-staging`, na **mesma VPS**.
@@ -92,7 +93,7 @@ Como ainda não existiam telas nem tabelas, o usuário decidiu **antecipar a VPS
   - monitorar o disco e os backups.
 - Novos arquivos:
   - `Dockerfile`, `compose.dev.yaml`;
-  - `deploy/compose.yaml`, `deploy/deploy.sh`, `deploy/nginx/orco.conf`, `deploy/env.example`, `deploy/README.md`;
+  - `deploy/compose.yaml`, `deploy/deploy.sh`, `deploy/nginx/orco.nbbrdev.com.conf`, `deploy/env.example`, `deploy/README.md`;
   - `backup.yml`.
 - `staging.yml`/`production.yml` passam a publicar na VPS, pelo `deploy-vps.yml`.
 - As variáveis `NEXT_PUBLIC_*` são embutidas no build, por isso staging e produção têm **imagens separadas**.

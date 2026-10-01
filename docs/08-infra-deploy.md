@@ -16,14 +16,15 @@
 
 ## VPS
 
-- **Hostinger KVM 1 ou KVM 2**, Ubuntu LTS. Contratada na NBB-35.
+- **Hostinger KVM 2**, **Ubuntu 26.04 LTS**. Contratada em 2026-09-30 (NBB-35).
 - O build acontece no GitHub Actions; a VPS só roda os containers. Uso estimado de ~1,5 GB para os dois ambientes.
-- **Base da máquina** (passo a passo em `deploy/README.md`):
-  - usuário `deploy` sem senha, **SSH só por chave** (root e senha desligados);
+- **A VPS é compartilhada entre projetos** (decidido em 2026-10-01). A **base da máquina** fica no repositório privado **`nbbrdev/vps`** (guia + arquivos gerais, projeto "VPS" no Linear):
+  - usuário de administração com chave dedicada; usuário `deploy` sem senha; **SSH só por chave** (root e senha desligados, `10-hardening.conf`);
   - firewall `ufw` com só **22, 80 e 443** abertas;
-  - atualizações automáticas de segurança (`unattended-upgrades`);
+  - atualizações automáticas de segurança (`unattended-upgrades`), sem reinício automático;
   - Docker Engine + plugin Compose;
-  - Nginx + Certbot.
+  - Nginx base (site padrão que recusa IP e domínio desconhecido, `server_tokens off`) e Certbot.
+- **O que é do Orçô** fica neste repositório (`deploy/README.md`): `/opt/orco/`, o `deploy.sh`, os `.env`, o site no Nginx, o certificado, as duas linhas das chaves de deploy e as portas **3000/3001**.
 - **Uma pasta por ambiente** (decidido em 2026-09-29, NBB-35): `/opt/orco/staging/` e `/opt/orco/production/`. Cada uma tem:
   - `.env`: os segredos do ambiente, criado à mão (modelo `deploy/env.example`), `chmod 600`. Os segredos existem **só nesses arquivos**;
   - `compose.yaml`, `init.sh` e `roles.sql`, copiados **de dentro da imagem** da versão no ar a cada deploy;
@@ -33,7 +34,7 @@
 
 ## Nginx e HTTPS
 
-- **Nginx instalado no Ubuntu** (fora do Docker), como proxy reverso. Configuração versionada em `deploy/nginx/orco.conf`:
+- **Nginx instalado no Ubuntu** (fora do Docker), como proxy reverso, um só para a VPS. O **site do Orçô** é versionado em `deploy/nginx/orco.nbbrdev.com.conf` (na VPS: `/etc/nginx/sites-available/orco.nbbrdev.com`); o que vale para todos os sites fica no `nbbrdev/vps`:
   - `orco.nbbrdev.com` → `127.0.0.1:3000`;
   - `staging.orco.nbbrdev.com` → `127.0.0.1:3001`.
 - **Certbot** (`certbot --nginx -d orco.nbbrdev.com -d staging.orco.nbbrdev.com`) emite os certificados do Let's Encrypt, adiciona o HTTPS à configuração e instala a **renovação automática** (timer do systemd).
