@@ -13,13 +13,17 @@ Produção: https://orco.nbbrdev.com · Repo: `nbbrdev/orco` (público) · Linea
 - Mudou `docs/`? Atualize o Linear Doc correspondente na mesma sessão, e vice-versa.
 
 ## Fase atual
-**M1: Setup técnico**, reestruturada em 2026-09-29 para a VPS. Sequência:
-1. NBB-66: docs/ADRs;
-2. NBB-67: remover Supabase/Vercel;
-3. NBB-68: Postgres/Drizzle/RLS;
-4. NBB-35: VPS + staging;
-5. NBB-63: produção + `v0.1.0` (no ar desde 2026-10-01);
-6. NBB-75: backup manual pelo DBeaver (sem backup automático).
+**M2: Auth & Perfil** (meta: `v0.2.0`). A **M1** foi concluída em 2026-10-01, com a `v0.1.0` no ar (VPS, deploy automatizado, backup manual pelo DBeaver).
+
+Issues da M2 (a ordem é decidida com o usuário no planejamento da fase):
+- NBB-39: cadastro e login por e-mail + senha, com anti-abuso (RN-46), Better Auth e módulo de e-mail;
+- NBB-40: login com Google;
+- NBB-41: recuperação de senha, logout e proteção de rotas;
+- NBB-42: perfil do freelancer e logo;
+- NBB-43: exclusão de conta;
+- NBB-60: PWA instalável e tema;
+- NBB-72: Playwright e E2E no CI;
+- NBB-73: reavaliar a cobertura mínima do código de banco.
 
 A base da VPS (compartilhada entre projetos) fica no repositório privado `nbbrdev/vps` (projeto "VPS" no Linear).
 
