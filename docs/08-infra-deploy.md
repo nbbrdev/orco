@@ -50,7 +50,7 @@ Um único `deploy/compose.yaml`, usado por dois **projetos** (`orco-production` 
 |---|---|---|
 | `app` | `ghcr.io/nbbrdev/orco:<tag>` | o Orçô; porta `127.0.0.1:3000` (prod) ou `:3001` (staging), alcançada só pelo Nginx |
 | `migrate` | a mesma do app | tarefa avulsa (`profiles: [tools]`): aplica as migrations do Drizzle com a role `orco_owner` |
-| `db` | `postgres:17-alpine` (versão fixa) | banco; volume `dbdata`; **sem porta publicada**; `healthcheck` com `pg_isready` |
+| `db` | `postgres:17-alpine` (versão fixa) | banco; volume `dbdata`; porta publicada **só em `127.0.0.1`** da VPS (5433 prod, 5434 staging), para o backup pelo DBeaver via túnel SSH; `healthcheck` com `pg_isready` |
 | `rustfs` | RustFS (versão fixa) | arquivos (logos), compatível com S3; volume próprio; **sem porta publicada** ([ADR-0015](decisoes/0015-arquivos-rustfs.md)) |
 
 - **Hardening do `app`:** imagem com usuário não-root, `read_only: true` + `tmpfs` para `/tmp`, `security_opt: no-new-privileges`, `restart: unless-stopped`.
@@ -98,29 +98,16 @@ command="/opt/orco/bin/deploy.sh staging",restrict ssh-ed25519 AAAA... orco-stag
 | `deploy-vps.yml` | **nunca sozinho**: chamado pelo `staging.yml` e pelo `production.yml` (`workflow_call`) | receita comum: build da imagem (`NEXT_PUBLIC_APP_VERSION`) → GHCR → SSH com a chave do environment → `deploy.sh <ambiente>` com `<tag>@<digest>`. Sem os secrets da VPS: aviso e deploy pulado no staging; erro na produção |
 | `staging.yml` | **CI concluído com sucesso** num push na `main` (ou manual) | confere o CI do commit → chama o `deploy-vps.yml` com `staging-<commit>`. Nunca roda para PR ou fork; um de cada vez |
 | `production.yml` | release publicada pelo usuário (`gh release create vX.Y.Z --target main --generate-notes`) | `verify` (formato `vX.Y.Z`, commit na `main`, check `ci` verde) → chama o `deploy-vps.yml` com `vX.Y.Z`. Rollback de código: "Re-run all jobs" na execução de uma versão anterior |
-| `backup.yml` | diário 06:00 UTC (03:00 SP) | SSH → `pg_dump` do banco de produção + conteúdo do RustFS → criptografa com `age` (chave **pública**) → artifact de **30 dias** |
 
-- **Segredos do GitHub:** só o acesso SSH, nos environments `staging` (só `main`) e `production` (só tags `v*`):
-  - `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` (a chave **daquele** ambiente) e `VPS_KNOWN_HOSTS`;
-  - `BACKUP_AGE_PUBLIC_KEY` (production).
+- **Segredos do GitHub:** só o acesso SSH de deploy, nos environments `staging` (só `main`) e `production` (só tags `v*`): `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` (a chave **daquele** ambiente) e `VPS_KNOWN_HOSTS`. Os chamadores passam `secrets: inherit` ao `deploy-vps.yml`; sem isso, o workflow chamado não enxerga nenhum secret.
 - Regras de workflow: `permissions:` mínimas por job, actions fixadas por SHA, inputs passados por variável de ambiente, secrets nunca impressos.
 
-## Backups e restauração
+## Backup (manual)
 
-- **Diário e automático** (`backup.yml`). O arquivo `orco-backup-AAAA-MM-DD.tar.age` contém:
-  - o dump do Postgres (`pg_dump -Fc`, com roles, schema e dados);
-  - os objetos do RustFS.
-- **Criptografia com `age`:**
-  - a chave **pública** fica no GitHub e só serve para trancar;
-  - a chave **privada** fica **só com o dono do projeto**, no gerenciador de senhas;
-  - artifacts de repositório público podem ser baixados por qualquer pessoa logada, por isso a criptografia é obrigatória.
-- **Acesso:** GitHub → Actions → Backup → execução do dia → Artifacts; ou `gh run download <id>`.
-- **Restauração** (documentada em `deploy/README.md`):
-  1. `age -d -i <chave-privada>`;
-  2. `pg_restore` num banco novo;
-  3. reenviar os objetos ao RustFS.
-- **Teste de restauração** numa máquina limpa antes do go-live (M7, NBB-58).
-- **Reforço:** snapshots da VPS na Hostinger, se o plano incluir.
+- **Sem backup automático** (decidido pelo usuário em 2026-09-30, NBB-75). O dono faz o backup **pelo DBeaver, antes de cada release** (passo 0 de `docs/06-regras-dev.md` §4.1). Passo a passo em `deploy/README.md`, "Backup pelo DBeaver".
+- O `db` de cada ambiente publica o Postgres **só em `127.0.0.1`** da VPS (`DB_PORT` no `.env`: **5433** produção, **5434** staging). O DBeaver entra por **túnel SSH** com a chave de administração, como `postgres`.
+- Formato custom (`pg_dump`), só o banco; os logos do RustFS ficam fora. Restauração: banco novo (roles pelo bootstrap) → **Tools → Restore** no DBeaver.
+- **Reforço opcional:** snapshots da VPS no painel da Hostinger.
 
 ## Agendamentos
 

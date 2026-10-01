@@ -123,7 +123,7 @@ sudo chmod 600 /opt/orco/staging/.env
 sudo ls -la /opt/orco/staging                   # -rw------- deploy deploy .env
 ```
 
-`APP_ENV=staging`, `SITE_URL=https://staging.orco.nbbrdev.com`, `APP_PORT=3001`, senhas do banco e do RustFS, e `STAGING_BASIC_AUTH_USER`/`PASSWORD` (o login que o navegador pede no staging). A senha do SMTP fica vazia até a M2.
+`APP_ENV=staging`, `SITE_URL=https://staging.orco.nbbrdev.com`, `APP_PORT=3001`, `DB_PORT=5434`, senhas do banco e do RustFS, e `STAGING_BASIC_AUTH_USER`/`PASSWORD` (o login que o navegador pede no staging). A senha do SMTP fica vazia até a M2.
 
 ### 5. Site no Nginx e certificado
 
@@ -191,6 +191,7 @@ Valores que mudam em relação ao staging:
 APP_ENV=production
 SITE_URL=https://orco.nbbrdev.com
 APP_PORT=3000
+DB_PORT=5433
 STAGING_BASIC_AUTH_USER=
 STAGING_BASIC_AUTH_PASSWORD=
 ```
@@ -215,7 +216,47 @@ gh release create v0.1.0 --target main --generate-notes
 
 O `production.yml` confere a tag, constrói a imagem `v0.1.0`, aplica as migrations no banco da produção e sobe o app. Abra `https://orco.nbbrdev.com`: a página mostra `v0.1.0`.
 
-Próximas versões: ver `docs/06-regras-dev.md` §4.1 (como escolher o número).
+Próximas versões: **antes de cada release, faça o backup da produção** (seção abaixo) e veja `docs/06-regras-dev.md` §4.1 (como escolher o número).
+
+---
+
+## Backup pelo DBeaver
+
+Não há backup automático (decisão de 2026-09-30: projeto pequeno). O backup é **manual**, pelo DBeaver, e é **obrigatório antes de cada release** (uma release aplica migrations no banco da produção). Só o banco: os logos do RustFS ficam fora (se a VPS for perdida, são enviados de novo).
+
+**Como o DBeaver alcança o banco:** o Postgres de cada ambiente escuta só em `127.0.0.1` da VPS (`DB_PORT`: 5433 na produção, 5434 no staging). A internet não alcança essas portas. O DBeaver entra na VPS por um **túnel SSH** com a sua chave de administração e, de dentro dela, conversa com o banco.
+
+### Conexão (uma vez por ambiente)
+
+Nova conexão → **PostgreSQL**:
+
+| Aba  | Campo               | Valor                                                                               |
+| ---- | ------------------- | ----------------------------------------------------------------------------------- |
+| Main | Host                | `localhost` (é o "localhost" **da VPS**, do outro lado do túnel)                    |
+| Main | Port                | `5433` (produção) ou `5434` (staging)                                               |
+| Main | Database            | `orco`                                                                              |
+| Main | Username / Password | `postgres` / a `POSTGRES_PASSWORD` do `.env` do ambiente (do gerenciador de senhas) |
+| SSH  | Use SSH Tunnel      | ligado                                                                              |
+| SSH  | Host / Port         | `IP_DA_VPS` / `22`                                                                  |
+| SSH  | User Name           | `default`                                                                           |
+| SSH  | Authentication      | **Public Key**, com o arquivo da sua chave de administração (`~/.ssh/CHAVE_DA_VPS`) |
+
+Use o superusuário `postgres`: o backup precisa ler tudo (produto, login, funções). As roles do app (`app_user`, `app_auth`) não servem, porque a RLS esconderia os dados.
+
+### Fazer o backup
+
+1. Botão direito no banco `orco` → **Tools → Backup**.
+2. Marque **todos os schemas** (`public`, `app`, `auth` e o `drizzle`, que guarda o controle das migrations).
+3. **Format: Custom** (compactado; é o que o restore usa).
+4. Escolha a pasta e um nome com a data (ex.: `orco-production-2026-10-01.backup`) → **Start**.
+
+O DBeaver usa o `pg_dump` **do seu PC**. Na primeira vez, ele pede o "local client": aponte para (ou deixe o DBeaver baixar) as ferramentas do **PostgreSQL 17**, a mesma versão do servidor.
+
+> O arquivo contém **dados de usuários reais**. Guarde numa pasta protegida (ex.: com o BitLocker ligado), nunca no repositório nem em nuvem pública.
+
+### Restaurar
+
+Num banco **novo** (ex.: depois de recriar o ambiente): as roles nascem pelo bootstrap (`init.sh`/`roles.sql`) na primeira subida do container, e só então **Tools → Restore** no banco `orco`, com o arquivo do backup. O `pg_dump` não leva as roles, por isso elas vêm do bootstrap, com as senhas do `.env`.
 
 ---
 

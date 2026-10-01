@@ -18,7 +18,10 @@ Produção: https://orco.nbbrdev.com · Repo: `nbbrdev/orco` (público) · Linea
 2. NBB-67: remover Supabase/Vercel;
 3. NBB-68: Postgres/Drizzle/RLS;
 4. NBB-35: VPS + staging;
-5. NBB-63: produção + backups + `v0.1.0`.
+5. NBB-63: produção + `v0.1.0` (no ar desde 2026-10-01);
+6. NBB-75: backup manual pelo DBeaver (sem backup automático).
+
+A base da VPS (compartilhada entre projetos) fica no repositório privado `nbbrdev/vps` (projeto "VPS" no Linear).
 
 Stack de ferramentas: **Node 24 LTS**, **npm**, **Docker** (`compose.dev.yaml` local; `deploy/compose.yaml` na VPS), **Drizzle** (`drizzle-kit`), imagens no **GHCR**.
 
