@@ -1,15 +1,17 @@
 # Deploy na VPS
 
-Como preparar a VPS do Orçô e como os deploys funcionam. Decisões em [ADR-0012](../docs/decisoes/0012-hospedagem-vps.md), visão geral em [docs/08-infra-deploy.md](../docs/08-infra-deploy.md).
+Como o Orçô é configurado na VPS e como os deploys funcionam. Decisões em [ADR-0012](../docs/decisoes/0012-hospedagem-vps.md), visão geral em [docs/08-infra-deploy.md](../docs/08-infra-deploy.md).
+
+**Pré-requisito:** a VPS preparada pelo guia do repositório privado **`nbbrdev/vps`** (usuário de administração, SSH só por chave, firewall, Docker, usuário `deploy`, Nginx base e Certbot instalados). A VPS é compartilhada entre projetos: aqui fica só o que é **do Orçô**.
 
 ## Arquivos desta pasta
 
-| Arquivo           | Para quê                                                                                                        |
-| ----------------- | --------------------------------------------------------------------------------------------------------------- |
-| `compose.yaml`    | Um ambiente (app, migrate, db, rustfs). Vai **dentro da imagem** e o `deploy.sh` copia para a VPS a cada deploy |
-| `env.example`     | Modelo do `.env` de cada ambiente na VPS (segredos)                                                             |
-| `deploy.sh`       | Único comando que as chaves de deploy do GitHub conseguem rodar. Instalado **à mão** em `/opt/orco/bin/`        |
-| `nginx/orco.conf` | Proxy reverso: `orco` → `127.0.0.1:3000`, `staging.orco` → `127.0.0.1:3001`                                     |
+| Arquivo                       | Para quê                                                                                                        |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `compose.yaml`                | Um ambiente (app, migrate, db, rustfs). Vai **dentro da imagem** e o `deploy.sh` copia para a VPS a cada deploy |
+| `env.example`                 | Modelo do `.env` de cada ambiente na VPS (segredos)                                                             |
+| `deploy.sh`                   | Único comando que as chaves de deploy do Orçô conseguem rodar. Instalado **à mão** em `/opt/orco/bin/`          |
+| `nginx/orco.nbbrdev.com.conf` | Site do Orçô no Nginx: `orco` → `127.0.0.1:3000`, `staging.orco` → `127.0.0.1:3001`                             |
 
 ## Como um deploy acontece
 
@@ -23,151 +25,74 @@ Como preparar a VPS do Orçô e como os deploys funcionam. Decisões em [ADR-001
 
 A produção segue o mesmo caminho a partir de uma release `vX.Y.Z` (`production.yml` → `deploy-vps.yml`), com a sua própria chave e a pasta `/opt/orco/production/`. Passo a passo em **Produção**, abaixo.
 
-Na VPS:
+O que é do Orçô na VPS:
 
 ```
 /opt/orco/
 ├── bin/deploy.sh          ← dono root; o usuário deploy só executa
-├── staging/
+├── staging/               ← dono deploy, chmod 700
 │   ├── .env               ← segredos do staging (você cria, chmod 600)
 │   ├── image.env          ← versão no ar (deploy.sh)
 │   ├── compose.yaml       ← da imagem da versão no ar
 │   ├── init.sh, roles.sql ← idem (criam as roles na primeira subida do banco)
 └── production/            ← mesma estrutura
+
+/etc/nginx/sites-available/orco.nbbrdev.com   ← o site (deste repositório)
+/home/deploy/.ssh/authorized_keys             ← duas linhas do Orçô (staging e produção)
+Portas: 3000 (produção) e 3001 (staging), só em 127.0.0.1
 ```
 
 ---
 
-## Preparar a VPS (uma vez)
+## Configurar o Orçô na VPS (uma vez)
 
-Hostinger KVM 1 ou 2 com **Ubuntu 24.04 LTS**. Nos comandos, troque `IP_DA_VPS` pelo IP e `SEU_USUARIO` pelo nome do seu usuário de administração.
+Troque `IP_DA_VPS` pelo IP e `CHAVE_DA_VPS` pela sua chave de administração. No Windows, use o **Git Bash** e barras normais (`/`). Nos testes de SSH, use sempre `-o IdentitiesOnly=yes` (explicação no guia do `nbbrdev/vps`).
 
 ### 1. DNS
 
-Na zona `nbbrdev.com` da Hostinger, dois registros **A** apontando para o IP da VPS:
+Na zona `nbbrdev.com` da Hostinger (hPanel → Domínios → DNS), dois registros **A** apontando para o IP da VPS (só IPv4):
 
 - `orco`
 - `staging.orco`
 
-### 2. Seu usuário de administração
+Se existirem registros antigos com esses nomes (ex.: CNAME da época da Vercel), apague antes. **Não mexa** nos registros do Resend (`resend._domainkey.orco`, `send.orco`, `_dmarc`). Confira do PC: `nslookup orco.nbbrdev.com` e `nslookup staging.orco.nbbrdev.com`.
 
-Primeiro acesso como `root` (senha ou chave do painel da Hostinger):
+### 2. Chaves de deploy do Orçô
 
-```bash
-adduser SEU_USUARIO            # cria o usuário (defina uma senha forte: usada pelo sudo)
-usermod -aG sudo SEU_USUARIO   # pode usar sudo
-```
-
-No **seu PC**, se ainda não tiver uma chave SSH pessoal:
+No **seu PC**, uma chave por ambiente, **sem passphrase** (aperte Enter duas vezes; o GitHub Actions não teria como digitá-la):
 
 ```bash
-ssh-keygen -t ed25519 -C "SEU_USUARIO@orco-vps"
-ssh-copy-id SEU_USUARIO@IP_DA_VPS
+ssh-keygen -t ed25519 -C "orco-staging-deploy" -f ~/.ssh/orco-staging-deploy
+ssh-keygen -t ed25519 -C "orco-production-deploy" -f ~/.ssh/orco-production-deploy
 ```
 
-Confira que entra **sem senha** com `ssh SEU_USUARIO@IP_DA_VPS` antes de seguir.
-
-Anote a **impressão digital** da VPS (usada no passo 8). No console da Hostinger ou já conectado:
+Cada comando gera a **privada** (vai para o secret do GitHub) e a **pública** `.pub` (vai para a VPS). Na VPS, acrescente uma linha por chave no `authorized_keys` do `deploy` (dono root, criado pelo guia da VPS):
 
 ```bash
-ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
-```
-
-### 3. SSH só por chave, sem root
-
-Crie `/etc/ssh/sshd_config.d/10-orco.conf` (`sudo nano …`):
-
-```
-PermitRootLogin no
-PasswordAuthentication no
-KbdInteractiveAuthentication no
-PubkeyAuthentication yes
-AllowUsers SEU_USUARIO deploy
-```
-
-```bash
-sudo sshd -t && sudo systemctl restart ssh
-```
-
-**Não feche a sessão atual.** Abra outro terminal e confira que ainda entra com `ssh SEU_USUARIO@IP_DA_VPS`. Se algo der errado, a sessão antiga ainda está aberta para corrigir.
-
-### 4. Firewall e atualizações automáticas
-
-```bash
-sudo apt update && sudo apt upgrade -y
-sudo apt install -y ufw unattended-upgrades
-sudo ufw allow OpenSSH
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw enable
-sudo dpkg-reconfigure -plow unattended-upgrades   # responda "Yes"
-```
-
-> O Docker cria regras de rede próprias que **passam por cima do `ufw`** para portas publicadas. Por isso o `compose.yaml` publica o app só em `127.0.0.1` e não publica o banco nem o RustFS: nada disso fica acessível pela internet, com ou sem firewall.
-
-### 5. Docker
-
-Instalação oficial (repositório da Docker):
-
-```bash
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
-  | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt update
-sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-sudo docker run --rm hello-world
-```
-
-### 6. Usuário `deploy` e as chaves do GitHub
-
-O usuário `deploy` não tem senha nem terminal: só roda o `deploy.sh`.
-
-```bash
-sudo adduser --disabled-password --gecos "" deploy
-sudo usermod -aG docker deploy
-```
-
-No **seu PC**, gere uma chave por ambiente, **sem senha** (o GitHub Actions não teria como digitá-la):
-
-```bash
-ssh-keygen -t ed25519 -N "" -C "orco-staging-deploy" -f orco-staging-deploy
-ssh-keygen -t ed25519 -N "" -C "orco-production-deploy" -f orco-production-deploy   # usada na NBB-63
-```
-
-Cada comando gera dois arquivos: `orco-staging-deploy` (**privada**, vai para o GitHub) e `orco-staging-deploy.pub` (**pública**, vai para a VPS).
-
-Na VPS, o `authorized_keys` do `deploy` fica com **dono root**, para que nem o próprio `deploy` consiga alterá-lo:
-
-```bash
-sudo install -d -o root -g root -m 755 /home/deploy/.ssh
 sudo nano /home/deploy/.ssh/authorized_keys
-sudo chown root:root /home/deploy/.ssh/authorized_keys
-sudo chmod 644 /home/deploy/.ssh/authorized_keys
 ```
-
-Conteúdo, **uma linha por chave**: as opções, um espaço e o conteúdo inteiro do `.pub`:
 
 ```
 command="/opt/orco/bin/deploy.sh staging",restrict ssh-ed25519 AAAA... orco-staging-deploy
 command="/opt/orco/bin/deploy.sh production",restrict ssh-ed25519 AAAA... orco-production-deploy
 ```
 
+Cada linha: as opções, um espaço e o conteúdo inteiro do `.pub` (`cat ~/.ssh/orco-staging-deploy.pub` no PC), **numa linha só**.
+
 - `command="…"`: a VPS ignora o que o cliente pediu e roda sempre este comando. O pedido original chega ao script em `$SSH_ORIGINAL_COMMAND`.
 - `restrict`: sem terminal interativo, sem túneis, sem repasse de chaves.
 
-### 7. Pastas e o `deploy.sh`
+### 3. Pastas e o `deploy.sh`
 
 ```bash
 sudo install -d -o root -g root -m 755 /opt/orco /opt/orco/bin
 sudo install -d -o deploy -g deploy -m 700 /opt/orco/staging /opt/orco/production
 ```
 
-Do **seu PC** (na pasta do repositório):
+Do **PC**, na pasta deste repositório:
 
 ```bash
-scp deploy/deploy.sh SEU_USUARIO@IP_DA_VPS:/tmp/deploy.sh
+scp -i ~/.ssh/CHAVE_DA_VPS -o IdentitiesOnly=yes deploy/deploy.sh default@IP_DA_VPS:/tmp/deploy.sh
 ```
 
 Na VPS:
@@ -175,40 +100,56 @@ Na VPS:
 ```bash
 sudo install -o root -g root -m 755 /tmp/deploy.sh /opt/orco/bin/deploy.sh
 rm /tmp/deploy.sh
+bash -n /opt/orco/bin/deploy.sh && echo "sintaxe ok"
 ```
 
-> O `deploy.sh` **não se atualiza sozinho**, de propósito: ele é a barreira de segurança das chaves de deploy. Quando um PR mudar o `deploy/deploy.sh`, repita estes dois comandos.
+> O `deploy.sh` **não se atualiza sozinho**, de propósito: ele é a barreira de segurança das chaves de deploy. Quando um PR mudar o `deploy/deploy.sh`, repita estes comandos.
 
-O `.env` do staging, a partir de `deploy/env.example` (gere cada senha com `openssl rand -hex 32`):
+**Teste da trava**, do PC:
+
+| Teste                    | Comando                                                                                                              | Esperado                                                    |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Outro comando            | `ssh -i ~/.ssh/orco-staging-deploy -o IdentitiesOnly=yes deploy@IP_DA_VPS "ls"`                                      | `deploy: pedido recusado`                                   |
+| Chave do ambiente errado | `ssh -i ~/.ssh/orco-production-deploy -o IdentitiesOnly=yes deploy@IP_DA_VPS "staging-<40 zeros>@sha256:<64 zeros>"` | `pedido recusado … production`                              |
+| Pedido válido            | `ssh -i ~/.ssh/orco-staging-deploy -o IdentitiesOnly=yes deploy@IP_DA_VPS "staging-<40 zeros>@sha256:<64 zeros>"`    | `deploy: falta /opt/orco/staging/.env` (até criar o `.env`) |
+
+### 4. `.env` do staging
+
+A partir de `deploy/env.example`. Gere cada senha com `openssl rand -hex 32` (só letras e números: as do banco entram nas URLs de conexão) e guarde todas no gerenciador de senhas.
 
 ```bash
-sudo -u deploy nano /opt/orco/staging/.env
+sudo -u deploy nano /opt/orco/staging/.env      # sudo -u deploy: o arquivo já nasce do deploy
 sudo chmod 600 /opt/orco/staging/.env
+sudo ls -la /opt/orco/staging                   # -rw------- deploy deploy .env
 ```
 
-Guarde uma cópia dessas senhas no seu gerenciador de senhas.
+`APP_ENV=staging`, `SITE_URL=https://staging.orco.nbbrdev.com`, `APP_PORT=3001`, senhas do banco e do RustFS, e `STAGING_BASIC_AUTH_USER`/`PASSWORD` (o login que o navegador pede no staging). A senha do SMTP fica vazia até a M2.
 
-### 8. Nginx e HTTPS
+### 5. Site no Nginx e certificado
+
+Do PC:
 
 ```bash
-sudo apt install -y nginx certbot python3-certbot-nginx
-sudo rm /etc/nginx/sites-enabled/default
+scp -i ~/.ssh/CHAVE_DA_VPS -o IdentitiesOnly=yes deploy/nginx/orco.nbbrdev.com.conf default@IP_DA_VPS:/tmp/
 ```
 
-Do seu PC: `scp deploy/nginx/orco.conf SEU_USUARIO@IP_DA_VPS:/tmp/orco.conf`. Na VPS:
+Na VPS:
 
 ```bash
-sudo install -o root -g root -m 644 /tmp/orco.conf /etc/nginx/sites-available/orco
-sudo ln -s /etc/nginx/sites-available/orco /etc/nginx/sites-enabled/orco
+sudo install -o root -g root -m 644 /tmp/orco.nbbrdev.com.conf /etc/nginx/sites-available/orco.nbbrdev.com
+rm /tmp/orco.nbbrdev.com.conf
+sudo ln -s /etc/nginx/sites-available/orco.nbbrdev.com /etc/nginx/sites-enabled/orco.nbbrdev.com
 sudo nginx -t && sudo systemctl reload nginx
 sudo certbot --nginx -d orco.nbbrdev.com -d staging.orco.nbbrdev.com
 ```
 
-O Certbot pede um e-mail (avisos de expiração), emite os certificados, adiciona o HTTPS ao `orco.conf` e agenda a renovação automática (`systemctl list-timers | grep certbot`).
+- `sites-available/` guarda os sites; o link em `sites-enabled/` é o que **ativa** um site.
+- O Certbot pede um e-mail (avisos de expiração), prova ao Let's Encrypt que o domínio aponta para a VPS (pela porta 80), emite o certificado, adiciona o HTTPS a este arquivo na VPS e renova sozinho.
+- Até o primeiro deploy, os domínios respondem **502** (o Nginx funciona, mas ainda não há app nas portas 3000/3001).
 
-### 9. GitHub
+### 6. GitHub
 
-**Settings → Environments → New environment** `staging`, com _Deployment branches and tags_ → **Selected branches and tags** → `main`, e estes secrets:
+**Settings → Environments** → `staging`, com _Deployment branches and tags_ → **Selected branches and tags** → `main`, e estes secrets:
 
 | Secret            | Valor                                                         |
 | ----------------- | ------------------------------------------------------------- |
@@ -217,7 +158,7 @@ O Certbot pede um e-mail (avisos de expiração), emite os certificados, adicion
 | `VPS_SSH_KEY`     | conteúdo inteiro do arquivo **privado** `orco-staging-deploy` |
 | `VPS_KNOWN_HOSTS` | saída de `ssh-keyscan -t ed25519 IP_DA_VPS` (no seu PC)       |
 
-Antes de colar o `VPS_KNOWN_HOSTS`, confira que é a sua VPS: `ssh-keyscan -t ed25519 IP_DA_VPS | ssh-keygen -lf -` deve mostrar a mesma impressão digital anotada no passo 2.
+Antes de colar o `VPS_KNOWN_HOSTS`, confira que é a sua VPS: `ssh-keyscan -t ed25519 IP_DA_VPS | ssh-keygen -lf -` deve mostrar a mesma impressão digital anotada no guia da VPS.
 
 Depois:
 
@@ -233,7 +174,7 @@ Depois:
 
 ## Produção
 
-Com o staging funcionando, a produção reaproveita a mesma VPS, o mesmo `deploy.sh` e o mesmo Nginx. Muda a pasta, o `.env`, a chave e o environment.
+Com o staging funcionando, a produção reaproveita a mesma VPS, o mesmo `deploy.sh` e o mesmo site do Nginx. Muda a pasta, o `.env`, a chave e o environment.
 
 ### 1. `.env` da produção
 
@@ -254,11 +195,11 @@ STAGING_BASIC_AUTH_USER=
 STAGING_BASIC_AUTH_PASSWORD=
 ```
 
-A linha da chave `orco-production-deploy` já está no `authorized_keys` (passo 6).
+A linha da chave `orco-production-deploy` já está no `authorized_keys` (passo 2).
 
 ### 2. Environment `production` no GitHub
 
-**Settings → Environments → New environment** `production`, com _Deployment branches and tags_ → **Selected branches and tags** → **Add deployment branch or tag rule** → _Ref type_ **Tag**, padrão `v*`. Assim, só releases (tags `vX.Y.Z`) conseguem usar a chave da produção. Sem aprovação manual: criar a release já é a aprovação.
+**Settings → Environments** → `production`, com _Deployment branches and tags_ → **Selected branches and tags** → **Add deployment branch or tag rule** → _Ref type_ **Tag**, padrão `v*`. Assim, só releases (tags `vX.Y.Z`) conseguem usar a chave da produção. Sem aprovação manual: criar a release já é a aprovação.
 
 Secrets: os mesmos quatro do staging (`VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `VPS_KNOWN_HOSTS`), mas com o `VPS_SSH_KEY` = conteúdo da chave **privada** `orco-production-deploy`.
 
@@ -294,5 +235,5 @@ orco() { sudo docker compose --project-directory "/opt/orco/$1" -p "orco-$1" --e
 | Versão no ar           | `sudo cat /opt/orco/staging/image.env` |
 | Espaço em disco        | `df -h` e `sudo docker system df`      |
 
-- **Rollback de código:** no GitHub, abra uma execução anterior do workflow (Staging, ou Production na NBB-63) e clique em **Re-run all jobs**. Ela sobe de novo aquela imagem exata, com o `compose.yaml` dela. As migrations não voltam: por isso toda migration precisa ser compatível com a versão anterior do código.
-- **Testar a trava da chave:** `ssh -i orco-staging-deploy deploy@IP_DA_VPS "ls"` deve responder `deploy: pedido recusado`.
+- **Rollback de código:** no GitHub, abra uma execução anterior do workflow (Staging ou Production) e clique em **Re-run all jobs**. Ela sobe de novo aquela imagem exata, com o `compose.yaml` dela. As migrations não voltam: por isso toda migration precisa ser compatível com a versão anterior do código.
+- Comandos gerais da VPS (Nginx, firewall, certificados, reboot): guia do `nbbrdev/vps`.

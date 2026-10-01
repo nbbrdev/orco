@@ -68,7 +68,7 @@ flowchart LR
 ├── docs/                      documentação (fonte da verdade de conteúdo)
 ├── db/
 │   └── migrations/            SQL gerado pelo drizzle-kit e revisado (roles, tabelas, RLS, funções)
-├── deploy/                    compose.yaml, deploy.sh, nginx/orco.conf, env.example, README (preparar a VPS)
+├── deploy/                    compose.yaml, deploy.sh, nginx/orco.nbbrdev.com.conf, env.example, README (o Orçô na VPS; a base fica no nbbrdev/vps)
 ├── Dockerfile                 imagem do app (standalone, não-root)
 ├── compose.dev.yaml           local: Postgres, RustFS e Mailpit
 ├── src/
