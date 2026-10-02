@@ -25,8 +25,8 @@ describe("confirmationEmail", () => {
 
   it("tem assunto, botão e link de reserva com o mesmo endereço", () => {
     expect(email.subject).toBe("Confirme seu e-mail");
-    // O & do link vira &amp; dentro do HTML (o navegador desfaz ao abrir).
-    const escaped = url.replace("&", "&amp;");
+    // Os & do link viram &amp; dentro do HTML (o navegador desfaz ao abrir).
+    const escaped = escapeHtml(url);
     expect(email.html.split(`href="${escaped}"`)).toHaveLength(3);
     expect(email.html).toContain("Confirmar e-mail");
     expect(email.html).toContain(`${siteUrl}/email/logo.png`);
