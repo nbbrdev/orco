@@ -22,8 +22,9 @@
 - **Limite de tentativas** de login e de envio de e-mails: o do Better Auth, somado ao nosso rate limit (§10).
 - Mensagens que não revelam se uma conta existe (F-01, F-03, F-04).
 - **Links dos e-mails de conta:** token de **uso único**, com validade de 1 hora, conferido **no servidor** pelas rotas do Better Auth (`/api/auth/*`). Funcionam em qualquer aparelho.
-- **Cadastro e reenvio só pelas Server Actions** (NBB-39): as rotas `/api/auth/sign-up/email` e `/api/auth/send-verification-email` ficam **desligadas** na API pública (`disabledPaths`, respondem 404), para ninguém pular o anti-abuso (RN-46) chamando a API direto.
+- **Cadastro, reenvio e recuperação só pelas Server Actions** (NBB-39, NBB-41): as rotas `/api/auth/sign-up/email`, `/api/auth/send-verification-email` e `/api/auth/request-password-reset` ficam **desligadas** na API pública (`disabledPaths`, respondem 404), para ninguém pular o anti-abuso (RN-46, §10) chamando a API direto.
 - **Aviso de senha alterada:** todo e-mail de conta recebe um aviso quando a senha muda, com link para redefinir ("não fui eu").
+- **Redefinir a senha encerra todas as sessões** da conta (`revokeSessionsOnPasswordReset`, NBB-41), inclusive a de quem a tenha invadido.
 - A chave SMTP do Resend só tem permissão de envio e só para `orco.nbbrdev.com` (ADR-0016).
 - **Google OAuth:** redirects cadastrados só para os domínios de cada ambiente (produção, staging e localhost).
 
@@ -31,6 +32,8 @@
 
 - Sessões do Better Auth guardadas no Postgres, com cookie `HttpOnly`, `Secure` e `SameSite=Lax`.
 - **Toda autorização parte da sessão validada no servidor**, a cada requisição que exige login (Server Components, Server Actions, Route Handlers). Nunca confiar em dados de sessão vindos do navegador sem validar.
+  - Toda página e Server Action do `/app` chama o `requireSessionUser()` (`src/lib/auth/session.ts`), que manda para o `/entrar` sem sessão (NBB-41).
+  - **Não** checar o login no layout: o Next não executa o layout de novo ao navegar entre páginas.
 - Logout invalida a sessão no banco.
 
 ## 3. Autorização (RLS, ADR-0014)
@@ -131,6 +134,7 @@
 | Cadastro por e-mail | IP | 3/hora (RN-46) |
 | Reenvio do e-mail de confirmação | IP | 3/hora (RN-46) |
 | E-mails de cadastro (confirmação + reenvio) | global | 60/dia (RN-46) |
+| Recuperação de senha | IP | 3/hora (NBB-41; fora do teto diário) |
 | Login (tentativas) | IP | limite embutido do Better Auth |
 
 A resposta ao exceder o limite é HTTP 429 com mensagem amigável.

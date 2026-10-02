@@ -9,6 +9,8 @@ import { getAuthDb } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
 import { sendEmail } from "@/lib/email";
 import { confirmationEmail } from "@/lib/email/templates/confirmation";
+import { passwordChangedEmail } from "@/lib/email/templates/password-changed";
+import { recoveryEmail } from "@/lib/email/templates/recovery";
 
 // Login do Orçô com o Better Auth (ADR-0013, NBB-79). As tabelas ficam no schema `auth`, acessado só
 // pela role app_auth (getAuthDb). Senhas, sessões e tokens são do Better Auth: o app nunca faz hash de
@@ -31,9 +33,28 @@ function createAuth() {
     // Assina cookies de sessão e tokens. Um por ambiente, só no .env.
     secret: requireEnv("BETTER_AUTH_SECRET"),
     database: drizzleAdapter(getAuthDb(), { provider: "pg", schema }),
-    // Cadastro e reenvio só pelas nossas Server Actions, que aplicam o anti-abuso (RN-46). Pela API
-    // pública estas rotas respondem 404; as chamadas internas (getAuth().api…) continuam valendo.
-    disabledPaths: ["/sign-up/email", "/send-verification-email"],
+    // Cadastro, reenvio e recuperação só pelas nossas Server Actions, que aplicam o anti-abuso
+    // (RN-46, NBB-41 P1). Pela API pública estas rotas respondem 404; as chamadas internas
+    // (getAuth().api…) continuam valendo.
+    disabledPaths: ["/sign-up/email", "/send-verification-email", "/request-password-reset"],
+    emailAndPassword: {
+      ...authOptions.emailAndPassword,
+      // F-04: o link de redefinição vale 1 hora (padrão do Better Auth) e é de uso único.
+      sendResetPassword: async ({ user, url }) => {
+        await sendEmail(user.email, recoveryEmail({ siteUrl, url }));
+      },
+      // P3: redefinir a senha derruba todas as sessões, inclusive a de quem invadiu a conta.
+      revokeSessionsOnPasswordReset: true,
+      // Aviso "Sua senha foi alterada" (docs/07 §1). Sai depois que a senha já mudou: se o envio
+      // falhar, a troca continua valendo e o erro só vai para o log (P4).
+      onPasswordReset: async ({ user }) => {
+        try {
+          await sendEmail(user.email, passwordChangedEmail({ siteUrl, email: user.email }));
+        } catch (error) {
+          console.error("Falha ao enviar o aviso de senha alterada.", error);
+        }
+      },
+    },
     emailVerification: {
       sendOnSignUp: true,
       // F-01: depois de confirmar, a pessoa já entra logada.

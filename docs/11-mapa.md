@@ -63,8 +63,8 @@ Público (sem login)
 ├── /                         Landing: proposta + "Começar grátis"
 ├── /entrar                   Login (e-mail+senha, Google)
 ├── /cadastro                 Cadastro (e-mail+senha, Google)
-├── /recuperar-senha          Pedir link de redefinição
-├── /redefinir-senha          Definir nova senha (via link do e-mail)
+├── /recuperar-senha          Pedir link de redefinição (aviso se o link venceu)
+├── /redefinir-senha          Definir nova senha (via link do e-mail) → /entrar
 ├── /termos                   Termos de uso
 ├── /privacidade              Política de privacidade
 └── /p/[token]                Orçamento para o cliente final: ver, PDF, Aprovar/Recusar
@@ -87,7 +87,12 @@ Técnico
 └── /sw.js                    Service worker (recebe push; sem cache offline)
 ```
 
-Navegação principal no celular: barra inferior com **Orçamentos · Clientes · Catálogo · Perfil** e botão flutuante **+ Novo orçamento**.
+Navegação principal (NBB-41):
+- **Celular:** barra inferior com **Orçamentos · Clientes · Catálogo · Perfil** e botão flutuante **+ Novo orçamento**.
+- **Tablet e computador:** barra no topo com o logo, os mesmos 4 itens e o botão **+ Novo orçamento**.
+- O item da página atual fica com a cor da marca. Telas ainda não construídas mostram "Em breve".
+
+Quem já está logado e abre `/entrar` ou `/cadastro` vai direto para `/app/orcamentos`. Sem login, qualquer página do `/app` manda para o `/entrar`.
 
 ## Glossário
 

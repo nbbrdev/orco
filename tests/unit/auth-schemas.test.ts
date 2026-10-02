@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { signInSchema, signUpSchema } from "@/features/auth/schemas";
+import {
+  recoverySchema,
+  resetPasswordSchema,
+  signInSchema,
+  signUpSchema,
+} from "@/features/auth/schemas";
 import { clientIpFrom } from "@/lib/request";
 
 describe("signUpSchema", () => {
@@ -32,6 +37,29 @@ describe("signUpSchema", () => {
 describe("signInSchema", () => {
   it("exige a senha", () => {
     expect(signInSchema.safeParse({ email: "a@example.com", password: "" }).success).toBe(false);
+  });
+});
+
+describe("recoverySchema", () => {
+  it("normaliza o e-mail e recusa e-mail inválido", () => {
+    expect(recoverySchema.safeParse({ email: " Ana@Example.com" }).data?.email).toBe(
+      "ana@example.com",
+    );
+    expect(recoverySchema.safeParse({ email: "ana" }).success).toBe(false);
+  });
+});
+
+describe("resetPasswordSchema", () => {
+  it("aceita token e senha de 8 caracteres", () => {
+    expect(resetPasswordSchema.safeParse({ token: "abc", password: "12345678" }).success).toBe(
+      true,
+    );
+  });
+
+  it("recusa senha curta (RN-03) e token vazio", () => {
+    const short = resetPasswordSchema.safeParse({ token: "abc", password: "1234567" });
+    expect(short.error?.issues[0]?.message).toContain("pelo menos 8");
+    expect(resetPasswordSchema.safeParse({ token: "", password: "12345678" }).success).toBe(false);
   });
 });
 

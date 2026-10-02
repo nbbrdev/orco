@@ -24,4 +24,4 @@ Rotas públicas (link do orçamento, aprovar/recusar) e a geração de PDF podem
 - Função `app.check_rate_limit` (`SECURITY DEFINER`, dona `orco_owner`, `execute` só para a `app_user`): conta mais um uso e diz se está dentro do limite.
 - Janelas alinhadas ao **relógio de São Paulo**: com 86400 s, o teto diário vira à meia-noite de Brasília.
 - Tabela com RLS `ENABLE` + `FORCE` e uma única policy, para a `orco_owner`; a `app_user` não tem permissão nenhuma nela, só usa a função.
-- O login usa o limite embutido do Better Auth (em memória); esta tabela fica para o cadastro, o reenvio e, depois, o link público e o PDF.
+- O login usa o limite embutido do Better Auth (em memória); esta tabela fica para o cadastro, o reenvio, a recuperação de senha (NBB-41) e, depois, o link público e o PDF.

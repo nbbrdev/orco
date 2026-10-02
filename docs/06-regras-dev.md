@@ -127,7 +127,7 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
 |---|---|---|---|---|
 | **Unitário** | Uma função isolada, sem banco nem rede | Vitest, `tests/unit/` | `money.ts` (100%), `dates.ts`, schemas Zod, validação CPF/CNPJ, transições de status, segurança (CSP, headers, proxy, Basic Auth) | ✅ em uso |
 | **Integração** | O código junto com um **Postgres real** (RLS, roles, funções, login) e o **Mailpit** (envio de e-mail por SMTP) | Vitest, `tests/integration/` (local: `compose.dev.yaml`; CI: service containers) | toda tabela e função (docs/07 §3); envio de e-mail | ✅ em uso |
-| **E2E** | Um fluxo inteiro no navegador, como o usuário faria | Playwright, `tests/e2e/` | F-01, F-05, F-06, F-07, F-08 (RNF-15) | ✅ em uso desde a NBB-39/72 (F-01). Só Chromium, em computador e num celular emulado; no CI, depois do build, com o Postgres e o Mailpit do job |
+| **E2E** | Um fluxo inteiro no navegador, como o usuário faria | Playwright, `tests/e2e/` | F-01, F-05, F-06, F-07, F-08 (RNF-15) | ✅ em uso desde a NBB-39/72 (F-01; F-04, logout e navegação na NBB-41). Só Chromium, em computador e num celular emulado; no CI, depois do build, com o Postgres e o Mailpit do job |
 
 **Sem smoke test automático** (decidido em 2026-09-30: projeto pequeno, simplicidade). Depois de cada release, a conferência do ambiente publicado é manual: abrir o site, ver a versão e o HTTPS. O E2E testa o código antes do merge, não o ambiente no ar.
 
