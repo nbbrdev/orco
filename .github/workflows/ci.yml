@@ -36,9 +36,12 @@ jobs:
           --health-interval 2s
           --health-retries 30
     env:
-      # Valores fictícios, só para os testes de integração (o Better Auth exige os dois).
+      # Valores fictícios, só para os testes (o Better Auth exige todos). O Google não é chamado de
+      # verdade: os testes só conferem o link gerado para ele.
       SITE_URL: http://localhost:3000
       BETTER_AUTH_SECRET: ci-only-better-auth-secret-not-for-production
+      GOOGLE_CLIENT_ID: ci-only-google-client-id.apps.googleusercontent.com
+      GOOGLE_CLIENT_SECRET: ci-only-google-client-secret
       DATABASE_URL_OWNER: postgres://orco_owner:orco_owner_ci@localhost:5432/orco
       DATABASE_URL_APP: postgres://app_user:app_user_ci@localhost:5432/orco
       DATABASE_URL_AUTH: postgres://app_auth:app_auth_ci@localhost:5432/orco

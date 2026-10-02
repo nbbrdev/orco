@@ -42,6 +42,14 @@ Sem Supabase (ADR-0012), o Orçô precisa de um componente de autenticação pr�
 - **Proteção do `/app`:** cada página e Server Action chama o `requireSessionUser()`, que manda para o `/entrar` sem sessão. Não há checagem no layout (o Next não o executa de novo ao navegar) nem no proxy.
 - **Logout** (`signOut`) apaga a sessão no banco e o cookie, e volta para o `/entrar`.
 
+### Login com Google (decidido pelo usuário em 2026-10-02, NBB-40)
+- **Tela de consentimento em modo Teste até a M7**, só com usuários de teste cadastrados. A publicação exige os links de termos e privacidade (P-07).
+- **Um cliente OAuth por ambiente** (local, staging, produção). As variáveis `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` são **obrigatórias**: o app não sobe sem elas; no CI, valores fictícios.
+- **Vinculação** com a conta por senha pelo padrão do Better Auth: só com o e-mail confirmado dos dois lados.
+- **Foto do Google descartada** (`mapProfileToUser`), por minimização (LGPD).
+- **Erros voltam ao `/entrar`** com mensagem em pt-BR: `errorCallbackURL` no botão e `onAPIError.errorURL` para falhas sem destino próprio, como `state` inválido.
+- **Testes:** o link gerado para o Google e a volta com erro são automáticos (integração e E2E). O login real é testado à mão.
+
 ## Alternativas descartadas
 - **Auth.js (NextAuth):** a própria documentação desencoraja login com e-mail e senha. Confirmação e recuperação teriam de ser escritas à mão.
 - **Implementação própria:** risco alto de falhas sutis num produto público.

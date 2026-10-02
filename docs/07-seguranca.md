@@ -26,7 +26,9 @@
 - **Aviso de senha alterada:** todo e-mail de conta recebe um aviso quando a senha muda, com link para redefinir ("não fui eu").
 - **Redefinir a senha encerra todas as sessões** da conta (`revokeSessionsOnPasswordReset`, NBB-41), inclusive a de quem a tenha invadido.
 - A chave SMTP do Resend só tem permissão de envio e só para `orco.nbbrdev.com` (ADR-0016).
-- **Google OAuth:** redirects cadastrados só para os domínios de cada ambiente (produção, staging e localhost).
+- **Google OAuth:** um cliente por ambiente (produção, staging e localhost), cada um só com o redirect do seu domínio (`/api/auth/callback/google`). Segredo de cada um só no `.env` do ambiente.
+- **Vinculação Google ↔ conta por senha** só com o e-mail confirmado dos dois lados (padrão do Better Auth). Uma conta por senha ainda não confirmada **não** é vinculada: senão, quem cadastrasse o e-mail de outra pessoa antes dela ficaria com a conta quando ela entrasse com o Google (NBB-40).
+- Erros do login com Google (e outros sem destino próprio) voltam ao `/entrar` com mensagem em pt-BR, nunca à página de erro padrão do Better Auth (`onAPIError.errorURL`).
 
 ## 2. Sessão
 
@@ -178,6 +180,7 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 
 - **Nunca logar** senhas, tokens públicos, cookies, headers de autorização, CPF/CNPJ, e-mails ou telefones.
 - Bases legais: execução de contrato (dados da conta), legítimo interesse (IP do aceite como evidência e segurança).
+- **Minimização no login com Google:** do perfil do Google, o Orçô guarda só o e-mail e o nome (coluna técnica). A foto é descartada, porque não é usada (NBB-40).
 - Retenção: dados da conta até a exclusão (RN-06); IP de eventos por 12 meses (RN-37).
 - Direitos do titular: exclusão pela própria conta; demais pedidos pelo e-mail de contato da política de privacidade.
 - Os dados dos clientes finais cadastrados pelo freelancer são tratados pelo Orçô como **operador**; o freelancer é o controlador. Isso consta nos termos.

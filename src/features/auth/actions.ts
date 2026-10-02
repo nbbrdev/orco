@@ -124,6 +124,22 @@ export async function resetPasswordAction(input: unknown): Promise<ResetPassword
   }
 }
 
+/**
+ * "Continuar com Google" (F-02). Pede ao Better Auth o endereço do Google (e grava o cookie que
+ * confere a volta) e manda a pessoa para lá. Na volta: sucesso → /app/orcamentos; erro →
+ * /entrar?error=<código> (G5).
+ */
+export async function googleSignInAction(): Promise<void> {
+  const { url } = await getAuth().api.signInSocial({
+    body: { provider: "google", callbackURL: AFTER_CONFIRM_PATH, errorCallbackURL: "/entrar" },
+    headers: await headers(),
+  });
+  if (!url) {
+    redirect("/entrar?error=google");
+  }
+  redirect(url);
+}
+
 /** Sair (RF-06): apaga a sessão no banco e o cookie (docs/07 §2) e volta para o /entrar (P7). */
 export async function signOutAction(): Promise<void> {
   await getAuth().api.signOut({ headers: await headers() });
