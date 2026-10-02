@@ -18,9 +18,12 @@ jobs:
     name: ci
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Postgres temporário, só para os testes de integração (RLS). Senhas fictícias: o banco
-    # existe apenas durante este job e some com a máquina.
+    # Serviços temporários, só para os testes de integração: Postgres (RLS, login) e Mailpit (envio de
+    # e-mail por SMTP). Senhas fictícias: tudo existe apenas durante este job e some com a máquina.
     services:
+      mailpit:
+        image: axllent/mailpit:v1.31.3
+        ports: ["1025:1025", "8025:8025"]
       postgres:
         image: postgres:17.11-alpine
         env:
@@ -39,6 +42,10 @@ jobs:
       DATABASE_URL_OWNER: postgres://orco_owner:orco_owner_ci@localhost:5432/orco
       DATABASE_URL_APP: postgres://app_user:app_user_ci@localhost:5432/orco
       DATABASE_URL_AUTH: postgres://app_auth:app_auth_ci@localhost:5432/orco
+      SMTP_HOST: localhost
+      SMTP_PORT: "1025"
+      EMAIL_FROM: "Orçô <nao-responda@orco.nbbrdev.com>"
+      MAILPIT_URL: http://localhost:8025
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

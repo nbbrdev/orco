@@ -92,7 +92,7 @@ command="/opt/orco/bin/deploy.sh staging",restrict ssh-ed25519 AAAA... orco-stag
 
 | Arquivo | Gatilho | Passos |
 |---|---|---|
-| `ci.yml` | PR e push em `main` | checkout → Node do `.nvmrc` → `npm ci` → Prettier → lint → typecheck → Vitest (unitários + integração com Postgres em service container) → build → `npm audit --audit-level=high` |
+| `ci.yml` | PR e push em `main` | checkout → Node do `.nvmrc` → `npm ci` → Prettier → lint → typecheck → Vitest (unitários + integração com Postgres e Mailpit em service containers) → build → `npm audit --audit-level=high` |
 | `codeql.yml` | PR, push em `main`, semanal | CodeQL `javascript-typescript`, suite `security-extended` |
 | `pr-title.yml` | PR aberto/editado | título em Conventional Commits com `[NBB-xx]` |
 | `deploy-vps.yml` | **nunca sozinho**: chamado pelo `staging.yml` e pelo `production.yml` (`workflow_call`) | receita comum: build da imagem (`NEXT_PUBLIC_APP_VERSION`) → GHCR → SSH com a chave do environment → `deploy.sh <ambiente>` com `<tag>@<digest>`. Sem os secrets da VPS: aviso e deploy pulado no staging; erro na produção |
