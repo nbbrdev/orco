@@ -1,20 +1,28 @@
 import type { Metadata } from "next";
 
-import { ComingSoon } from "@/features/app-shell/components/coming-soon";
 import { SignOutButton } from "@/features/auth/components/sign-out-button";
+import { ProfileForm } from "@/features/profile/components/profile-form";
+import { getProfile } from "@/features/profile/profile";
 import { requireSessionUser } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Perfil" };
 
-// Página PROVISÓRIA (NBB-41, N1/N3): o perfil completo (F-14) chega na NBB-42. A seção "Conta", com
-// o Sair, já fica no lugar definitivo.
+const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
+
+// Perfil do freelancer (F-14, NBB-42). Tudo opcional e salvo campo a campo. Ficam para outras
+// issues (D6): o logo, a aparência (NBB-60), o push e o "Instalar" e a exclusão de conta (NBB-43).
 export default async function ProfilePage() {
   const user = await requireSessionUser();
+  const profile = await getProfile(user.id);
 
   return (
-    <ComingSoon title="Perfil">
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-10">
+      <h1 className="text-2xl font-semibold">Perfil</h1>
+
+      <ProfileForm initial={profile} accountEmail={user.email} />
+
       <section aria-labelledby="account-heading" className="flex flex-col gap-3">
-        <h2 id="account-heading" className="text-lg font-semibold">
+        <h2 id="account-heading" className="text-base font-medium">
           Conta
         </h2>
         <p className="text-sm text-muted-foreground">{user.email}</p>
@@ -22,6 +30,8 @@ export default async function ProfilePage() {
           <SignOutButton />
         </div>
       </section>
-    </ComingSoon>
+
+      <p className="text-xs text-muted-foreground">Orçô {APP_VERSION}</p>
+    </div>
   );
 }
