@@ -123,7 +123,7 @@ sudo chmod 600 /opt/orco/staging/.env
 sudo ls -la /opt/orco/staging                   # -rw------- deploy deploy .env
 ```
 
-`APP_ENV=staging`, `SITE_URL=https://staging.orco.nbbrdev.com`, `APP_PORT=3001`, `DB_PORT=5434`, senhas do banco e do RustFS, e `STAGING_BASIC_AUTH_USER`/`PASSWORD` (o login que o navegador pede no staging). A senha do SMTP fica vazia até a M2.
+`APP_ENV=staging`, `SITE_URL=https://staging.orco.nbbrdev.com`, `APP_PORT=3001`, `DB_PORT=5434`, senhas do banco e do RustFS, `BETTER_AUTH_SECRET` (assina as sessões; trocar desloga todo mundo), e `STAGING_BASIC_AUTH_USER`/`PASSWORD` (o login que o navegador pede no staging). A senha do SMTP fica vazia até a M2.
 
 ### 5. Site no Nginx e certificado
 
@@ -192,6 +192,7 @@ APP_ENV=production
 SITE_URL=https://orco.nbbrdev.com
 APP_PORT=3000
 DB_PORT=5433
+BETTER_AUTH_SECRET=   # gerado só para a produção, diferente do staging
 STAGING_BASIC_AUTH_USER=
 STAGING_BASIC_AUTH_PASSWORD=
 ```

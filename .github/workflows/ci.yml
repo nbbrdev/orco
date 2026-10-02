@@ -33,6 +33,9 @@ jobs:
           --health-interval 2s
           --health-retries 30
     env:
+      # Valores fictícios, só para os testes de integração (o Better Auth exige os dois).
+      SITE_URL: http://localhost:3000
+      BETTER_AUTH_SECRET: ci-only-better-auth-secret-not-for-production
       DATABASE_URL_OWNER: postgres://orco_owner:orco_owner_ci@localhost:5432/orco
       DATABASE_URL_APP: postgres://app_user:app_user_ci@localhost:5432/orco
       DATABASE_URL_AUTH: postgres://app_auth:app_auth_ci@localhost:5432/orco

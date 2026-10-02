@@ -105,6 +105,7 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
   2. `npm run db:generate -- <nome>` (o `drizzle-kit` gera o SQL em `db/migrations/`);
   3. **revisar o SQL** (RLS, policies, grants, triggers e funções podem ser escritos à mão na migration);
   4. `npm run db:reset` para testar do zero.
+- **Tabelas de login (Better Auth):** não são editadas à mão. Mudou uma opção em `src/lib/auth/options.ts` ou a versão do Better Auth? `npm run auth:generate` (regera `src/lib/db/schema/auth.ts`) → refazer o ajuste das datas para `timestamptz` (comentário no topo do arquivo) → `npm run db:generate`. O CLI (`auth`) fica sempre na **mesma versão** do `better-auth`: com versão diferente, ele ignorou o schema `auth` no teste da NBB-79.
 - **Banco local:** `npm run db:start` / `db:stop` sobem e descem o `compose.dev.yaml`:
   - Postgres em `127.0.0.1:55432`;
   - RustFS em `:9000`, com console em `:9001`;

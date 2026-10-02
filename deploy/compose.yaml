@@ -27,6 +27,7 @@ services:
     environment:
       APP_ENV: ${APP_ENV:?defina APP_ENV}
       SITE_URL: ${SITE_URL:?defina SITE_URL}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?defina BETTER_AUTH_SECRET}
       DATABASE_URL_APP: postgres://app_user:${APP_USER_PASSWORD}@db:5432/orco
       DATABASE_URL_AUTH: postgres://app_auth:${APP_AUTH_PASSWORD}@db:5432/orco
       S3_ENDPOINT: http://rustfs:9000
