@@ -54,6 +54,30 @@ test("link de redefinição inválido leva a pedir outro (P9)", async ({ page })
   await expect(page.getByText("Este link expirou ou já foi usado. Peça um novo")).toBeVisible();
 });
 
+for (const path of ["/entrar", "/cadastro"]) {
+  test(`"Continuar com Google" em ${path} leva ao Google (F-02)`, async ({ page }) => {
+    // A página do Google não é carregada de verdade: só conferimos que o navegador foi para lá.
+    await page.route("https://accounts.google.com/**", (route) =>
+      route.fulfill({ status: 200, contentType: "text/html", body: "Google" }),
+    );
+    await page.goto(path);
+    await page.getByRole("button", { name: "Continuar com Google" }).click();
+
+    await expect(page).toHaveURL(/^https:\/\/accounts\.google\.com\//);
+    expect(new URL(page.url()).searchParams.get("redirect_uri")).toMatch(
+      /\/api\/auth\/callback\/google$/,
+    );
+  });
+}
+
+test("voltar do Google sem entrar mostra o motivo (G5)", async ({ page }) => {
+  await page.goto("/entrar?error=access_denied");
+  await expect(page.getByText("Login cancelado.")).toBeVisible();
+
+  await page.goto("/entrar?error=unable_to_link_account");
+  await expect(page.getByText("Este e-mail já tem uma conta esperando confirmação")).toBeVisible();
+});
+
 test("sem login, as páginas do app mandam para o /entrar (P5)", async ({ page }) => {
   for (const path of [
     "/app",

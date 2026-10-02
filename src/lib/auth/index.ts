@@ -33,6 +33,20 @@ function createAuth() {
     // Assina cookies de sessão e tokens. Um por ambiente, só no .env.
     secret: requireEnv("BETTER_AUTH_SECRET"),
     database: drizzleAdapter(getAuthDb(), { provider: "pg", schema }),
+    // Login com Google (F-02, NBB-40). Um cliente OAuth por ambiente (G2); o retorno é
+    // `${SITE_URL}/api/auth/callback/google`. A conta nasce com o e-mail confirmado (RN-02) e só se
+    // vincula a uma conta por senha já confirmada (padrão do Better Auth, docs/07 §1).
+    socialProviders: {
+      google: {
+        clientId: requireEnv("GOOGLE_CLIENT_ID"),
+        clientSecret: requireEnv("GOOGLE_CLIENT_SECRET"),
+        // G6: a foto do perfil do Google não é usada pelo Orçô, então nem é guardada (LGPD).
+        mapProfileToUser: () => ({ image: undefined }),
+      },
+    },
+    // Erros sem destino próprio (ex.: volta do Google com `state` inválido) vão para o /entrar com
+    // `?error=`, e não para a página de erro do Better Auth, em inglês (G5).
+    onAPIError: { errorURL: `${siteUrl}/entrar` },
     // Cadastro, reenvio e recuperação só pelas nossas Server Actions, que aplicam o anti-abuso
     // (RN-46, NBB-41 P1). Pela API pública estas rotas respondem 404; as chamadas internas
     // (getAuth().api…) continuam valendo.

@@ -221,6 +221,42 @@ Próximas versões: **antes de cada release, faça o backup da produção** (se�
 
 ---
 
+## Login com Google
+
+O botão "Continuar com Google" precisa de um **cliente OAuth** no Google Cloud por ambiente (local, staging e produção; NBB-40). O app não sobe sem o `GOOGLE_CLIENT_ID` e o `GOOGLE_CLIENT_SECRET`.
+
+### 1. Projeto e tela de consentimento (uma vez)
+
+1. Em [console.cloud.google.com](https://console.cloud.google.com), crie o projeto **Orçô**.
+2. **Google Auth Platform** (no menu antigo: _APIs e serviços → Tela de consentimento OAuth_) → **Começar**:
+   - nome do app **Orçô**, e-mail de suporte e e-mail de contato do desenvolvedor: os seus;
+   - público: **Externo**.
+3. **Público-alvo**: deixe em **Teste** e adicione como **usuários de teste** as contas Google que vão entrar (a sua e de quem for testar). Em Teste, só elas conseguem entrar com o Google.
+4. **Acesso a dados** (escopos): não precisa adicionar nada. O Better Auth pede só `openid`, `email` e `profile`, que não exigem verificação.
+
+> **Publicar o app** (sair do modo Teste) fica para a M7: o Google exige os links de termos de uso e de política de privacidade, que ainda não existem (P-07).
+
+### 2. Um cliente por ambiente
+
+**Clientes** → **Criar cliente** → tipo **Aplicativo da Web**, três vezes:
+
+| Nome              | URIs de redirecionamento autorizados                        |
+| ----------------- | ----------------------------------------------------------- |
+| `orco-local`      | `http://localhost:3000/api/auth/callback/google`            |
+| `orco-staging`    | `https://staging.orco.nbbrdev.com/api/auth/callback/google` |
+| `orco-production` | `https://orco.nbbrdev.com/api/auth/callback/google`         |
+
+As "Origens JavaScript autorizadas" ficam vazias: o navegador não fala com o Google direto, só o servidor.
+
+Ao criar, o Google mostra o **ID do cliente** e a **chave secreta**. Guarde a chave no gerenciador de senhas: depois, o painel não mostra mais o valor inteiro.
+
+### 3. Onde colocar
+
+- **Local:** no `.env.local`, os dois valores do `orco-local`.
+- **VPS:** no `/opt/orco/staging/.env` e no `/opt/orco/production/.env`, os valores do cliente de cada ambiente (`GOOGLE_CLIENT_ID=` e `GOOGLE_CLIENT_SECRET=`). Vale no próximo deploy.
+
+---
+
 ## Backup pelo DBeaver
 
 Não há backup automático (decisão de 2026-09-30: projeto pequeno). O backup é **manual**, pelo DBeaver, e é **obrigatório antes de cada release** (uma release aplica migrations no banco da produção). Só o banco: os logos do RustFS ficam fora (se a VPS for perdida, são enviados de novo).

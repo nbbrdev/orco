@@ -141,12 +141,12 @@ command="/opt/orco/bin/deploy.sh staging",restrict ssh-ed25519 AAAA... orco-stag
 
 ## Google OAuth
 
-- Projeto no Google Cloud com tela de consentimento (nome Orçô, logo, links de privacidade e termos, domínio autorizado).
-- Client OAuth Web com redirects para o **Better Auth** do app:
+- Projeto no Google Cloud com tela de consentimento (nome Orçô, público Externo). Fica em **modo Teste** até a M7, só com usuários de teste cadastrados; a publicação exige os links de termos e privacidade (P-07). Decidido em 2026-10-02 (NBB-40).
+- **Um cliente OAuth Web por ambiente** (`orco-local`, `orco-staging`, `orco-production`), cada um só com o redirect do seu ambiente para o **Better Auth** do app:
   - `https://orco.nbbrdev.com/api/auth/callback/google`;
   - `https://staging.orco.nbbrdev.com/api/auth/callback/google`;
   - `http://localhost:3000/api/auth/callback/google`.
-- Client ID/secret nos `.env` da VPS (e no `.env.local`), só no servidor. Configurado na M2 (NBB-40).
+- `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` nos `.env` da VPS (e no `.env.local`), só no servidor; obrigatórios (o app não sobe sem). Passo a passo em `deploy/README.md`, "Login com Google".
 
 ## GitHub (ADR-0007)
 

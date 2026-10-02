@@ -54,11 +54,15 @@
 
 **Orçamento:** 0 campos · 1 toque + tela do Google.
 
-1. `/entrar` ou `/cadastro` → **Continuar com Google**.
-2. Consentimento no Google → `/auth/callback`.
+1. `/entrar` ou `/cadastro` → **Continuar com Google** (no topo, acima do formulário de e-mail, separado por "ou").
+2. Consentimento no Google → `/api/auth/callback/google` (rota do Better Auth).
 3. Sempre vai para `/app/orcamentos`. No primeiro acesso, a lista vazia mostra **Criar primeiro orçamento**, igual ao F-01.
 
-**Erros:** o usuário cancelou no Google → volta a `/entrar` com "Login cancelado". Se o e-mail já tem conta por senha, o Better Auth vincula as identidades (e-mail verificado nos dois lados).
+**Erros** (decididos em 2026-10-02, NBB-40; todos voltam a `/entrar`):
+- O usuário cancelou no Google → "Login cancelado."
+- O e-mail já tem conta por senha **confirmada** → o Better Auth vincula as identidades (e-mail verificado nos dois lados) e a pessoa entra.
+- O e-mail tem conta por senha **ainda não confirmada** → não vincula, para ninguém tomar a conta de outra pessoa cadastrando o e-mail dela antes: "Este e-mail já tem uma conta esperando confirmação. Abra o link que enviamos (ou entre e peça um novo) e depois use o Google."
+- Qualquer outra falha → "Não foi possível entrar com o Google. Tente de novo."
 
 ## F-03 — Entrar com e-mail e senha · ✅
 
