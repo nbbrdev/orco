@@ -8,7 +8,7 @@
 
 | Schema | Conteúdo | Quem acessa |
 |---|---|---|
-| `auth` | tabelas do **Better Auth** (usuários, contas, sessões, verificações); detalhadas na M2 (NBB-39) | só a role **`app_auth`** |
+| `auth` | tabelas do **Better Auth** (NBB-79): `user`, `account` (senha e Google), `session`, `verification` (tokens dos links). Geradas pelo CLI do Better Auth (`src/lib/db/schema/auth.ts`) | só a role **`app_auth`** |
 | `public` | tabelas do produto (abaixo) | só a role **`app_user`**, sempre com RLS |
 | `app` | funções auxiliares (ex.: `app.current_user_id()`) | `app_user` (execute) |
 
@@ -17,9 +17,9 @@
 
 ## Convenções
 
-- PK `id uuid default gen_random_uuid()`. Exceção: `profiles.id` = `auth.users.id`.
-- O `id` do usuário é `uuid`, com o Better Auth configurado para gerar UUIDs (a confirmar na NBB-39).
-- Toda tabela de domínio tem `user_id uuid not null references auth.users(id) on delete cascade`.
+- PK `id uuid default gen_random_uuid()`. Exceção: `profiles.id` = `auth.user.id`.
+- O `id` do usuário é `uuid`: o Better Auth usa `generateId: "uuid"`, e o Postgres gera (confirmado na NBB-79).
+- Toda tabela de domínio tem `user_id uuid not null references auth.user(id) on delete cascade`.
 - Nas policies, o usuário da requisição é `app.current_user_id()`, que lê `current_setting('app.user_id', true)` definido por `withUserDb` na transação. Sem ele, retorna nulo e nenhuma linha é visível.
 - `created_at` / `updated_at timestamptz not null default now()`, com `updated_at` mantido por trigger.
 - Dinheiro em **centavos** (`bigint`, `check >= 0`). Percentuais em **pontos-base** (`int`, 0–10000 = 0–100,00%).
@@ -31,7 +31,7 @@
 ### `profiles`
 | Coluna | Tipo | Notas |
 |---|---|---|
-| id | uuid PK → auth.users | criado por trigger no cadastro |
+| id | uuid PK → auth.user | criado por trigger no cadastro |
 | display_name | text null | ≤ 80 |
 | business_name | text null | ≤ 120 |
 | document | text null | CPF/CNPJ só com dígitos, validado (RN-08) |
@@ -168,7 +168,7 @@ PK `(key, window_start)`. **RLS habilitada sem policies**: acesso só por funç�
 
 | Função | Executável por | Descrição |
 |---|---|---|
-| `handle_new_user()` | trigger em `auth.users` | cria `profiles` |
+| `handle_new_user()` | trigger em `auth.user` | cria `profiles` |
 | `assign_quote_number()` | trigger em `quotes` | pega e incrementa `profiles.next_quote_number` com lock de linha |
 | `get_public_quote(token)` | `app_user` (só o servidor chama) | retorna campos mínimos do orçamento + perfil público; registra `viewed` (RN-35); aplica RN-31 |
 | `respond_to_quote(token, decision, name, reason, ip, ua)` | `app_user` (só o servidor chama) | valida RN-32, grava status + evento (RN-34) em transação |

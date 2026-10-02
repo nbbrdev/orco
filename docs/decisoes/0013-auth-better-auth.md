@@ -23,6 +23,17 @@ Sem Supabase (ADR-0012), o Orçô precisa de um componente de autenticação pr�
 - **Anti-abuso do cadastro** conferido na Server Action antes de criar a conta: limite por IP, honeypot e teto diário de e-mails (RN-46). Substituiu o Turnstile em 2026-09-29 (NBB-70).
 - Implementado na **M2**, junto das telas (NBB-39/40/41).
 
+### Configuração (decidida pelo usuário em 2026-10-02, NBB-79)
+- **Better Auth 1.7.x** com o adapter do Drizzle.
+- **IDs em UUID** (`advanced.database.generateId: "uuid"`, opção nativa; no Postgres o banco gera), para casar com o `withUserDb` e a `app.current_user_id()` da RLS.
+- **Tabelas no schema `auth`** com os nomes padrão: `auth.user`, `auth.session`, `auth.account` (senha e contas do Google) e `auth.verification` (tokens dos links). Datas em `timestamptz`.
+- **Schema gerado pelo CLI do Better Auth** (`npm run auth:generate`, versão igual à do pacote) e migration pelo `drizzle-kit` de sempre, revisada no PR.
+- **Opções num arquivo só** (`src/lib/auth/options.ts`), usado pelo app e pelo CLI (`auth.config.ts`, fora do build).
+- **Criado na primeira chamada** (`getAuth()`, como o `getAppDb()`): o build e a imagem Docker não precisam de segredos.
+- **Telemetria desligada** explicitamente (já é o padrão).
+- **Sessão conferida no banco a cada requisição** (sem cache em cookie): logout e sessão apagada valem na hora (`getSessionUser()`).
+- `baseURL` = `SITE_URL`; `BETTER_AUTH_SECRET` um por ambiente, só no `.env`.
+
 ## Alternativas descartadas
 - **Auth.js (NextAuth):** a própria documentação desencoraja login com e-mail e senha. Confirmação e recuperação teriam de ser escritas à mão.
 - **Implementação própria:** risco alto de falhas sutis num produto público.

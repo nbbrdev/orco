@@ -35,6 +35,7 @@ npm run dev                  # http://localhost:3000
 | `npm run db:migrate`            | aplica as migrations (role `orco_owner`)        |
 | `npm run db:generate -- <nome>` | gera uma migration a partir do schema (Drizzle) |
 | `npm run db:reset`              | apaga os dados locais e recria do zero          |
+| `npm run auth:generate`         | regera as tabelas de login (CLI do Better Auth) |
 | `npm run format`                | formata o código com Prettier                   |
 
 ## Contribuindo

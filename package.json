@@ -20,9 +20,11 @@
     "db:stop": "docker compose -f compose.dev.yaml down",
     "db:reset": "docker compose -f compose.dev.yaml down -v && docker compose -f compose.dev.yaml up -d --wait && npm run db:migrate",
     "db:generate": "drizzle-kit generate --name",
-    "db:migrate": "node scripts/migrate.mts"
+    "db:migrate": "node scripts/migrate.mts",
+    "auth:generate": "auth generate --config auth.config.ts --output src/lib/db/schema/auth.ts --yes"
   },
   "dependencies": {
+    "better-auth": "^1.7.7",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
     "drizzle-orm": "^0.45.3",
@@ -43,6 +45,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitest/coverage-v8": "^5.0.2",
+    "auth": "^1.7.7",
     "babel-plugin-react-compiler": "1.0.0",
     "drizzle-kit": "^0.31.11",
     "eslint": "^9",
