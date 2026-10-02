@@ -21,6 +21,14 @@ O domínio de envio `orco.nbbrdev.com` já está verificado no Resend (DKIM, SPF
 - Falha no envio de **notificação** é logada sem PII e não quebra a ação que a originou (RN-42). Falha no envio de e-mail de **conta** é informada ao usuário ("não conseguimos enviar, tente de novo").
 - Implementado na **M2**, junto do Better Auth (NBB-39).
 
+### Detalhes (decididos pelo usuário em 2026-10-02, NBB-80)
+- **Templates em funções TypeScript** (sem React Email), com o HTML aprovado na NBB-37: `src/lib/email/templates/` (`confirmation`, `recovery`, `password-changed`) sobre uma moldura comum (`layout.ts`) e o `escapeHtml` (`escape.ts`). Os HTML antigos do Supabase saíram; `email_change` e `magic_link` ficaram de fora (fora do escopo; continuam no histórico do Git).
+- **Cada e-mail vai em HTML e em texto puro** (leitores de tela, clientes sem HTML, filtros de spam).
+- **TLS automático na porta 465** (Resend); outras portas (Mailpit: 1025) sem criptografia. Login SMTP só se `SMTP_USER` existir.
+- **`sendEmail(to, email)`** (`src/lib/email/index.ts`, `server-only`) lança erro se o envio falhar; quem chama decide. O transporte é criado na primeira chamada (o build não tem o `.env`).
+- **Ligação com o Better Auth em cada tela:** confirmação na NBB-39; recuperação e aviso de senha alterada na NBB-41.
+- **Testes:** unitários dos templates (escape, links, texto) e integração com envio real para o **Mailpit**, localmente e no CI (service container).
+
 ## Alternativas descartadas
 - **API HTTP do Resend:** tem recursos extras (agendamento, lote), mas é específica do Resend e não funciona com o Mailpit. Exigiria um caminho de envio só para o ambiente local.
 
