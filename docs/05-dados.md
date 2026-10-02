@@ -151,11 +151,11 @@ Limite de 100 itens por orçamento (RN-14), via trigger. **RLS:** CRUD onde `use
 ### `rate_limits`
 | Coluna | Tipo | Notas |
 |---|---|---|
-| key | text | ex.: `pdf:user:<uuid>`, `public:ip:<ip>` |
-| window_start | timestamptz | |
+| key | text | ex.: `signup:ip:<ip>`, `signup-email:day`, `pdf:user:<uuid>` |
+| window_start | timestamptz | início da janela, no relógio de São Paulo |
 | count | int | |
 
-PK `(key, window_start)`. **RLS habilitada sem policies**: acesso só por função. Limpeza de janelas antigas feita dentro da própria função.
+PK `(key, window_start)`. Criada na NBB-39 (migration `0002_rate_limits`, escrita à mão). **RLS `ENABLE` + `FORCE` com uma única policy, para a `orco_owner`** (a dona, usada pela função `SECURITY DEFINER`); a `app_user` não tem nenhuma permissão na tabela. Limpeza das janelas antigas da mesma chave feita dentro da própria função.
 
 ## Arquivos (RustFS, ADR-0015)
 
@@ -172,7 +172,7 @@ PK `(key, window_start)`. **RLS habilitada sem policies**: acesso só por funç�
 | `assign_quote_number()` | trigger em `quotes` | pega e incrementa `profiles.next_quote_number` com lock de linha |
 | `get_public_quote(token)` | `app_user` (só o servidor chama) | retorna campos mínimos do orçamento + perfil público; registra `viewed` (RN-35); aplica RN-31 |
 | `respond_to_quote(token, decision, name, reason, ip, ua)` | `app_user` (só o servidor chama) | valida RN-32, grava status + evento (RN-34) em transação |
-| `check_rate_limit(key, limit, window_seconds)` | `app_user` | janela fixa; retorna permitido/negado |
+| `app.check_rate_limit(key, limit, window_seconds)` | `app_user` | janela fixa alinhada ao relógio de São Paulo (86400 = vira à meia-noite de Brasília); conta mais um uso e retorna permitido/negado (NBB-39) |
 | `regenerate_public_token(quote_id)` | `app_user` (dono, via RLS) | RN-36 |
 | `anonymize_old_event_ips()` | tarefa agendada na VPS | RN-37 |
 | `quotes_due_for_reminder()` | `app_user` (rota do cron) | orçamentos `sent`, sem resposta, com `valid_until = amanhã (SP)` e `reminder_sent_at` nulo; usada pelo lembrete diário (RN-43) |

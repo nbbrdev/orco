@@ -31,6 +31,7 @@ npm run dev                  # http://localhost:3000
 | `npm test`                      | testes unitários (Vitest), sem Docker           |
 | `npm run test:integration`      | testes contra o Postgres local (RLS)            |
 | `npm run test:coverage`         | unitários + integração com cobertura (Docker)   |
+| `npm run test:e2e`              | E2E no navegador (Playwright; build antes)      |
 | `npm run db:start` / `db:stop`  | sobe / desce os serviços locais (Docker)        |
 | `npm run db:migrate`            | aplica as migrations (role `orco_owner`)        |
 | `npm run db:generate -- <nome>` | gera uma migration a partir do schema (Drizzle) |

@@ -75,8 +75,7 @@ flowchart LR
 │   ├── app/
 │   │   ├── (marketing)/       /, /termos, /privacidade
 │   │   ├── (auth)/            /entrar, /cadastro, /recuperar-senha, /redefinir-senha
-│   │   ├── api/auth/[...all]/ rotas do Better Auth (inclui o callback do Google)
-│   │   ├── auth/confirm/      links dos e-mails de conta (token de uso único)
+│   │   ├── api/auth/[...all]/ rotas do Better Auth (confirmação de e-mail, callback do Google)
 │   │   ├── app/               área logada (layout com navegação)
 │   │   │   ├── orcamentos/
 │   │   │   ├── clientes/
@@ -104,7 +103,7 @@ flowchart LR
 │   ├── unit/                  Vitest, sem banco
 │   ├── integration/           Vitest contra Postgres real (RLS)
 │   ├── stubs/                 substitutos de módulos só do Next (ex.: server-only)
-│   └── e2e/                   Playwright (a partir da M2, NBB-72)
+│   └── e2e/                   Playwright (desde a NBB-39/72)
 ├── .github/                   workflows, dependabot, templates (M1)
 └── CLAUDE.md
 ```

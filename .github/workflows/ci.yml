@@ -90,5 +90,12 @@ jobs:
       - name: Build
         run: npm run build
 
+      # E2E (NBB-72): o app compilado no navegador, com o Postgres e o Mailpit deste job.
+      - name: Navegador do Playwright (Chromium)
+        run: npx playwright install --with-deps chromium
+
+      - name: Testes E2E (Playwright)
+        run: npm run test:e2e
+
       - name: Auditoria de dependências
         run: npm audit --audit-level=high

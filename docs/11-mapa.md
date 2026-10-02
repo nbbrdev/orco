@@ -80,7 +80,7 @@ App (logado) — barra fixa com botão "Novo orçamento"
 
 Técnico
 ├── /auth/callback            Retorno do OAuth (Google)
-├── /auth/confirm             Links dos e-mails de conta (confirmação, recuperação, troca de e-mail)
+├── /api/auth/*               Rotas do Better Auth: links dos e-mails de conta (confirmação, recuperação) e retorno do Google
 ├── /api/orcamentos/[id]/pdf  PDF (dono) · /api/p/[token]/pdf (cliente final)
 ├── /api/cron/lembretes       Lembrete diário de vencimento (agendamento na VPS, protegido por segredo)
 ├── /manifest.webmanifest     Manifesto do PWA
