@@ -30,6 +30,11 @@ updates:
       # Remover quando typescript-eslint suportar TS 7.
       - dependency-name: typescript
         update-types: ["version-update:semver-major"]
+      # @hookform/resolvers 5.4.1+ declara dezenas de dependências opcionais (@typeschema/*) que
+      # conflitam com o zod 4 no npm 11 e quebram a instalação. Fixado em 5.4.0 (NBB-39). Reavaliar
+      # quando o pacote corrigir.
+      - dependency-name: "@hookform/resolvers"
+        versions: [">5.4.0"]
 
   # Imagem base do Dockerfile (Node).
   - package-ecosystem: docker
