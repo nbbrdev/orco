@@ -34,6 +34,14 @@ Sem Supabase (ADR-0012), o Orçô precisa de um componente de autenticação pr�
 - **Sessão conferida no banco a cada requisição** (sem cache em cookie): logout e sessão apagada valem na hora (`getSessionUser()`).
 - `baseURL` = `SITE_URL`; `BETTER_AUTH_SECRET` um por ambiente, só no `.env`.
 
+### Recuperação, logout e proteção do app (decidido pelo usuário em 2026-10-02, NBB-41)
+- **Recuperação só pela Server Action**, com 3 pedidos por hora por IP (tabela `rate_limits`, ADR-0004). A rota `/api/auth/request-password-reset` fica desligada (`disabledPaths`), como o cadastro e o reenvio. Não conta no teto diário do cadastro (RN-46).
+- **Redefinir a senha não faz login:** o Better Auth não entra na conta nesse passo, então a pessoa volta ao `/entrar` com o aviso "Senha alterada" (F-04). A alternativa, ler a tabela interna de tokens para fazer o login, foi descartada por depender de um detalhe interno da biblioteca.
+- **Redefinir a senha derruba todas as sessões** (`revokeSessionsOnPasswordReset`), inclusive a de quem invadiu a conta.
+- **Aviso de senha alterada** pelo `onPasswordReset`. Se o envio falhar, a troca continua valendo e o erro vai para o log.
+- **Proteção do `/app`:** cada página e Server Action chama o `requireSessionUser()`, que manda para o `/entrar` sem sessão. Não há checagem no layout (o Next não o executa de novo ao navegar) nem no proxy.
+- **Logout** (`signOut`) apaga a sessão no banco e o cookie, e volta para o `/entrar`.
+
 ## Alternativas descartadas
 - **Auth.js (NextAuth):** a própria documentação desencoraja login com e-mail e senha. Confirmação e recuperação teriam de ser escritas à mão.
 - **Implementação própria:** risco alto de falhas sutis num produto público.

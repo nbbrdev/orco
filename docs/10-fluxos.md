@@ -74,8 +74,11 @@ A sessão persiste no navegador até o logout; não existe "lembrar de mim".
 
 1. `/entrar` → **Esqueci minha senha** → `/recuperar-senha` → e-mail → **Enviar**.
 2. A resposta é sempre "Se existir uma conta, enviamos um link".
-3. Link do e-mail → `/auth/confirm` → `/redefinir-senha` → nova senha → **Salvar** → entra logado.
-4. A conta recebe o e-mail **"Sua senha do Orçô foi alterada"**, com o botão "Não fui eu: redefinir senha". O mesmo aviso sai em qualquer troca de senha (segurança, 2026-09-28).
+3. Link do e-mail (vale 1 hora, uso único) → `/redefinir-senha` → nova senha (1 campo, com o botão do olho e a dica "mínimo 8 caracteres") → **Salvar** → `/entrar` com o aviso "Senha alterada. Entre com a nova senha." (NBB-41, 2026-10-02: o Better Auth não faz login nesse passo).
+4. A conta recebe o e-mail **"Sua senha foi alterada"**, com o botão "Não fui eu: redefinir senha". O mesmo aviso sai em qualquer troca de senha (segurança, 2026-09-28).
+5. Todas as sessões da conta são encerradas: é preciso entrar de novo em cada aparelho.
+
+**Erros:** link vencido ou já usado → `/recuperar-senha` com "Este link expirou ou já foi usado. Peça um novo." Excesso de pedidos (3 por hora por IP) → "Muitas tentativas. Tente de novo em alguns minutos."
 
 ## F-05 — Primeiro orçamento (fluxo principal) · ✅
 
@@ -242,6 +245,7 @@ Conta ............ sair · excluir minha conta (F-17)
 Rodapé ........... "Orçô v0.4.0" · link "Novidades" (notas da versão no GitHub Releases)
 ```
 - Tudo opcional, salvo automaticamente.
+- Até a NBB-42, `/app/perfil` é provisório: só a seção **Conta**, com o e-mail e o **Sair** (NBB-41).
 
 ## F-15 — Gerenciar clientes · ✅
 

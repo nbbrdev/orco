@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 
+import { PasswordInput } from "@/components/password-input";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -48,14 +49,19 @@ export function SignInForm() {
 
         <Field data-invalid={!!errors.password}>
           <FieldLabel htmlFor="password">Senha</FieldLabel>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="current-password"
             aria-invalid={!!errors.password}
             {...form.register("password")}
           />
           <FieldError errors={[errors.password]} />
+          <Link
+            href="/recuperar-senha"
+            className="self-start text-sm font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Esqueci minha senha
+          </Link>
         </Field>
       </FieldGroup>
 

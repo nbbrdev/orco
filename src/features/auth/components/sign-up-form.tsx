@@ -5,12 +5,14 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
+import { PasswordInput } from "@/components/password-input";
 import { Button } from "@/components/ui/button";
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { signUpAction } from "@/features/auth/actions";
+import { PasswordHint } from "@/features/auth/components/password-hint";
 import { ResendButton } from "@/features/auth/components/resend-button";
-import { PASSWORD_MIN_LENGTH, type SignUpInput, signUpSchema } from "@/features/auth/schemas";
+import { type SignUpInput, signUpSchema } from "@/features/auth/schemas";
 
 // Cadastro com e-mail e senha (F-01): 2 campos obrigatórios. A proteção contra robôs (RN-46) não
 // aparece para a pessoa: o campo "website" fica escondido e a checagem acontece no servidor.
@@ -71,20 +73,14 @@ export function SignUpForm() {
 
         <Field data-invalid={!!errors.password}>
           <FieldLabel htmlFor="password">Senha</FieldLabel>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="new-password"
             aria-invalid={!!errors.password}
             aria-describedby="password-hint"
             {...form.register("password")}
           />
-          {/* F-01: o requisito da senha fica visível enquanto a pessoa digita. */}
-          <FieldDescription id="password-hint">
-            {passwordLength >= PASSWORD_MIN_LENGTH
-              ? "✓ Senha com pelo menos 8 caracteres."
-              : `Mínimo de ${PASSWORD_MIN_LENGTH} caracteres (${passwordLength}/${PASSWORD_MIN_LENGTH}).`}
-          </FieldDescription>
+          <PasswordHint id="password-hint" length={passwordLength} />
           <FieldError errors={[errors.password]} />
         </Field>
       </FieldGroup>

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { getAuth } from "@/lib/auth";
 
@@ -18,4 +19,17 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     return null;
   }
   return { id: session.user.id, email: session.user.email };
+}
+
+/**
+ * Para toda página e Server Action do /app (P5): devolve o usuário logado ou manda para o /entrar.
+ * A checagem fica aqui, perto dos dados, e não no layout: o layout não roda de novo quando a pessoa
+ * navega entre páginas (docs do Next 16, "Layouts and auth checks").
+ */
+export async function requireSessionUser(): Promise<SessionUser> {
+  const user = await getSessionUser();
+  if (!user) {
+    redirect("/entrar");
+  }
+  return user;
 }
