@@ -15,6 +15,13 @@
       "when": 1790947742962,
       "tag": "0001_better_auth",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790954893704,
+      "tag": "0002_rate_limits",
+      "breakpoints": true
     }
   ]
 }
