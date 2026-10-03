@@ -251,7 +251,7 @@ Rodapé ........... "Orçô v0.4.0" · link "Novidades" (notas da versão no Git
 - Tudo opcional, salvo automaticamente.
 - **Salvamento:** cada campo se salva ao perder o foco, com "Salvando… / Salvo ✓" ao lado do nome e o erro embaixo do campo. O valor volta já limpo: site com `https://`, Instagram como `@usuario`, CPF/CNPJ formatado (NBB-42).
 - **Logo** (NBB-81): no topo de "Sua marca", a miniatura com **Enviar logo** / **Trocar** e **Remover**. O navegador reduz a imagem antes de enviar; o logo aparece na prévia. Arquivo inválido: "Use uma imagem PNG, JPEG ou WebP de até 5 MB."
-- **O que já existe** (NBB-42): prévia, Sua marca, Contato, Pagamento, Padrões, Notificações (só o e-mail), Conta (Sair) e, no rodapé, a versão com o link **Novidades** (abre numa aba nova a página da versão no GitHub Releases; no staging e no local, a lista de versões). Chegam depois: Aparência (NBB-60), push e "Instalar" (NBB-60 e push) e "Excluir minha conta" (NBB-43).
+- **O que já existe** (NBB-42): prévia, Sua marca, Contato, Pagamento, Padrões, Notificações (só o e-mail), Conta (Sair e **Excluir minha conta**, NBB-43) e, no rodapé, a versão com o link **Novidades** (abre numa aba nova a página da versão no GitHub Releases; no staging e no local, a lista de versões). Chegam depois: Aparência (NBB-60), push e "Instalar" (NBB-60 e push).
 
 ## F-15 — Gerenciar clientes · ✅
 
@@ -269,6 +269,11 @@ Rodapé ........... "Orçô v0.4.0" · link "Novidades" (notas da versão no Git
 ## F-17 — Excluir conta · ✅
 
 - `/app/perfil` → seção **Conta** → **Excluir minha conta** → explicação do que será apagado (RN-06) → digitar "EXCLUIR" → confirmar → a sessão é encerrada e a pessoa vê a landing com "Sua conta foi excluída".
+- **Como ficou** (NBB-43, 2026-10-03):
+  - a confirmação abre na própria seção Conta, sem janela por cima;
+  - o botão **Excluir conta definitivamente** só fica ativo com `EXCLUIR` exato, em maiúsculas (o servidor confere de novo), e há um **Cancelar**;
+  - depois, a pessoa vai para `/?conta=excluida`, com o aviso "Sua conta foi excluída. Todos os seus dados foram apagados.".
+- **Erro:** se o logo não puder ser apagado (RustFS fora do ar), nada é apagado e aparece "Não foi possível excluir agora. Tente de novo em instantes."
 
 ## F-18 — Ativar notificações push e instalar o app · ✅
 

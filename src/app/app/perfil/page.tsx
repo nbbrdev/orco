@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { DeleteAccount } from "@/features/auth/components/delete-account";
 import { SignOutButton } from "@/features/auth/components/sign-out-button";
 import { ProfileForm } from "@/features/profile/components/profile-form";
 import { logoUrl } from "@/features/profile/logo-rules";
@@ -17,8 +18,9 @@ const RELEASE_NOTES_URL = /^v\d+\.\d+\.\d+$/.test(APP_VERSION)
   ? `${RELEASES_URL}/tag/${APP_VERSION}`
   : RELEASES_URL;
 
-// Perfil do freelancer (F-14, NBB-42) e logo (NBB-81). Tudo opcional e salvo campo a campo. Ficam
-// para outras issues (D6): a aparência (NBB-60), o push e o "Instalar" e a exclusão de conta (NBB-43).
+// Perfil do freelancer (F-14, NBB-42), logo (NBB-81) e exclusão de conta (F-17, NBB-43). Tudo
+// opcional e salvo campo a campo. Ficam para outras issues (D6): a aparência (NBB-60), o push e o
+// "Instalar".
 export default async function ProfilePage() {
   const user = await requireSessionUser();
   const { logoPath, ...profile } = await getProfile(user.id);
@@ -41,6 +43,7 @@ export default async function ProfilePage() {
         <div>
           <SignOutButton />
         </div>
+        <DeleteAccount />
       </section>
 
       <p className="text-xs text-muted-foreground">

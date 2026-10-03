@@ -4,13 +4,16 @@ import { isAPIError } from "better-auth/api";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { deleteAccount } from "@/features/auth/delete-account";
 import { requestRecovery, resetPassword } from "@/features/auth/recovery";
 import { recoverySchema, resendSchema, signInSchema } from "@/features/auth/schemas";
 import { AFTER_CONFIRM_PATH, registerUser, resendConfirmation } from "@/features/auth/sign-up";
 import { getAuth } from "@/lib/auth";
+import { requireSessionUser } from "@/lib/auth/session";
 import { getClientIp } from "@/lib/request";
 
-// Server Actions do cadastro, do login, da recuperação de senha e do logout (F-01, F-03, F-04). Rodam
+// Server Actions do cadastro, do login, da recuperação de senha, do logout e da exclusão de conta
+// (F-01, F-03, F-04, F-17). Rodam
 // no servidor; os formulários as chamam como funções. Toda entrada é validada de novo aqui (Zod),
 // mesmo já validada no navegador.
 
@@ -144,4 +147,27 @@ export async function googleSignInAction(): Promise<void> {
 export async function signOutAction(): Promise<void> {
   await getAuth().api.signOut({ headers: await headers() });
   redirect("/entrar");
+}
+
+export type DeleteAccountState = { status: "error"; message: string };
+
+/**
+ * Excluir a conta (F-17, RN-06): a pessoa digita "EXCLUIR". Em caso de sucesso, não retorna: limpa
+ * o cookie da sessão (que a cascata já apagou no banco) e vai para a landing com o aviso (E3).
+ */
+export async function deleteAccountAction(confirmation: unknown): Promise<DeleteAccountState> {
+  const user = await requireSessionUser();
+  const result = await deleteAccount(user.id, confirmation);
+  switch (result.status) {
+    case "deleted":
+      await getAuth().api.signOut({ headers: await headers() });
+      redirect("/?conta=excluida");
+    case "unconfirmed":
+      return { status: "error", message: "Digite EXCLUIR para confirmar." };
+    case "failed":
+      return {
+        status: "error",
+        message: "Não foi possível excluir agora. Tente de novo em instantes.",
+      };
+  }
 }
