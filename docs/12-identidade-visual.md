@@ -16,7 +16,11 @@
 
 - Fonte do ícone: [`identidade/orco-icone.svg`](identidade/orco-icone.svg) (48×48, cantos de 10 px).
 - **Logotipo completo:** ícone + a palavra **"Orçô"** em Inter 700, espaçamento −0,02em, cor do texto principal. Espaço entre ícone e nome = 1/4 da altura do ícone.
-- Versões finais geradas na M2 (NBB-60): favicon (SVG + ICO 32 px), ícones do PWA 192, 512 e *maskable*, `apple-touch-icon` 180 px e versão para o PDF.
+- Versões finais geradas na M2 (NBB-60), a partir do SVG-fonte:
+  - favicon em SVG (`src/app/icon.svg`); sem ICO, porque os navegadores atuais usam o SVG e o Safari usa o `apple-touch-icon` (decisão W2);
+  - ícones do PWA 192 e 512 (com os cantos arredondados) e *maskable* 512 (quadrado, com o desenho na zona segura), mais o `apple-touch-icon` 180 px (quadrado, porque o iPhone arredonda sozinho);
+  - todos em `public/icons/`, gerados por `npm run icons` (`scripts/generate-icons.mts`, com o Playwright). Se o ícone mudar, basta rodar de novo;
+  - a versão para o PDF fica para a issue do PDF.
 - Não distorcer, não trocar as cores do ícone, não aplicar sombra nem contorno.
 
 ## Cores

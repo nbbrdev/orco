@@ -22,7 +22,8 @@
     "db:reset": "docker compose -f compose.dev.yaml down -v && docker compose -f compose.dev.yaml up -d --wait && npm run db:migrate",
     "db:generate": "drizzle-kit generate --name",
     "db:migrate": "node scripts/migrate.mts",
-    "auth:generate": "auth generate --config auth.config.ts --output src/lib/db/schema/auth.ts --yes"
+    "auth:generate": "auth generate --config auth.config.ts --output src/lib/db/schema/auth.ts --yes",
+    "icons": "node scripts/generate-icons.mts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1146.0",
