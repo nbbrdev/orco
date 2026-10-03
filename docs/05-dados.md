@@ -89,10 +89,10 @@ Migration `0005_catalog_items` (NBB-45, 2026-10-03).
 | Coluna | Tipo | Notas |
 |---|---|---|
 | id, user_id, timestamps | | |
-| number | int not null | `unique (user_id, number)`, atribuído por trigger (RN-12) |
+| number | int not null | `unique (user_id, number)`, atribuído pelo trigger `app.prepare_new_quote` (RN-12) |
 | status | enum `quote_status` (`draft`,`sent`,`approved`,`rejected`) | `expired` é derivado (RN-26) |
 | version | int not null default 1 | RN-24 |
-| client_id | uuid null → clients `on delete no action` | impede excluir cliente com orçamentos (RN-09). `NO ACTION` (e não `RESTRICT`) para que a cascata da exclusão de conta funcione, já que a checagem ocorre no fim do statement |
+| client_id | uuid null → clients `on delete no action` | FK composta `(client_id, user_id)`: só um cliente da mesma conta. Impede excluir cliente com orçamentos (RN-09). `NO ACTION` (e não `RESTRICT`) para que a cascata da exclusão de conta funcione, já que a checagem ocorre no fim do statement |
 | client_name, client_email, client_phone, client_document, client_address | text null | **snapshot** (RN-20) |
 | discount_type | enum (`percent`,`amount`) null | desconto geral (RN-17) |
 | discount_value | bigint not null default 0 | pontos-base ou centavos |
@@ -102,27 +102,29 @@ Migration `0005_catalog_items` (NBB-45, 2026-10-03).
 | delivery_time | text null | ≤ 500, prazo de execução (RN-44) |
 | notes | text null | ≤ 2000, visível ao cliente |
 | internal_notes | text null | ≤ 2000, **privado**, editável em qualquer status, não incrementa a versão (RN-20a) |
-| public_token | text not null unique | 32 bytes aleatórios em base64url (RN-30) |
+| public_token | text not null unique | 32 bytes aleatórios em base64url, 43 caracteres (RN-30), gerados por `app.generate_public_token()` |
 | sent_at, responded_at, first_viewed_at | timestamptz null | |
 | response_seen_at | timestamptz null | quando o dono viu a resposta (destaque "novo", RN-42) |
 | reminder_sent_at | timestamptz null | lembrete de vencimento já enviado para a validade atual; zerado ao prorrogar (RN-43) |
 | view_count | int not null default 0 | RN-35 |
 
-Índices: `(user_id, status)`, `(user_id, created_at desc)`, `unique(public_token)`.
-**RLS:** select/insert/delete/update onde `user_id = app.current_user_id()`. A trava de conteúdo (RN-25) fica num **trigger** `BEFORE UPDATE`: em `approved`/`rejected`, qualquer coluna diferente de `internal_notes`, `response_seen_at` e `updated_at` gera erro. (A RLS filtra linhas, não colunas, por isso a trava por coluna é trigger.)
+Índices: `(user_id, status)`, `(user_id, created_at desc)`, `(client_id)`, `unique(public_token)`, `unique(id, user_id)` (alvo da FK dos itens).
+**RLS:** select/insert/delete/update onde `user_id = app.current_user_id()` (uma policy `FOR ALL`).
+**Criação** (migration `0006_quotes`, NBB-46): o trigger `app.prepare_new_quote` (`BEFORE INSERT`) dá o número, e todo orçamento nasce `draft`, na versão 1, com um token novo e sem as datas e a contagem da M6, não importa o que o app mande. O insert fica liberado em todas as colunas porque o Drizzle sempre lista todas; no **update**, a `app_user` só altera as colunas que o app preenche (sem `number`, `public_token`, `version`, `status`, as datas e a contagem). `status`, `sent_at` e `response_seen_at` entram no PR 2 da NBB-46, junto com o trigger de transições.
+A trava de conteúdo (RN-25) fica num **trigger** `BEFORE UPDATE`: em `approved`/`rejected`, qualquer coluna diferente de `internal_notes`, `response_seen_at` e `updated_at` gera erro. (A RLS filtra linhas, não colunas, por isso a trava por coluna é trigger.)
 **Trigger:** transições de status válidas (RN-22–RN-27) garantidas no banco, e não só na aplicação.
 
 ### `quote_items`
 | Coluna | Tipo | Notas |
 |---|---|---|
 | id, user_id, timestamps | | `user_id` duplicado para simplificar a RLS |
-| quote_id | uuid not null → quotes `on delete cascade` | |
+| quote_id | uuid not null → quotes `on delete cascade` | FK composta `(quote_id, user_id)`: só um orçamento da mesma conta |
 | position | int not null | ordem de exibição |
-| catalog_item_id | uuid null → catalog_items `on delete set null` | origem; usada para atualizar rascunhos quando o item do catálogo muda (RN-11) |
-| description | text not null | 1–500 (snapshot) |
+| catalog_item_id | uuid null → catalog_items `on delete set null (catalog_item_id)` | origem; usada para atualizar rascunhos quando o item do catálogo muda (RN-11). FK composta `(catalog_item_id, user_id)`; ao excluir o item do catálogo, só esta coluna vira nula |
+| description | text not null default '' | ≤ 500 (snapshot); vazia aceita no rascunho, exigida no envio (RN-13) |
 | unit | text null | ≤ 10 |
-| quantity | numeric(12,3) not null | > 0 (RN-14) |
-| unit_price_cents | bigint null | ≥ 0; nulo só em rascunho (RN-10, RN-13) |
+| quantity | numeric(12,3) not null default 1 | > 0 (RN-14) |
+| unit_price_cents | bigint null | 0 a 999.999.999 (o teto do catálogo); nulo só em rascunho (RN-10, RN-13) |
 | gross_cents | bigint not null | quantidade × preço (RN-15) |
 | discount_type | enum (`percent`,`amount`) null | RN-15a |
 | discount_value | bigint not null default 0 | pontos-base ou centavos |
@@ -184,7 +186,8 @@ PK `(key, window_start)`. Criada na NBB-39 (migration `0002_rate_limits`, escrit
 | `app.set_updated_at()` | trigger `BEFORE UPDATE` de cada tabela | mantém o `updated_at` (convenção) |
 | `app.enforce_client_limit()` | trigger `BEFORE INSERT` em `clients` | limite de 1.000 clientes por conta (RN-38); erro `OR001` (NBB-44) |
 | `app.enforce_catalog_item_limit()` | trigger `BEFORE INSERT` em `catalog_items` | limite de 500 itens por conta (RN-38); erro `OR002` (NBB-45) |
-| `assign_quote_number()` | trigger em `quotes` | pega e incrementa `profiles.next_quote_number` com lock de linha |
+| `app.prepare_new_quote()` | trigger `BEFORE INSERT` em `quotes` (`SECURITY DEFINER`) | pega e incrementa `profiles.next_quote_number` com lock de linha (RN-12) e força os valores iniciais (rascunho, versão 1, token novo); confere que o orçamento é da conta da transação (NBB-46) |
+| `app.generate_public_token()` | `app_user` (default de `quotes.public_token`; `SECURITY DEFINER`) | 32 bytes de `gen_random_bytes` (extensão `pgcrypto`, no schema `extensions`, sem acesso do app) em base64url (RN-30, NBB-46) |
 | `get_public_quote(token)` | `app_user` (só o servidor chama) | retorna campos mínimos do orçamento + perfil público; registra `viewed` (RN-35); aplica RN-31 |
 | `respond_to_quote(token, decision, name, reason, ip, ua)` | `app_user` (só o servidor chama) | valida RN-32, grava status + evento (RN-34) em transação |
 | `app.check_rate_limit(key, limit, window_seconds)` | `app_user` | janela fixa alinhada ao relógio de São Paulo (86400 = vira à meia-noite de Brasília); conta mais um uso e retorna permitido/negado (NBB-39) |

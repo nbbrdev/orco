@@ -76,7 +76,8 @@ export function ClientForm({
     if (!client) return;
     startTransition(async () => {
       const result = await deleteClientAction(client.id);
-      if (result.status === "error") {
+      // Com orçamentos, o cliente fica, e a mensagem da RN-09 aparece no painel.
+      if (result.status === "error" || result.status === "has_quotes") {
         setMessage(result.message);
       } else {
         onDeleted(client.id);

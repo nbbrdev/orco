@@ -1,6 +1,11 @@
 "use server";
 
-import { deleteClient, saveClient, type SaveClientResult } from "@/features/clients/clients";
+import {
+  deleteClient,
+  type DeleteClientResult,
+  saveClient,
+  type SaveClientResult,
+} from "@/features/clients/clients";
 import { requireSessionUser } from "@/lib/auth/session";
 
 // Server Actions dos clientes (F-15, NBB-44): casca fina sobre src/features/clients/clients.ts. O
@@ -22,8 +27,7 @@ export async function saveClientAction(
   }
 }
 
-export type DeleteClientState =
-  { status: "deleted" | "not_found" } | { status: "error"; message: string };
+export type DeleteClientState = DeleteClientResult | { status: "error"; message: string };
 
 export async function deleteClientAction(id: string): Promise<DeleteClientState> {
   const user = await requireSessionUser();

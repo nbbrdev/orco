@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, count, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -11,7 +11,7 @@ import {
 } from "@/features/clients/schemas";
 import { withUserDb } from "@/lib/db";
 import { DB_ERROR_CODES, hasPostgresCode } from "@/lib/db/errors";
-import { clients, MAX_CLIENTS_PER_USER } from "@/lib/db/schema";
+import { clients, MAX_CLIENTS_PER_USER, quotes } from "@/lib/db/schema";
 import { firstErrorByField } from "@/lib/validation";
 
 // O "miolo" dos clientes (F-15, NBB-44), sem nada do Next: lê e grava sempre pelo withUserDb, então
@@ -93,19 +93,39 @@ async function createClient(userId: string, values: ClientValues): Promise<SaveC
   }
 }
 
-/** Exclui um cliente da pessoa. Sem orçamentos ainda (M4), a exclusão sempre é permitida (K1-A). */
-export async function deleteClient(
-  userId: string,
-  id: string,
-): Promise<{ status: "deleted" | "not_found" }> {
+export type DeleteClientResult =
+  { status: "deleted" | "not_found" } | { status: "has_quotes"; message: string };
+
+/**
+ * Exclui um cliente da pessoa. Com orçamentos, o banco impede (FK, RN-09, NBB-46 Q11-A): o erro vira
+ * a mensagem com quantos orçamentos ele tem.
+ */
+export async function deleteClient(userId: string, id: string): Promise<DeleteClientResult> {
   if (!clientId.safeParse(id).success) {
     return { status: "not_found" };
   }
-  const deleted = await withUserDb(userId, (tx) =>
-    tx
-      .delete(clients)
-      .where(and(eq(clients.id, id), eq(clients.userId, userId)))
-      .returning({ id: clients.id }),
-  );
-  return { status: deleted.length > 0 ? "deleted" : "not_found" };
+  try {
+    const deleted = await withUserDb(userId, (tx) =>
+      tx
+        .delete(clients)
+        .where(and(eq(clients.id, id), eq(clients.userId, userId)))
+        .returning({ id: clients.id }),
+    );
+    return { status: deleted.length > 0 ? "deleted" : "not_found" };
+  } catch (error) {
+    if (!hasPostgresCode(error, DB_ERROR_CODES.foreignKeyViolation)) {
+      throw error;
+    }
+    const [row] = await withUserDb(userId, (tx) =>
+      tx.select({ count: count() }).from(quotes).where(eq(quotes.clientId, id)),
+    );
+    return { status: "has_quotes", message: clientHasQuotesMessage(row?.count ?? 0) };
+  }
+}
+
+/** RN-09: "Este cliente tem N orçamentos. Exclua-os antes de excluir o cliente." */
+export function clientHasQuotesMessage(quoteCount: number): string {
+  return quoteCount === 1
+    ? "Este cliente tem 1 orçamento. Exclua-o antes de excluir o cliente."
+    : `Este cliente tem ${quoteCount} orçamentos. Exclua-os antes de excluir o cliente.`;
 }

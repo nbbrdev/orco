@@ -60,6 +60,9 @@
 ## 4. Acesso público ao orçamento (ADR-0005/0014)
 
 - Token: 32 bytes de `gen_random_bytes` (256 bits) em base64url. É inviável adivinhar, não é sequencial e não deriva do ID.
+  - Gerado **pelo banco** (NBB-46, Q6-A): a função `app.generate_public_token()` usa a extensão `pgcrypto`, instalada num schema próprio (`extensions`) que o app não alcança.
+  - O trigger de criação sempre gera um token novo, mesmo que o app mande outro, e a `app_user` não pode alterá-lo depois. Regenerar o link (RN-36) será uma função própria, na M6.
+- **Nada aponta para dados de outra conta:** as FKs de `quotes` e `quote_items` para clientes, orçamentos e catálogo são compostas com o `user_id`. Uma FK sozinha não respeita a RLS, porque o Postgres confere a referência sem filtrar por conta (NBB-46).
 - A página `/p/[token]` e o PDF público chamam as funções `get_public_quote` / `respond_to_quote` (`SECURITY DEFINER`, donas `orco_owner`, `execute` para `app_user`) **somente do servidor**. O banco não tem porta pública, então o navegador nunca fala com ele.
 - As funções retornam **apenas** os campos necessários à exibição, nunca IDs internos, `user_id` ou e-mail da conta.
 - IP e user agent vêm dos headers repassados pelo **Nginx** (`X-Forwarded-For`, `X-Real-IP`), lidos no servidor. O app só confia nesses headers porque só o Nginx o alcança (porta ligada a `127.0.0.1`).
