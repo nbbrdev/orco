@@ -13,18 +13,11 @@ Produção: https://orco.nbbrdev.com · Repo: `nbbrdev/orco` (público) · Linea
 - Mudou `docs/`? Atualize o Linear Doc correspondente na mesma sessão, e vice-versa.
 
 ## Fase atual
-**M2: Auth & Perfil** (meta: `v0.2.0`). A **M1** foi concluída em 2026-10-01, com a `v0.1.0` no ar (VPS, deploy automatizado, backup manual pelo DBeaver).
+**M3: Clientes & Catálogo** (meta: `v0.3.0`). A **M2** foi concluída em 2026-10-03, com a `v0.2.0` no ar (cadastro e login com e-mail e Google, recuperação de senha, perfil e logo, exclusão de conta, PWA e tema, E2E no CI, trava de cobertura de 80%).
 
-Ordem da M2 (decidida com o usuário em 2026-10-02; só a `v0.2.0` no fim, o staging recebe cada merge):
-1. NBB-79: base do Better Auth (tabelas `auth`, `getAuth()`, `getSessionUser()`);
-2. NBB-80: módulo de e-mail (Nodemailer, Mailpit, templates pt-BR);
-3. NBB-39: telas de cadastro e login, com confirmação de e-mail e anti-abuso (RN-46), junto com a NBB-72 (Playwright e E2E no CI);
-4. NBB-41: recuperação de senha, logout e proteção de rotas;
-5. NBB-40: login com Google;
-6. NBB-42: perfil do freelancer e logo;
-7. NBB-43: exclusão de conta;
-8. NBB-60: PWA instalável e tema;
-9. NBB-73: reavaliar a cobertura mínima do código de banco.
+Ordem da M3 (decidida com o usuário em 2026-10-03; só a `v0.3.0` no fim, o staging recebe cada merge):
+1. NBB-44: clientes (schema, RLS e CRUD);
+2. NBB-45: catálogo (schema, RLS e CRUD).
 
 A base da VPS (compartilhada entre projetos) fica no repositório privado `nbbrdev/vps` (projeto "VPS" no Linear).
 
