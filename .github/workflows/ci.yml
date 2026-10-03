@@ -100,5 +100,7 @@ jobs:
       - name: Testes E2E (Playwright)
         run: npm run test:e2e
 
+      # Só as dependências de produção (o que roda no servidor). Alertas em ferramentas de
+      # desenvolvimento chegam pelo Dependabot, sem travar o CI (decidido em 2026-10-02, NBB-42).
       - name: Auditoria de dependências
-        run: npm audit --audit-level=high
+        run: npm audit --audit-level=high --omit=dev
