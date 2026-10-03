@@ -10,15 +10,14 @@ import {
   type ClientValues,
 } from "@/features/clients/schemas";
 import { withUserDb } from "@/lib/db";
+import { DB_ERROR_CODES, hasPostgresCode } from "@/lib/db/errors";
 import { clients, MAX_CLIENTS_PER_USER } from "@/lib/db/schema";
+import { firstErrorByField } from "@/lib/validation";
 
 // O "miolo" dos clientes (F-15, NBB-44), sem nada do Next: lê e grava sempre pelo withUserDb, então
 // a RLS garante que cada pessoa só alcança os próprios clientes. O `userId` vem da sessão validada.
 
 export const CLIENT_LIMIT_MESSAGE = `Você chegou ao limite de ${MAX_CLIENTS_PER_USER.toLocaleString("pt-BR")} clientes. Exclua um cliente que não usa mais para cadastrar outro.`;
-
-/** Código do erro lançado pelo trigger app.enforce_client_limit (migration 0004). */
-const CLIENT_LIMIT_ERROR_CODE = "OR001";
 
 const clientId = z.uuid();
 
@@ -56,7 +55,7 @@ export async function saveClient(
 ): Promise<SaveClientResult> {
   const parsed = clientSchema.safeParse(input);
   if (!parsed.success) {
-    return { status: "invalid", errors: fieldErrors(parsed.error) };
+    return { status: "invalid", errors: firstErrorByField<ClientField>(parsed.error) };
   }
   if (id === null) {
     return createClient(userId, parsed.data);
@@ -87,7 +86,7 @@ async function createClient(userId: string, values: ClientValues): Promise<SaveC
     }
     return { status: "saved", client: created };
   } catch (error) {
-    if (isClientLimitError(error)) {
+    if (hasPostgresCode(error, DB_ERROR_CODES.clientLimit)) {
       return { status: "limit", message: CLIENT_LIMIT_MESSAGE };
     }
     throw error;
@@ -109,27 +108,4 @@ export async function deleteClient(
       .returning({ id: clients.id }),
   );
   return { status: deleted.length > 0 ? "deleted" : "not_found" };
-}
-
-/** A primeira mensagem de erro de cada campo. */
-function fieldErrors(error: z.ZodError): Partial<Record<ClientField, string>> {
-  const errors: Partial<Record<ClientField, string>> = {};
-  for (const issue of error.issues) {
-    const field = issue.path[0] as ClientField | undefined;
-    if (field && !errors[field]) {
-      errors[field] = issue.message;
-    }
-  }
-  return errors;
-}
-
-// O Drizzle embrulha o erro do Postgres; o código (SQLSTATE) fica em `cause`.
-function isClientLimitError(error: unknown): boolean {
-  const cause = error instanceof Error && error.cause ? error.cause : error;
-  return (
-    typeof cause === "object" &&
-    cause !== null &&
-    "code" in cause &&
-    cause.code === CLIENT_LIMIT_ERROR_CODE
-  );
 }

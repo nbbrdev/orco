@@ -36,6 +36,20 @@ export function optionalEmail(max: number) {
     );
 }
 
+/** A primeira mensagem de erro de cada campo de um formulário (ex.: clientes, catálogo). */
+export function firstErrorByField<Field extends string>(
+  error: z.ZodError,
+): Partial<Record<Field, string>> {
+  const errors: Partial<Record<Field, string>> = {};
+  for (const issue of error.issues) {
+    const field = issue.path[0] as Field | undefined;
+    if (field && !errors[field]) {
+      errors[field] = issue.message;
+    }
+  }
+  return errors;
+}
+
 /** CPF/CNPJ (RN-08): guarda sem pontuação e confere o dígito verificador. */
 export const optionalDocument = z
   .string()

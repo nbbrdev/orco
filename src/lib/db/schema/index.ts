@@ -2,5 +2,6 @@
 // sempre com RLS (ENABLE + FORCE), policies com `app.current_user_id()` e teste de integração.
 // As tabelas de login do Better Auth (schema `auth`) ficam em ./auth.ts.
 export * from "./auth";
+export * from "./catalog-items";
 export * from "./clients";
 export * from "./profiles";
