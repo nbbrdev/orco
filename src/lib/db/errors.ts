@@ -1,7 +1,10 @@
 import "server-only";
 
-// Códigos de erro (SQLSTATE) próprios do Orçô, lançados pelos triggers de limite (RN-38).
+// Códigos de erro (SQLSTATE) que o app trata: os do Postgres e os próprios do Orçô, lançados pelos
+// triggers de limite (RN-38).
 export const DB_ERROR_CODES = {
+  /** FK impediu a operação (ex.: excluir cliente com orçamentos, RN-09). */
+  foreignKeyViolation: "23503",
   /** app.enforce_client_limit (migration 0004). */
   clientLimit: "OR001",
   /** app.enforce_catalog_item_limit (migration 0005). */

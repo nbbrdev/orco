@@ -2,7 +2,7 @@
 // e morre em cascata com ela. RLS: a app_user só vê e altera os itens da própria conta. O limite de
 // 500 por conta (RN-38) é garantido pelo trigger app.enforce_catalog_item_limit (migration 0005).
 import { sql } from "drizzle-orm";
-import { bigint, check, index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { bigint, check, index, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 
 import { user } from "./auth";
 
@@ -34,6 +34,8 @@ export const catalogItems = pgTable(
   },
   (table) => [
     index("catalog_items_user_id_name_idx").on(table.userId, table.name),
+    // Alvo da FK composta de quote_items (NBB-46, escrita à mão na migration 0006).
+    unique("catalog_items_id_user_id_key").on(table.id, table.userId),
     check(
       "catalog_items_name_length",
       sql`char_length(${table.name}) between 1 and ${sql.raw(String(CATALOG_ITEM_LIMITS.name))}`,

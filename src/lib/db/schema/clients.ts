@@ -2,7 +2,7 @@
 // cascata com ela. RLS: a app_user só vê e altera os clientes da própria conta. O limite de 1.000 por
 // conta (RN-38) é garantido pelo trigger app.enforce_client_limit (migration 0004).
 import { sql } from "drizzle-orm";
-import { check, index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { check, index, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 
 import { user } from "./auth";
 
@@ -37,6 +37,8 @@ export const clients = pgTable(
   },
   (table) => [
     index("clients_user_id_name_idx").on(table.userId, table.name),
+    // Alvo da FK composta de quotes (NBB-46): um orçamento só aponta para um cliente da mesma conta.
+    unique("clients_id_user_id_key").on(table.id, table.userId),
     check(
       "clients_name_length",
       sql`char_length(${table.name}) between 1 and ${sql.raw(String(CLIENT_LIMITS.name))}`,
