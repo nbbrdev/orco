@@ -21,7 +21,12 @@ import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import type { ClientRow } from "@/features/clients/schemas";
-import { saveItemToCatalogAction, saveQuoteItemsAction } from "@/features/quotes/actions";
+import {
+  deleteQuoteAction,
+  duplicateQuoteAction,
+  saveItemToCatalogAction,
+  saveQuoteItemsAction,
+} from "@/features/quotes/actions";
 import {
   type CatalogSuggestion,
   type DiscountDraft,
@@ -42,11 +47,15 @@ import {
   quoteTotals,
 } from "@/features/quotes/items";
 import type { QuoteClient } from "@/features/quotes/quotes";
+import type { QuoteStatus } from "@/features/quotes/status";
+import { todayInAppTimeZone } from "@/lib/dates";
 import { MAX_ITEMS_PER_QUOTE } from "@/lib/db/schema/quote-limits";
 import { formatBRL } from "@/lib/money";
 
 import { ClientPicker } from "./client-picker";
+import { ExtendValidity } from "./extend-validity";
 import { MoreOptions } from "./more-options";
+import { QuoteActionsMenu } from "./quote-actions-menu";
 import { QuoteItemCard } from "./quote-item-card";
 
 // Editor de orçamento (F-05): cliente (NBB-87), itens, total na hora e salvamento automático (NBB-86),
@@ -55,6 +64,7 @@ import { QuoteItemCard } from "./quote-item-card";
 // - Cada mudança agenda um salvamento do orçamento inteiro ~800 ms depois (P2-A, RN-21, G3-A). Se
 //   algum campo estiver inválido, nada é salvo até corrigir (P3-A).
 // - Reordenar arrastando pela alça (R2-B), também pelo teclado (espaço, setas, espaço).
+// - Menu "⋯" com Duplicar e Excluir; no expirado, o aviso com "Prorrogar validade" (NBB-49).
 
 const SAVE_DELAY_MS = 800;
 const CAPPED_HINT = "O desconto ficou limitado ao valor.";
@@ -64,6 +74,8 @@ type SaveStatus = "saved" | "pending" | "saving" | "invalid" | "error" | "blocke
 export function QuoteEditor({
   quoteId,
   quoteNumber,
+  quoteStatus,
+  defaultValidityDays,
   initialItems,
   initialOptions,
   initialClient,
@@ -72,6 +84,9 @@ export function QuoteEditor({
 }: {
   quoteId: string;
   quoteNumber: number;
+  quoteStatus: QuoteStatus;
+  /** Validade padrão do perfil, para sugerir a data ao prorrogar (NBB-49 P5-A). */
+  defaultValidityDays: number;
   initialItems: ItemDraft[];
   initialOptions: OptionsDraft;
   initialClient: QuoteClient | null;
@@ -89,6 +104,8 @@ export function QuoteEditor({
   // O estado mais recente, para quem continua depois de esperar o servidor (ex.: salvar no catálogo).
   const latest = useRef(initialItems);
   const latestOptions = useRef(initialOptions);
+  // O salvamento em andamento, para quem precisa esperar por ele (ex.: duplicar).
+  const inFlight = useRef<Promise<unknown> | null>(null);
 
   const parsed = items.map(parseItem);
   const valid = parsed.flatMap((result) => (result.ok ? [result.item] : []));
@@ -96,6 +113,7 @@ export function QuoteEditor({
   const quoteDiscount = parsedOptions.ok ? parsedOptions.options.discount : NO_STORED_DISCOUNT;
   const totals = quoteTotals(valid, quoteDiscount);
   const optionErrors = parsedOptions.ok ? NO_OPTION_ERRORS : parsedOptions.errors;
+  const today = todayInAppTimeZone();
 
   // Pede confirmação ao sair da página com algo ainda não salvo.
   useEffect(() => {
@@ -116,7 +134,36 @@ export function QuoteEditor({
       return;
     }
     setStatus("pending");
-    timer.current = setTimeout(() => void save(nextItems, nextOptions), SAVE_DELAY_MS);
+    timer.current = setTimeout(() => {
+      timer.current = null;
+      void save(nextItems, nextOptions);
+    }, SAVE_DELAY_MS);
+  }
+
+  /** Salva já o que estiver agendado, ou espera o salvamento em andamento. */
+  async function flush() {
+    if (timer.current) {
+      clearTimeout(timer.current);
+      timer.current = null;
+      await save(latest.current, latestOptions.current);
+    } else if (inFlight.current) {
+      await inFlight.current;
+    }
+  }
+
+  /** "Duplicar" (NBB-49 P2-A): a cópia leva o que acabou de ser digitado. */
+  async function duplicate() {
+    await flush();
+    const result = await duplicateQuoteAction(quoteId);
+    setMessage(result.message);
+  }
+
+  /** "Excluir" (RN-29): o que estava agendado para salvar não importa mais. */
+  async function remove() {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+    const result = await deleteQuoteAction(quoteId);
+    setMessage(result.message);
   }
 
   function update(next: ItemDraft[]) {
@@ -130,7 +177,10 @@ export function QuoteEditor({
   async function save(nextItems: ItemDraft[], nextOptions: OptionsDraft) {
     const attempt = ++lastSave.current;
     setStatus("saving");
-    const result = await saveQuoteItemsAction(quoteId, { items: nextItems, options: nextOptions });
+    const request = saveQuoteItemsAction(quoteId, { items: nextItems, options: nextOptions });
+    inFlight.current = request;
+    const result = await request;
+    if (inFlight.current === request) inFlight.current = null;
     if (attempt !== lastSave.current) return;
     if (result.status === "saved") {
       setStatus("saved");
@@ -206,10 +256,26 @@ export function QuoteEditor({
 
   return (
     <div className="flex flex-col gap-6 pb-24 md:pb-28">
-      <div className="flex items-baseline justify-between gap-4">
+      <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">Orçamento Nº {formatQuoteNumber(quoteNumber)}</h1>
-        <SaveIndicator status={status} onRetry={() => void save(items, options)} />
+        <div className="flex items-center gap-2">
+          <SaveIndicator status={status} onRetry={() => void save(items, options)} />
+          <QuoteActionsMenu
+            quoteLabel={`Nº ${formatQuoteNumber(quoteNumber)}`}
+            onDuplicate={duplicate}
+            onDelete={remove}
+          />
+        </div>
       </div>
+
+      {/* Expirado: enviado com a validade antes de hoje (RN-26). Prorrogar devolve a enviado (RN-27). */}
+      {quoteStatus === "sent" && !optionErrors.validUntil && options.validUntil < today ? (
+        <ExtendValidity
+          validUntil={options.validUntil}
+          defaultValidityDays={defaultValidityDays}
+          onExtend={(validUntil) => updateOptions({ ...latestOptions.current, validUntil })}
+        />
+      ) : null}
 
       <ClientPicker quoteId={quoteId} clients={clients} initialClient={initialClient} />
 

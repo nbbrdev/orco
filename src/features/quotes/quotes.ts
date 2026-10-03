@@ -129,6 +129,8 @@ export type EditorQuote = {
   responseUnseen: boolean;
   /** "Mais opções" (NBB-88 G2-A). */
   options: ParsedOptions;
+  /** Validade padrão do perfil, em dias: a sugestão ao prorrogar (F-11, NBB-49 P5-A). */
+  defaultValidityDays: number;
 };
 
 /** O orçamento e os itens, na ordem salva, para abrir o editor. `null` se não existe ou é de outra conta. */
@@ -177,10 +179,18 @@ export async function getQuoteForEditor(userId: string, id: string): Promise<Edi
       .from(quoteItems)
       .where(eq(quoteItems.quoteId, id))
       .orderBy(asc(quoteItems.position), asc(quoteItems.createdAt));
+    const [profile] = await tx
+      .select({ validityDays: profiles.defaultValidityDays })
+      .from(profiles)
+      .where(eq(profiles.id, userId));
+    if (!profile) {
+      throw new Error("Perfil não encontrado para a conta da sessão.");
+    }
     return {
       id: quote.id,
       number: quote.number,
       status: quote.status,
+      defaultValidityDays: profile.validityDays,
       client:
         quote.clientName === null
           ? null
