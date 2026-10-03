@@ -51,16 +51,16 @@ test("criar, buscar, editar e excluir um item do catálogo (F-16)", async ({ pag
   await page.reload();
   await expect(list.getByText(/R\$\s1\.250,50 \/ h/u)).toBeVisible();
 
-  // Excluir pede confirmação.
+  // Excluir pede confirmação. Enquanto uma janela está aberta, o resto da página fica escondido do
+  // leitor de tela, e o painel e a lista "somem" para o teste. Por isso, a ordem: a confirmação
+  // fecha, depois o painel fecha (é quando a exclusão terminou), e só então a lista.
   await list.getByText("Site").click();
-  await page
-    .getByRole("dialog", { name: "Editar item" })
-    .getByRole("button", { name: "Excluir" })
-    .click();
-  await page
-    .getByRole("alertdialog", { name: "Excluir Site?" })
-    .getByRole("button", { name: "Excluir" })
-    .click();
+  const deletePanel = page.getByRole("dialog", { name: "Editar item" });
+  await deletePanel.getByRole("button", { name: "Excluir" }).click();
+  const confirm = page.getByRole("alertdialog", { name: "Excluir Site?" });
+  await confirm.getByRole("button", { name: "Excluir" }).click();
+  await expect(confirm).toBeHidden();
+  await expect(deletePanel).toBeHidden();
   await expect(list.getByText("Site")).toBeHidden();
 
   await page.reload();
