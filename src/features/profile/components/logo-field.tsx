@@ -5,6 +5,7 @@ import { useRef, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 import { removeLogoAction, uploadLogoAction } from "@/features/profile/actions";
+import { LogoImage } from "@/features/profile/components/logo-image";
 import { LOGO_ACCEPTED_TYPES, LOGO_MAX_BYTES, LOGO_MAX_SIDE } from "@/features/profile/logo-rules";
 
 // Logo do freelancer (RN-05, NBB-81). O navegador reduz a imagem (lado maior até 1024 px) e tenta
@@ -87,8 +88,12 @@ export function LogoField({
       <div className="flex items-center gap-4">
         <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted">
           {logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- imagem da nossa própria rota, já pequena
-            <img src={logoUrl} alt="Seu logo" className="size-full object-contain" />
+            <LogoImage
+              src={logoUrl}
+              alt="Seu logo"
+              className="size-full object-contain"
+              onMissing={() => onChange(null)}
+            />
           ) : (
             <ImageIcon className="size-6 text-muted-foreground" aria-hidden="true" />
           )}

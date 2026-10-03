@@ -60,6 +60,27 @@ test("enviar, ver na prévia e remover o logo (NBB-81)", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Enviar logo" })).toBeVisible();
 });
 
+test("logo que não existe mais aparece como sem logo, sem imagem quebrada (ADR-0015)", async ({
+  page,
+}) => {
+  await useOwnIp(page);
+  await signUpAndConfirm(page, "senha-logo-789");
+  await page.goto("/app/perfil");
+  await page
+    .getByLabel("Arquivo do logo")
+    .setInputFiles({ name: "logo.png", mimeType: "image/png", buffer: PNG });
+  await expect(page.getByRole("img", { name: "Seu logo" })).toBeVisible();
+
+  // Simula o arquivo perdido (ex.: VPS reconstruída sem os logos): a rota responde 404.
+  await page.route("**/api/p/logos/**", (route) => route.fulfill({ status: 404 }));
+  await page.reload();
+
+  await expect(page.getByRole("img", { name: "Seu logo" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Enviar logo" })).toBeVisible();
+  const preview = page.getByRole("region", { name: "Prévia do cabeçalho do orçamento" });
+  await expect(preview.locator("img")).toHaveCount(0);
+});
+
 test("arquivo que não é imagem é recusado no navegador (RN-05)", async ({ page }) => {
   await useOwnIp(page);
   await signUpAndConfirm(page, "senha-logo-456");

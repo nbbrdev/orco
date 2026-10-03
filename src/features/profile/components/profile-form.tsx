@@ -14,6 +14,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { saveProfileFieldAction } from "@/features/profile/actions";
 import { LogoField } from "@/features/profile/components/logo-field";
+import { LogoImage } from "@/features/profile/components/logo-image";
 import { ProfileTextField } from "@/features/profile/components/profile-field";
 import type { ProfileField, ProfileValues } from "@/features/profile/schemas";
 import { formatDocument } from "@/lib/document";
@@ -42,7 +43,12 @@ export function ProfileForm({
 
   return (
     <div className="flex flex-col gap-10">
-      <HeaderPreview values={values} logoUrl={logoUrl} accountEmail={accountEmail} />
+      <HeaderPreview
+        values={values}
+        logoUrl={logoUrl}
+        onLogoMissing={() => setLogoUrl(null)}
+        accountEmail={accountEmail}
+      />
 
       <FieldSet>
         <FieldLegend>Sua marca</FieldLegend>
@@ -220,10 +226,12 @@ function EmailNotificationsSwitch({
 function HeaderPreview({
   values,
   logoUrl,
+  onLogoMissing,
   accountEmail,
 }: {
   values: ProfileValues;
   logoUrl: string | null;
+  onLogoMissing: () => void;
   accountEmail: string;
 }) {
   const name = values.businessName ?? values.displayName ?? accountEmail;
@@ -242,8 +250,12 @@ function HeaderPreview({
       </p>
       <div className="flex items-center gap-4 rounded-lg border border-b-2 border-border border-b-primary p-4">
         {logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- imagem da nossa própria rota, já pequena
-          <img src={logoUrl} alt="" className="size-14 shrink-0 object-contain" />
+          <LogoImage
+            src={logoUrl}
+            alt=""
+            className="size-14 shrink-0 object-contain"
+            onMissing={onLogoMissing}
+          />
         ) : null}
         <div className="min-w-0">
           <p className="text-lg font-semibold">{name}</p>

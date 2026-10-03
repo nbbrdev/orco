@@ -22,7 +22,7 @@ O único arquivo enviado pelos usuários no MVP é o **logo** do freelancer (RN-
 - **Serviço externo (R2/S3):** mais uma conta e mais chaves. Continua possível no futuro sem mudar o código.
 
 ## Consequências
-- **Revisão (2026-09-30, decisão do usuário):** o RustFS **fica fora do backup**, que é manual e só do banco (ADR-0012). Risco aceito: poucos clientes; se a VPS for perdida, os logos são enviados de novo. Como o app trata um logo que não existe mais fica para a NBB-42.
+- **Revisão (2026-09-30, decisão do usuário):** o RustFS **fica fora do backup**, que é manual e só do banco (ADR-0012). Risco aceito: poucos clientes; se a VPS for perdida, os logos são enviados de novo. **Logo que não existe mais** (decidido em 2026-10-03, NBB-81, opção A): quando a imagem não carrega, o app a trata como "sem logo", sem mostrar imagem quebrada, e a pessoa vê "Enviar logo" para mandar de novo.
 - A **exclusão de conta** apaga explicitamente o logo da conta no RustFS (pelo `profiles.logo_path`), porque o armazenamento não participa da cascata do banco.
 
 ## Implementação (decidida pelo usuário em 2026-10-03, NBB-81)
