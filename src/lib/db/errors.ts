@@ -9,6 +9,16 @@ export const DB_ERROR_CODES = {
   clientLimit: "OR001",
   /** app.enforce_catalog_item_limit (migration 0005). */
   catalogItemLimit: "OR002",
+  /** 200 orçamentos criados no mês (RN-38), app.prepare_new_quote (migration 0007). */
+  monthlyQuoteLimit: "OR003",
+  /** 100 itens por orçamento (RN-14), app.check_quote_item_change (migration 0007). */
+  quoteItemLimit: "OR004",
+  /** Mudança de status fora das regras (RN-22 a RN-27), app.check_quote_update (migration 0007). */
+  invalidStatusChange: "OR005",
+  /** Orçamento respondido não muda (RN-25), migration 0007. */
+  quoteLocked: "OR006",
+  /** Envio sem os itens completos (RN-13), app.check_quote_update (migration 0007). */
+  quoteNotReadyToSend: "OR007",
 } as const;
 
 /** Se o erro veio do Postgres com este código. O Drizzle embrulha o erro; o código fica em `cause`. */

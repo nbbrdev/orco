@@ -2,7 +2,7 @@
 // auth.user. Nasce pelo trigger app.handle_new_user (migration 0003) e morre em cascata com a conta.
 // RLS: a app_user só lê e altera o próprio perfil; não insere nem apaga.
 import { sql } from "drizzle-orm";
-import { boolean, check, integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, date, integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 import { user } from "./auth";
 
@@ -40,6 +40,11 @@ export const profiles = pgTable(
     defaultPaymentTerms: text("default_payment_terms"),
     defaultDeliveryTime: text("default_delivery_time"),
     nextQuoteNumber: integer("next_quote_number").notNull().default(1),
+    // Limite de 200 orçamentos criados por mês (RN-38, NBB-46 Q7-A): o mês (dia 1º, no fuso de São
+    // Paulo) e quantos foram criados nele. Só o trigger app.prepare_new_quote mexe; excluir um
+    // orçamento não devolve a vaga.
+    quotesMonth: date("quotes_month"),
+    quotesMonthCount: integer("quotes_month_count").notNull().default(0),
     emailNotifications: boolean("email_notifications").notNull().default(true),
     pushPromptedAt: timestamp("push_prompted_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -97,6 +102,7 @@ export const profiles = pgTable(
       sql`char_length(${table.defaultDeliveryTime}) <= ${sql.raw(String(PROFILE_LIMITS.defaultDeliveryTime))}`,
     ),
     check("profiles_next_quote_number_positive", sql`${table.nextQuoteNumber} >= 1`),
+    check("profiles_quotes_month_count_positive", sql`${table.quotesMonthCount} >= 0`),
   ],
 );
 

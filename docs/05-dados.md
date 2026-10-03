@@ -46,6 +46,8 @@
 | default_payment_terms | text null | ≤ 500 (RN-44) |
 | default_delivery_time | text null | ≤ 500 (RN-44) |
 | next_quote_number | int not null default 1 | contador (RN-12) |
+| quotes_month | date null | mês (dia 1º, fuso de São Paulo) do contador abaixo (RN-38, NBB-46) |
+| quotes_month_count | int not null default 0 | orçamentos criados no mês; excluir não devolve a vaga (RN-38). Só o trigger `app.prepare_new_quote` mexe |
 | email_notifications | boolean not null default true | respostas + lembretes por e-mail (RN-41) |
 | push_prompted_at | timestamptz null | quando a permissão de push já foi pedida, para não pedir de novo (RN-45) |
 | created_at, updated_at | timestamptz | `updated_at` pelo trigger `app.set_updated_at` |
@@ -110,9 +112,11 @@ Migration `0005_catalog_items` (NBB-45, 2026-10-03).
 
 Índices: `(user_id, status)`, `(user_id, created_at desc)`, `(client_id)`, `unique(public_token)`, `unique(id, user_id)` (alvo da FK dos itens).
 **RLS:** select/insert/delete/update onde `user_id = app.current_user_id()` (uma policy `FOR ALL`).
-**Criação** (migration `0006_quotes`, NBB-46): o trigger `app.prepare_new_quote` (`BEFORE INSERT`) dá o número, e todo orçamento nasce `draft`, na versão 1, com um token novo e sem as datas e a contagem da M6, não importa o que o app mande. O insert fica liberado em todas as colunas porque o Drizzle sempre lista todas; no **update**, a `app_user` só altera as colunas que o app preenche (sem `number`, `public_token`, `version`, `status`, as datas e a contagem). `status`, `sent_at` e `response_seen_at` entram no PR 2 da NBB-46, junto com o trigger de transições.
-A trava de conteúdo (RN-25) fica num **trigger** `BEFORE UPDATE`: em `approved`/`rejected`, qualquer coluna diferente de `internal_notes`, `response_seen_at` e `updated_at` gera erro. (A RLS filtra linhas, não colunas, por isso a trava por coluna é trigger.)
-**Trigger:** transições de status válidas (RN-22–RN-27) garantidas no banco, e não só na aplicação.
+**Criação** (migration `0006_quotes`, NBB-46): o trigger `app.prepare_new_quote` (`BEFORE INSERT`) dá o número, e todo orçamento nasce `draft`, na versão 1, com um token novo e sem as datas e a contagem da M6, não importa o que o app mande. O insert fica liberado em todas as colunas porque o Drizzle sempre lista todas; no **update**, a `app_user` só altera as colunas que o app preenche (sem `number`, `public_token`, `version`, `sent_at`, `responded_at`, a contagem e as datas da M6). O mesmo trigger conta o **limite de 200 orçamentos criados no mês** (RN-38) em `profiles.quotes_month_count`; acima disso, erro `OR003`, e o número não é gasto.
+**Regras no update** (trigger `app.check_quote_update`, migration `0007_quote_rules`, NBB-46). "Conteúdo" é o que o cliente vê: tudo menos as anotações internas, as datas, a contagem, a versão e o status.
+- **Transições** (RN-22 a RN-27): a `app_user` só faz `draft` → `sent`, e o banco confere a RN-13 (ao menos 1 item, todos com descrição e valor; senão, erro `OR007`) e preenche o `sent_at`. `sent` → `approved`/`rejected` só pela dona (as funções da M6), que preenche o `responded_at`. Qualquer outra mudança: erro `OR005`. Expirado é `sent` com a validade vencida (RN-26); prorrogar só muda a `valid_until` e zera o `reminder_sent_at` (RN-43).
+- **Versão** (RN-24): editar o conteúdo de um orçamento `sent` sobe a `version` **uma vez por transação** (um salvamento do editor mexe em várias linhas). Se a linha já foi alterada na transação, o `xmin` dela é o id da transação atual (`pg_current_xact_id()`), e a versão não sobe de novo. Mexer nos itens também versiona (trigger `app.bump_quote_version_from_item`).
+- **Trava** (RN-25): em `approved`/`rejected`, só mudam `internal_notes`, `response_seen_at`, `updated_at` e a contagem de visualizações da M6 (`view_count`, `first_viewed_at`); o resto, inclusive o status (a resposta é definitiva, RN-32), dá erro `OR006`. (A RLS filtra linhas, não colunas, por isso a trava é trigger.)
 
 ### `quote_items`
 | Coluna | Tipo | Notas |
@@ -131,7 +135,9 @@ A trava de conteúdo (RN-25) fica num **trigger** `BEFORE UPDATE`: em `approved`
 | discount_cents | bigint not null default 0 | ≤ gross_cents |
 | line_total_cents | bigint not null | gross − discount (RN-15) |
 
-Limite de 100 itens por orçamento (RN-14), via trigger. **RLS:** CRUD onde `user_id = app.current_user_id()` e o orçamento pai é editável.
+**RLS:** CRUD onde `user_id = app.current_user_id()` (uma policy `FOR ALL`). O trigger `app.check_quote_item_change` (`BEFORE INSERT/UPDATE/DELETE`) trava a linha do orçamento e:
+- recusa mexer nos itens de um orçamento respondido (RN-25, erro `OR006`), para a `app_user`; as cascatas de exclusão (orçamento, conta) passam;
+- limita a **100 itens por orçamento** (RN-14, erro `OR004`), contando depois da trava, então dois itens ao mesmo tempo entram em fila.
 
 ### `quote_events`
 | Coluna | Tipo | Notas |
@@ -186,7 +192,10 @@ PK `(key, window_start)`. Criada na NBB-39 (migration `0002_rate_limits`, escrit
 | `app.set_updated_at()` | trigger `BEFORE UPDATE` de cada tabela | mantém o `updated_at` (convenção) |
 | `app.enforce_client_limit()` | trigger `BEFORE INSERT` em `clients` | limite de 1.000 clientes por conta (RN-38); erro `OR001` (NBB-44) |
 | `app.enforce_catalog_item_limit()` | trigger `BEFORE INSERT` em `catalog_items` | limite de 500 itens por conta (RN-38); erro `OR002` (NBB-45) |
-| `app.prepare_new_quote()` | trigger `BEFORE INSERT` em `quotes` (`SECURITY DEFINER`) | pega e incrementa `profiles.next_quote_number` com lock de linha (RN-12) e força os valores iniciais (rascunho, versão 1, token novo); confere que o orçamento é da conta da transação (NBB-46) |
+| `app.prepare_new_quote()` | trigger `BEFORE INSERT` em `quotes` (`SECURITY DEFINER`) | pega e incrementa `profiles.next_quote_number` com lock de linha (RN-12) e força os valores iniciais (rascunho, versão 1, token novo); conta o limite de 200 por mês (RN-38); confere que o orçamento é da conta da transação (NBB-46) |
+| `app.check_quote_update()` | trigger `BEFORE UPDATE` em `quotes` | transições de status e RN-13 no envio, versão uma vez por transação, trava do respondido (RN-22 a RN-27, NBB-46) |
+| `app.check_quote_item_change()` | trigger `BEFORE INSERT/UPDATE/DELETE` em `quote_items` | trava do respondido e limite de 100 itens (RN-14, RN-25) |
+| `app.bump_quote_version_from_item()` | trigger `AFTER` em `quote_items` (`SECURITY DEFINER`) | sobe a versão do orçamento enviado quando um item muda, uma vez por transação (RN-24) |
 | `app.generate_public_token()` | `app_user` (default de `quotes.public_token`; `SECURITY DEFINER`) | 32 bytes de `gen_random_bytes` (extensão `pgcrypto`, no schema `extensions`, sem acesso do app) em base64url (RN-30, NBB-46) |
 | `get_public_quote(token)` | `app_user` (só o servidor chama) | retorna campos mínimos do orçamento + perfil público; registra `viewed` (RN-35); aplica RN-31 |
 | `respond_to_quote(token, decision, name, reason, ip, ua)` | `app_user` (só o servidor chama) | valida RN-32, grava status + evento (RN-34) em transação |
