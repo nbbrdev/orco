@@ -142,9 +142,14 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
 | `npm run test:e2e` | E2E com o Playwright (precisa de `npm run build` antes; na primeira vez, `npx playwright install chromium`) | sim |
 
 **Cobertura:**
-- Mede quais linhas de `src/lib/` os testes executaram. Unitários e integração rodam **juntos** para o relatório somar os dois: código que só roda com banco (ex.: `src/lib/db/`) aparece com a cobertura real, e não com 0%.
-- Todo arquivo de `src/lib/` aparece no relatório, mesmo sem teste nenhum, para nada ficar escondido.
-- **Trava no CI:** 100% em `money.ts` e `dates.ts` (RNF-14). O resto aparece no relatório sem trava; a trava para o código de banco é reavaliada na M2 (NBB-73).
+- Mede quais linhas de `src/lib/` e dos arquivos `.ts` de `src/features/` (a lógica de servidor) os testes executaram. Unitários e integração rodam **juntos** para o relatório somar os dois: código que só roda com banco (ex.: `src/lib/db/`) aparece com a cobertura real, e não com 0%.
+- Todo arquivo dessas pastas aparece no relatório, mesmo sem teste nenhum, para nada ficar escondido. **Ficam fora** os arquivos que só rodam dentro de uma requisição do Next ou no navegador, testados pelo E2E: as Server Actions (`actions.ts`), o `session.ts`, o `nav-items.ts` e o `utils.ts`. Os componentes `.tsx` também ficam fora (E2E).
+- **Por isso, as Server Actions são uma casca fina:** leem a sessão e o IP e chamam um arquivo com a regra de negócio (ex.: `sign-up.ts`, `profile.ts`), que o Vitest testa.
+- **Trava no CI** (decidida em 2026-10-03, NBB-73):
+  - **80%** de linhas, comandos e funções no total;
+  - **100%** em `money.ts` e `dates.ts` (RNF-14).
+
+  O CI falha se ficar abaixo. Na M2, o total fechou em ~91%.
 - No CI, os testes rodam depois das roles e das migrations no Postgres temporário, num passo só (`npm run test:coverage`).
 
 **Regras:**
