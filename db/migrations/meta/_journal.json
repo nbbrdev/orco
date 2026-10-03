@@ -29,6 +29,13 @@
       "when": 1790982434807,
       "tag": "0003_profiles",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791027550729,
+      "tag": "0004_clients",
+      "breakpoints": true
     }
   ]
 }

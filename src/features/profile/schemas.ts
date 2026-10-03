@@ -1,20 +1,12 @@
 import { z } from "zod";
 
 import { PROFILE_LIMITS } from "@/lib/db/schema/profiles";
-import { normalizeDocument } from "@/lib/document";
+import { optionalDocument, optionalEmail, optionalPhone, optionalText } from "@/lib/validation";
 
 // Validação e limpeza de cada campo do perfil (F-14, NBB-42 D4). O salvamento é campo a campo (D3):
 // o navegador manda um campo e o valor digitado, e o servidor valida de novo aqui. Texto vazio vira
-// `null` (campo apagado), porque nada no perfil é obrigatório (RN-04).
-
-/** Texto opcional: sem espaços nas pontas; vazio → null; limite de tamanho. */
-function optionalText(max: number) {
-  return z
-    .string()
-    .trim()
-    .max(max, `Use até ${max} caracteres.`)
-    .transform((value) => value || null);
-}
+// `null` (campo apagado), porque nada no perfil é obrigatório (RN-04). Telefone, e-mail e CPF/CNPJ
+// usam as mesmas regras dos clientes (src/lib/validation.ts).
 
 /** Site (D4): sem `http(s)://`, acrescenta `https://`. Só aceita endereços web. */
 const website = z
@@ -53,38 +45,6 @@ const instagram = z
     "Informe o usuário do Instagram, ex.: @meunegocio",
   );
 
-/** Telefone (RN-08, D4): só o formato, sem conferir o número. */
-const phone = optionalText(PROFILE_LIMITS.phone).refine(
-  (value) => value === null || /^[0-9()+\-\s]{8,}$/.test(value),
-  "Informe um telefone válido, ex.: (11) 91234-5678",
-);
-
-/** E-mail de contato (RN-08): só o formato. */
-const contactEmail = z
-  .string()
-  .trim()
-  .toLowerCase()
-  .max(PROFILE_LIMITS.contactEmail)
-  .transform((value) => value || null)
-  .refine(
-    (value) => value === null || z.email().safeParse(value).success,
-    "Informe um e-mail válido.",
-  );
-
-/** CPF/CNPJ (RN-08, D4): guarda sem pontuação e confere o dígito verificador. */
-const document = z
-  .string()
-  .trim()
-  .transform((value, context) => {
-    if (!value) return null;
-    const normalized = normalizeDocument(value);
-    if (!normalized) {
-      context.addIssue({ code: "custom", message: "CPF ou CNPJ inválido. Confira os números." });
-      return z.NEVER;
-    }
-    return normalized;
-  });
-
 /** Validade padrão em dias (RN-19): 1 a 365. */
 const defaultValidityDays = z.coerce
   .number({ error: "Informe um número de dias." })
@@ -96,11 +56,11 @@ const defaultValidityDays = z.coerce
 export const profileFieldSchemas = {
   displayName: optionalText(PROFILE_LIMITS.displayName),
   businessName: optionalText(PROFILE_LIMITS.businessName),
-  phone,
-  contactEmail,
+  phone: optionalPhone(PROFILE_LIMITS.phone),
+  contactEmail: optionalEmail(PROFILE_LIMITS.contactEmail),
   website,
   instagram,
-  document,
+  document: optionalDocument,
   paymentInfo: optionalText(PROFILE_LIMITS.paymentInfo),
   defaultValidityDays,
   defaultNotes: optionalText(PROFILE_LIMITS.defaultNotes),

@@ -59,13 +59,17 @@ Migration `0003_profiles` (NBB-42, 2026-10-02): a tabela completa já nasce com 
 |---|---|---|
 | id, user_id, timestamps | | |
 | name | text not null | 1–120 (RN-07) |
-| email | text null | |
-| phone | text null | |
-| document | text null | validado (RN-08) |
+| email | text null | ≤ 254; só o formato (RN-08) |
+| phone | text null | ≤ 20; só o formato (RN-08) |
+| document | text null | mesmo formato do `profiles.document`; dígito verificador conferido no servidor (RN-08) |
 | address | text null | ≤ 300 |
 | internal_notes | text null | ≤ 2000, **privado**, fora do snapshot (RN-07) |
 
-Índice: `(user_id, name)`. **RLS:** CRUD onde `user_id = app.current_user_id()`.
+Índice: `(user_id, name)`. **RLS:** CRUD onde `user_id = app.current_user_id()` (uma policy `FOR ALL`). A `app_user` só altera as colunas editáveis: `id`, `user_id` e as datas ficam fora do `GRANT UPDATE`. `updated_at` pelo trigger `app.set_updated_at`.
+
+**Limite de 1.000 clientes por conta (RN-38):** garantido pelo trigger `app.enforce_client_limit` (`BEFORE INSERT`). Antes de contar, ele trava a linha do perfil da pessoa (`SELECT … FOR UPDATE`), para que dois cadastros simultâneos entrem em fila e o segundo já conte o primeiro. Acima do limite, lança o erro `OR001`, que o app traduz na mensagem da tela.
+
+Migration `0004_clients` (NBB-44, 2026-10-03). A FK de `quotes.client_id`, que impede excluir um cliente com orçamentos (RN-09), nasce com a tabela `quotes` (M4, NBB-46).
 
 ### `catalog_items`
 | Coluna | Tipo | Notas |

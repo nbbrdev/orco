@@ -264,6 +264,12 @@ Rodapé ........... "Orçô v0.4.0" · link "Novidades" (notas da versão no Git
 - Tocar num cliente abre a edição e a lista de orçamentos dele, com atalho **Novo orçamento para este cliente**.
 - Ao editar um cliente usado em rascunhos, aparece a pergunta "Atualizar também os N rascunhos deste cliente?" (RN-20).
 - Excluir pede confirmação e só é permitido se o cliente não tiver orçamentos. Caso tenha, a mensagem é "Este cliente tem N orçamentos. Exclua-os antes de excluir o cliente." (RN-09).
+- **Implementado na NBB-44 (2026-10-03):**
+  - a lista carrega todos os clientes, e a busca filtra na hora, por nome, e-mail ou CPF/CNPJ, sem diferenciar acentos nem maiúsculas;
+  - o painel salva só ao tocar em **Salvar**;
+  - o **Excluir** fica no painel de edição e pede confirmação numa janela;
+  - no limite de 1.000 clientes (RN-38), a mensagem é "Você chegou ao limite de 1.000 clientes. Exclua um cliente que não usa mais para cadastrar outro.".
+- **Fica para a M4, com os orçamentos:** a lista de orçamentos do cliente (RF-13), o atalho **Novo orçamento para este cliente**, a pergunta sobre os rascunhos (RN-20) e o bloqueio da exclusão (RN-09). Até lá, excluir um cliente sempre é permitido.
 
 ## F-16 — Gerenciar catálogo · ✅
 
