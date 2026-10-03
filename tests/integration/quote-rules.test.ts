@@ -302,15 +302,13 @@ describe("limites (RN-14, RN-38)", () => {
   it("até 100 itens por orçamento (Q8-A)", async () => {
     const quote = await createQuote(userA);
     await withUserDb(userA, (tx) =>
-      tx
-        .insert(quoteItems)
-        .values(
-          Array.from({ length: 99 }, (_, position) => ({
-            userId: userA,
-            quoteId: quote.id,
-            position,
-          })),
-        ),
+      tx.insert(quoteItems).values(
+        Array.from({ length: 99 }, (_, position) => ({
+          userId: userA,
+          quoteId: quote.id,
+          position,
+        })),
+      ),
     );
     // Dois itens ao mesmo tempo no 100º: só um passa.
     const results = await Promise.allSettled([
