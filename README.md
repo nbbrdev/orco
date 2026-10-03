@@ -38,6 +38,7 @@ npm run dev                  # http://localhost:3000
 | `npm run db:reset`              | apaga os dados locais e recria do zero          |
 | `npm run auth:generate`         | regera as tabelas de login (CLI do Better Auth) |
 | `npm run icons`                 | gera os ícones PNG do PWA a partir do SVG       |
+| `npm run pdf:sample`            | gera PDFs de exemplo em `pdf-samples/`          |
 | `npm run format`                | formata o código com Prettier                   |
 
 ## Contribuindo

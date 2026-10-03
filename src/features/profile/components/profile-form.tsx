@@ -18,6 +18,7 @@ import { LogoField } from "@/features/profile/components/logo-field";
 import { LogoImage } from "@/features/profile/components/logo-image";
 import { ThemeSelector } from "@/features/profile/components/theme-selector";
 import { ProfileTextField } from "@/features/profile/components/profile-field";
+import { issuerContacts, issuerName } from "@/features/profile/issuer";
 import type { ProfileField, ProfileValues } from "@/features/profile/schemas";
 import { formatDocument } from "@/lib/document";
 import { maskDocument, maskPhone } from "@/lib/masks";
@@ -245,14 +246,8 @@ function HeaderPreview({
   onLogoMissing: () => void;
   accountEmail: string;
 }) {
-  const name = values.businessName ?? values.displayName ?? accountEmail;
-  const contacts = [
-    values.phone,
-    values.contactEmail,
-    values.website?.replace(/^https?:\/\//, ""),
-    values.instagram,
-    values.document ? formatDocument(values.document) : null,
-  ].filter(Boolean);
+  const name = issuerName(values, accountEmail);
+  const contacts = issuerContacts(values);
 
   return (
     <section aria-label="Prévia do cabeçalho do orçamento" className="flex flex-col gap-2">

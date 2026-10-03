@@ -119,6 +119,10 @@ flowchart LR
 **Página pública `/p/[token]` (ADR-0005/0014):** Server Component → rate limit → função `get_public_quote(token)` (`SECURITY DEFINER`, executada pela role `app_user`, retorna campos mínimos) → renderiza. O navegador do cliente final nunca fala com o banco. A resposta chama a função `respond_to_quote` via Server Action. Rate limit via função `check_rate_limit`. Depois do commit da resposta, a Server Action chama `notifyFreelancer` (e-mail + push) em `after()` do Next.js, para não atrasar a página do cliente. Uma falha no envio é logada sem PII e não afeta a resposta (RN-42).
 
 **PDF:** Route Handler (runtime Node) → autentica (dono via sessão; cliente via token) → rate limit → busca os dados → `renderToBuffer` do react-pdf → `Content-Disposition: attachment` (download) ou `inline` (prévia do freelancer, RN-22a, que não muda o status).
+- **O modelo** (NBB-50, 2026-10-03) fica em `src/pdf/`: `model.ts` monta os textos e as regras de exibição (RN-04, RN-15b), como função pura e testada; `quote-document.tsx` desenha; `render.ts` gera o arquivo.
+- **Fonte:** Inter do pacote `@fontsource/inter` (.woff, pesos 400, 600 e 700), sem fonte binária no repositório.
+- **Logo:** fica guardado em WebP (RN-05), mas o react-pdf só lê PNG e JPEG; na hora do PDF, o servidor converte para PNG com o `sharp` (`logo.ts`).
+- **Revisar o visual:** `npm run pdf:sample` grava PDFs de exemplo, com dados inventados, em `pdf-samples/` (ignorada pelo Git).
 
 **Cálculo de totais:** uma única implementação em `src/lib/money.ts`, usada no client (tempo real), no servidor (persistência) e no PDF. O total é sempre recalculado no servidor, nunca confiado do client.
 
