@@ -273,6 +273,7 @@ Rodapé ........... "Orçô v0.4.0" · link "Novidades" (notas da versão no Git
   - a confirmação abre na própria seção Conta, sem janela por cima;
   - o botão **Excluir conta definitivamente** só fica ativo com `EXCLUIR` exato, em maiúsculas (o servidor confere de novo), e há um **Cancelar**;
   - depois, a pessoa vai para `/?conta=excluida`, com o aviso "Sua conta foi excluída. Todos os seus dados foram apagados.".
+- **Aviso por e-mail** (NBB-82, 2026-10-03): depois da exclusão, chega o e-mail **"Sua conta no Orçô foi excluída"**. Ele diz qual conta e o que foi apagado; se não foi a pessoa, orienta a trocar a senha do e-mail (e a do Google). Não tem botão. Se o envio falhar, a exclusão vale mesmo assim.
 - **Erro:** se o logo não puder ser apagado (RustFS fora do ar), nada é apagado e aparece "Não foi possível excluir agora. Tente de novo em instantes."
 
 ## F-18 — Ativar notificações push e instalar o app · ✅

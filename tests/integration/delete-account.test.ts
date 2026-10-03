@@ -22,15 +22,29 @@ const PNG = Uint8Array.from(
 const password = "senha-de-teste-123";
 const leftovers: string[] = [];
 
+const MAILPIT_URL = process.env.MAILPIT_URL ?? "http://127.0.0.1:8025";
+
+async function subjectsTo(email: string): Promise<string[]> {
+  const response = await fetch(
+    `${MAILPIT_URL}/api/v1/search?query=${encodeURIComponent(`to:"${email}"`)}`,
+  );
+  const body = (await response.json()) as { messages: { Subject: string }[] };
+  return body.messages.map((message) => message.Subject);
+}
+
 /** Conta confirmada, com sessão aberta, conta de login (senha) e logo. */
-async function fullAccount(): Promise<{ id: string; logoPath: string }> {
+async function fullAccount(): Promise<{ id: string; email: string; logoPath: string }> {
   const email = `teste-${randomUUID()}@example.com`;
   leftovers.push(email);
   await getAuth().api.signUpEmail({ body: { email, password, name: "Teste" } });
   await getAuthDb().update(user).set({ emailVerified: true }).where(eq(user.email, email));
   const { user: created } = await getAuth().api.signInEmail({ body: { email, password } });
   const upload = await uploadLogo(created.id, PNG);
-  return { id: created.id, logoPath: upload.status === "saved" ? (upload.logoPath ?? "") : "" };
+  return {
+    id: created.id,
+    email,
+    logoPath: upload.status === "saved" ? (upload.logoPath ?? "") : "",
+  };
 }
 
 async function countRows(userId: string) {
@@ -57,8 +71,8 @@ afterAll(async () => {
 });
 
 describe("deleteAccount", () => {
-  it("apaga a conta, as sessões, o login, o perfil e o logo (RN-06)", async () => {
-    const { id, logoPath } = await fullAccount();
+  it("apaga a conta, as sessões, o login, o perfil e o logo (RN-06) e avisa por e-mail", async () => {
+    const { id, email, logoPath } = await fullAccount();
     expect(await countRows(id)).toEqual({ users: 1, sessions: 1, accounts: 1, profiles: 1 });
     expect(await getObject(logoPath)).not.toBeNull();
 
@@ -66,6 +80,8 @@ describe("deleteAccount", () => {
 
     expect(await countRows(id)).toEqual({ users: 0, sessions: 0, accounts: 0, profiles: 0 });
     expect(await getObject(logoPath)).toBeNull();
+    // NBB-82: o aviso de conta excluída chega à caixa da pessoa.
+    expect(await subjectsTo(email)).toContain("Sua conta no Orçô foi excluída");
   });
 
   it("sem EXCLUIR exato, nada acontece", async () => {

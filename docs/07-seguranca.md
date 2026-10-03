@@ -24,6 +24,7 @@
 - **Links dos e-mails de conta:** token de **uso único**, com validade de 1 hora, conferido **no servidor** pelas rotas do Better Auth (`/api/auth/*`). Funcionam em qualquer aparelho.
 - **Cadastro, reenvio e recuperação só pelas Server Actions** (NBB-39, NBB-41): as rotas `/api/auth/sign-up/email`, `/api/auth/send-verification-email` e `/api/auth/request-password-reset` ficam **desligadas** na API pública (`disabledPaths`, respondem 404), para ninguém pular o anti-abuso (RN-46, §10) chamando a API direto.
 - **Aviso de senha alterada:** todo e-mail de conta recebe um aviso quando a senha muda, com link para redefinir ("não fui eu").
+- **Aviso de conta excluída** (NBB-82): depois da exclusão, a conta recebe um aviso com orientação para o caso de não ter sido a pessoa. Sai depois de apagar; se falhar, a exclusão vale e o erro só vai para o log.
 - **Redefinir a senha encerra todas as sessões** da conta (`revokeSessionsOnPasswordReset`, NBB-41), inclusive a de quem a tenha invadido.
 - A chave SMTP do Resend só tem permissão de envio e só para `orco.nbbrdev.com` (ADR-0016).
 - **Google OAuth:** um cliente por ambiente (produção, staging e localhost), cada um só com o redirect do seu domínio (`/api/auth/callback/google`). Segredo de cada um só no `.env` do ambiente.

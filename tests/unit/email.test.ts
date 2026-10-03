@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { escapeHtml } from "@/lib/email/escape";
+import { accountDeletedEmail } from "@/lib/email/templates/account-deleted";
 import { confirmationEmail } from "@/lib/email/templates/confirmation";
 import { passwordChangedEmail } from "@/lib/email/templates/password-changed";
 import { recoveryEmail } from "@/lib/email/templates/recovery";
@@ -63,5 +64,21 @@ describe("passwordChangedEmail", () => {
     const email = passwordChangedEmail({ siteUrl, email: `<img src=x onerror=alert(1)>@x.com` });
     expect(email.html).not.toContain("<img src=x");
     expect(email.html).toContain("&lt;img src=x onerror=alert(1)&gt;@x.com");
+  });
+});
+
+describe("accountDeletedEmail", () => {
+  it("diz qual conta foi excluída e o que fazer se não foi a pessoa (NBB-82)", () => {
+    const email = accountDeletedEmail({ siteUrl, email: "maria@example.com" });
+    expect(email.subject).toBe("Sua conta no Orçô foi excluída");
+    expect(email.html).toContain("<strong>maria@example.com</strong>");
+    expect(email.html).toContain("Se não foi você");
+    expect(email.text).toContain("maria@example.com");
+    expect(email.text).toContain("Troque a senha do seu e-mail");
+  });
+
+  it("escapa o e-mail antes de inserir no HTML", () => {
+    const email = accountDeletedEmail({ siteUrl, email: `<img src=x onerror=alert(1)>@x.com` });
+    expect(email.html).not.toContain("<img src=x");
   });
 });
