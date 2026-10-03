@@ -2,7 +2,15 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { BookmarkPlus, EllipsisVertical, GripVertical, Trash2 } from "lucide-react";
+import {
+  BadgePercent,
+  BookmarkPlus,
+  EllipsisVertical,
+  GripVertical,
+  Trash2,
+  X,
+} from "lucide-react";
+import { useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -12,23 +20,34 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import type { CatalogSuggestion, ItemDraft, ItemErrors, ItemField } from "@/features/quotes/items";
+import {
+  type CatalogSuggestion,
+  type DiscountDraft,
+  type ItemDraft,
+  type ItemErrors,
+  type ItemField,
+  type ItemTextField,
+  NO_DISCOUNT,
+} from "@/features/quotes/items";
 import { cn } from "@/lib/utils";
 
 import { DescriptionField } from "./description-field";
+import { DiscountInput } from "./discount-input";
 
 // Um item do orçamento como cartão editável (NBB-86 P4-A): descrição (com sugestões do catálogo,
 // NBB-87 C6-A) em cima; quantidade, unidade, valor e o total da linha embaixo. A alça (⠿) arrasta
-// para reordenar (R2-B) e o menu "⋯" tem "Salvar no catálogo" (C7-B) e "Remover" (R3-A); na NBB-88,
-// o menu ganha o desconto do item.
+// para reordenar (R2-B) e o menu "⋯" tem "Adicionar desconto" (NBB-88 G1-A), "Salvar no catálogo"
+// (C7-B) e "Remover" (R3-A). O desconto aparece numa linha própria, com % ou R$ e um × para tirar.
 
 export function QuoteItemCard({
   item,
   index,
   errors,
   lineTotal,
+  discountHint,
   catalog,
   onChange,
+  onDiscountChange,
   onPick,
   onSaveToCatalog,
   onRemove,
@@ -37,15 +56,21 @@ export function QuoteItemCard({
   /** Posição na lista, começando em 0. Na tela aparece como "item 1", "item 2"… */
   index: number;
   errors: ItemErrors;
-  /** Total da linha já formatado, ou vazio se a linha ainda não tem valor válido. */
+  /** Total da linha já formatado, com o desconto, ou vazio se a linha ainda não tem valor válido. */
   lineTotal: string;
+  /** Aviso embaixo do desconto, ex.: quando ele foi limitado ao valor da linha (G6-A). */
+  discountHint?: string;
   /** Itens do catálogo, para as sugestões da descrição (C6-A). */
   catalog: readonly CatalogSuggestion[];
-  onChange: (field: ItemField, value: string) => void;
+  onChange: (field: ItemTextField, value: string) => void;
+  onDiscountChange: (discount: DiscountDraft) => void;
   onPick: (suggestion: CatalogSuggestion) => void;
   onSaveToCatalog: () => void;
   onRemove: () => void;
 }) {
+  const discountInput = useRef<HTMLInputElement>(null);
+  // Ao escolher "Adicionar desconto", o foco vai para o campo novo, e não de volta para o menu.
+  const focusDiscount = useRef(false);
   const {
     attributes,
     listeners,
@@ -79,64 +104,91 @@ export function QuoteItemCard({
         <GripVertical className="size-4" aria-hidden="true" />
       </button>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-2 md:flex-row md:items-start">
-        <Field error={errors.description} errorId={errorId("description")} className="md:flex-1">
-          <DescriptionField
-            label={`Descrição do ${label}`}
-            value={item.description}
-            catalog={catalog}
-            invalid={!!errors.description}
-            describedBy={errors.description ? errorId("description") : undefined}
-            onChange={(value) => onChange("description", value)}
-            onPick={onPick}
-          />
-        </Field>
-        <div className="flex items-start gap-2">
-          <Field error={errors.quantity} errorId={errorId("quantity")} className="w-14">
-            <Input
-              aria-label={`Quantidade do ${label}`}
-              inputMode="decimal"
-              value={item.quantity}
-              onChange={(event) => onChange("quantity", event.target.value)}
-              aria-invalid={!!errors.quantity}
-              aria-describedby={errors.quantity ? errorId("quantity") : undefined}
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="flex flex-col gap-2 md:flex-row md:items-start">
+          <Field error={errors.description} errorId={errorId("description")} className="md:flex-1">
+            <DescriptionField
+              label={`Descrição do ${label}`}
+              value={item.description}
+              catalog={catalog}
+              invalid={!!errors.description}
+              describedBy={errors.description ? errorId("description") : undefined}
+              onChange={(value) => onChange("description", value)}
+              onPick={onPick}
             />
           </Field>
-          {/* Unidade entre a quantidade e o valor: "1 [h] × 800,00" (C5-A). */}
-          <Field error={errors.unit} errorId={errorId("unit")} className="w-12 md:w-16">
-            <Input
-              aria-label={`Unidade do ${label}`}
-              placeholder="un"
-              value={item.unit}
-              onChange={(event) => onChange("unit", event.target.value)}
-              aria-invalid={!!errors.unit}
-              aria-describedby={errors.unit ? errorId("unit") : undefined}
-            />
-          </Field>
-          <span className="pt-1.5 text-muted-foreground" aria-hidden="true">
-            ×
-          </span>
-          <Field
-            error={errors.unitPrice}
-            errorId={errorId("unitPrice")}
-            className="flex-1 md:w-32 md:flex-none"
-          >
-            <Input
-              aria-label={`Valor do ${label} (R$)`}
-              inputMode="decimal"
-              placeholder="0,00"
-              value={item.unitPrice}
-              onChange={(event) => onChange("unitPrice", event.target.value)}
-              aria-invalid={!!errors.unitPrice}
-              aria-describedby={errors.unitPrice ? errorId("unitPrice") : undefined}
-            />
-          </Field>
+          <div className="flex items-start gap-2">
+            <Field error={errors.quantity} errorId={errorId("quantity")} className="w-14">
+              <Input
+                aria-label={`Quantidade do ${label}`}
+                inputMode="decimal"
+                value={item.quantity}
+                onChange={(event) => onChange("quantity", event.target.value)}
+                aria-invalid={!!errors.quantity}
+                aria-describedby={errors.quantity ? errorId("quantity") : undefined}
+              />
+            </Field>
+            {/* Unidade entre a quantidade e o valor: "1 [h] × 800,00" (C5-A). */}
+            <Field error={errors.unit} errorId={errorId("unit")} className="w-12 md:w-16">
+              <Input
+                aria-label={`Unidade do ${label}`}
+                placeholder="un"
+                value={item.unit}
+                onChange={(event) => onChange("unit", event.target.value)}
+                aria-invalid={!!errors.unit}
+                aria-describedby={errors.unit ? errorId("unit") : undefined}
+              />
+            </Field>
+            <span className="pt-1.5 text-muted-foreground" aria-hidden="true">
+              ×
+            </span>
+            <Field
+              error={errors.unitPrice}
+              errorId={errorId("unitPrice")}
+              className="flex-1 md:w-32 md:flex-none"
+            >
+              <Input
+                aria-label={`Valor do ${label} (R$)`}
+                inputMode="decimal"
+                placeholder="0,00"
+                value={item.unitPrice}
+                onChange={(event) => onChange("unitPrice", event.target.value)}
+                aria-invalid={!!errors.unitPrice}
+                aria-describedby={errors.unitPrice ? errorId("unitPrice") : undefined}
+              />
+            </Field>
+          </div>
+          {/* No celular, o total da linha fica embaixo, à direita; no computador, na mesma linha. */}
+          <p className="text-right text-sm font-medium tabular-nums md:w-40 md:pt-1.5">
+            <span className="sr-only">Total do {label}: </span>
+            {lineTotal}
+          </p>
         </div>
-        {/* No celular, o total da linha fica embaixo, à direita; no computador, na mesma linha. */}
-        <p className="text-right text-sm font-medium tabular-nums md:w-28 md:pt-1.5">
-          <span className="sr-only">Total do {label}: </span>
-          {lineTotal}
-        </p>
+
+        {item.discount.type === null ? null : (
+          <Field error={errors.discount} hint={discountHint} errorId={errorId("discount")}>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Desconto</span>
+              <DiscountInput
+                label={`Desconto do ${label}`}
+                value={item.discount}
+                onChange={onDiscountChange}
+                invalid={!!errors.discount}
+                describedBy={errors.discount || discountHint ? errorId("discount") : undefined}
+                inputRef={discountInput}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`Tirar o desconto do ${label}`}
+                onClick={() => onDiscountChange(NO_DISCOUNT)}
+              >
+                <X aria-hidden="true" />
+              </Button>
+            </div>
+          </Field>
+        )}
       </div>
 
       <DropdownMenu>
@@ -145,7 +197,27 @@ export function QuoteItemCard({
             <EllipsisVertical aria-hidden="true" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuContent
+          align="end"
+          className="w-48"
+          onCloseAutoFocus={(event) => {
+            if (!focusDiscount.current) return;
+            focusDiscount.current = false;
+            event.preventDefault();
+            discountInput.current?.focus();
+          }}
+        >
+          {item.discount.type === null ? (
+            <DropdownMenuItem
+              onSelect={() => {
+                focusDiscount.current = true;
+                onDiscountChange({ type: "percent", value: "" });
+              }}
+            >
+              <BadgePercent aria-hidden="true" />
+              Adicionar desconto
+            </DropdownMenuItem>
+          ) : null}
           {/* Só para itens que ainda não vêm do catálogo (C7-B). */}
           {item.catalogItemId ? null : (
             <DropdownMenuItem onSelect={onSaveToCatalog}>
@@ -165,11 +237,14 @@ export function QuoteItemCard({
 
 function Field({
   error,
+  hint,
   errorId,
   className,
   children,
 }: {
   error: string | undefined;
+  /** Aviso que não impede salvar; o erro, se houver, tem prioridade. */
+  hint?: string;
   errorId: string;
   className?: string;
   children: React.ReactNode;
@@ -180,6 +255,10 @@ function Field({
       {error ? (
         <p id={errorId} className="text-xs text-destructive">
           {error}
+        </p>
+      ) : hint ? (
+        <p id={errorId} className="text-xs text-muted-foreground">
+          {hint}
         </p>
       ) : null}
     </div>

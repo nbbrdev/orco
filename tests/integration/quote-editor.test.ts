@@ -131,6 +131,7 @@ describe("saveQuoteItems", () => {
         unit: null,
         unitPriceCents: 150000,
         catalogItemId: null,
+        discount: { type: null, value: 0 },
       },
       {
         id: logo.id,
@@ -139,6 +140,7 @@ describe("saveQuoteItems", () => {
         unit: null,
         unitPriceCents: 80000,
         catalogItemId: null,
+        discount: { type: null, value: 0 },
       },
     ]);
     const [saved] = await withUserDb(userA, (tx) =>
@@ -211,6 +213,128 @@ describe("saveQuoteItems", () => {
       status: "locked",
       message: LOCKED_MESSAGE,
     });
+  });
+});
+
+describe("descontos e mais opções (NBB-88)", () => {
+  const options = (values: Record<string, unknown> = {}) => ({
+    discount: { type: null, value: "" },
+    validUntil: "2026-12-31",
+    paymentTerms: "50% na entrada",
+    deliveryTime: "",
+    notes: "Valores sem impostos.",
+    internalNotes: "Cliente indicado",
+    ...values,
+  });
+
+  it("salva os descontos e as opções, e o servidor recalcula (exemplo da RN-16)", async () => {
+    const quoteId = await newQuote(userA);
+    const logo = { ...item("Logo", "1", "800"), discount: { type: "percent", value: "10" } };
+    const site = item("Site", "1", "2.000");
+
+    expect(
+      await saveQuoteItems(userA, quoteId, {
+        items: [logo, site],
+        options: options({ discount: { type: "amount", value: "220" } }),
+      }),
+    ).toEqual({ status: "saved", totalCents: 250000 });
+
+    const [saved] = await withUserDb(userA, (tx) =>
+      tx.select().from(quotes).where(eq(quotes.id, quoteId)),
+    );
+    expect(saved).toMatchObject({
+      discountType: "amount",
+      discountValue: 22000,
+      subtotalCents: 272000,
+      discountCents: 22000,
+      totalCents: 250000,
+      validUntil: "2026-12-31",
+      paymentTerms: "50% na entrada",
+      deliveryTime: null,
+      notes: "Valores sem impostos.",
+      internalNotes: "Cliente indicado",
+    });
+    const [line] = await withUserDb(userA, (tx) =>
+      tx.select().from(quoteItems).where(eq(quoteItems.id, logo.id)),
+    );
+    expect(line).toMatchObject({
+      discountType: "percent",
+      discountValue: 1000,
+      grossCents: 80000,
+      discountCents: 8000,
+      lineTotalCents: 72000,
+    });
+
+    const editor = await getQuoteForEditor(userA, quoteId);
+    expect(editor?.items[0]?.discount).toEqual({ type: "percent", value: 1000 });
+    expect(editor?.options).toEqual({
+      discount: { type: "amount", value: 22000 },
+      validUntil: "2026-12-31",
+      paymentTerms: "50% na entrada",
+      deliveryTime: null,
+      notes: "Valores sem impostos.",
+      internalNotes: "Cliente indicado",
+    });
+  });
+
+  it("sem as opções, mantém o desconto geral já salvo", async () => {
+    const quoteId = await newQuote(userA);
+    await saveQuoteItems(userA, quoteId, {
+      items: [item("Logo", "1", "800")],
+      options: options({ discount: { type: "percent", value: "50" } }),
+    });
+    expect(await saveQuoteItems(userA, quoteId, { items: [item("Site", "1", "2.000")] })).toEqual({
+      status: "saved",
+      totalCents: 100000,
+    });
+  });
+
+  it("desconto maior que a base fica limitado a ela (G6-A)", async () => {
+    const quoteId = await newQuote(userA);
+    const cheap = { ...item("Brinde", "1", "50"), discount: { type: "amount", value: "80" } };
+    expect(
+      await saveQuoteItems(userA, quoteId, {
+        items: [cheap, item("Logo", "1", "100")],
+        options: options({ discount: { type: "amount", value: "500" } }),
+      }),
+    ).toEqual({ status: "saved", totalCents: 0 });
+    const [saved] = await withUserDb(userA, (tx) =>
+      tx.select().from(quotes).where(eq(quotes.id, quoteId)),
+    );
+    expect(saved).toMatchObject({
+      discountValue: 50000,
+      subtotalCents: 10000,
+      discountCents: 10000,
+    });
+  });
+
+  it("validade no passado é aceita (G5-A); opção inválida não salva nada", async () => {
+    const quoteId = await newQuote(userA);
+    expect(
+      (
+        await saveQuoteItems(userA, quoteId, {
+          items: [],
+          options: options({ validUntil: "2020-01-01" }),
+        })
+      ).status,
+    ).toBe("saved");
+
+    const logo = item("Logo", "1", "800");
+    expect(
+      await saveQuoteItems(userA, quoteId, {
+        items: [logo],
+        options: options({ validUntil: "", discount: { type: "percent", value: "150" } }),
+      }),
+    ).toEqual({
+      status: "invalid",
+      errors: {},
+      optionErrors: {
+        validUntil: "Informe a validade.",
+        discount: "Informe um percentual de 0 a 100, ex.: 10 ou 10,5",
+      },
+    });
+    expect((await getQuoteForEditor(userA, quoteId))?.items).toEqual([]);
+    expect((await getQuoteForEditor(userA, quoteId))?.options.validUntil).toBe("2020-01-01");
   });
 });
 

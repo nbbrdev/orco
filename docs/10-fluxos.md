@@ -144,6 +144,13 @@ Total R$ 2.800,00  [Visualizar] [Compartilhar]
   - **Cliente:** o campo **Escolher cliente (opcional)** busca entre os clientes enquanto se digita (sem acentos) e oferece **Criar "Fulano"** no fim, que cria o cliente só com o nome (RN-07) e já o escolhe. Escolhido, aparecem o nome e os contatos, com **Trocar** e **×** (tirar). O orçamento guarda uma cópia dos dados (RN-20), salva na hora.
   - **Unidade:** um campo pequeno entre a quantidade e o valor ("1 [h] × 800,00").
   - **Catálogo:** ao digitar a descrição, aparecem sugestões do catálogo; escolher uma preenche descrição, unidade e valor, e o item guarda de onde veio (RN-11). **Salvar no catálogo**, no menu **⋯**, cria o item no catálogo e liga a linha a ele (some do menu depois).
+- **Como ficou a parte 3 do editor** (NBB-88, 2026-10-03):
+  - **Desconto do item** (RN-15a): **Adicionar desconto**, no menu **⋯**, abre uma linha embaixo do item, com **%** ou **R$**, o valor e um **×** para tirar. O foco vai direto para o campo. O total da linha mostra o desconto: "R$ 720,00 (−10%)".
+  - **Mais opções:** fica fechado, abaixo dos itens. Tem desconto geral (% ou R$), validade, condições de pagamento, prazo de execução, observações ("O cliente vê.") e anotações internas ("Só você vê."), já com os padrões do perfil. Abre sozinho se algum campo dele precisar de correção.
+  - Tudo entra no mesmo salvamento automático, e o servidor recalcula os totais com o `money.ts`.
+  - **Rodapé:** com desconto geral, uma linha menor acima do total: "Subtotal R$ 2.720,00 · Desconto −R$ 220,00".
+  - **Validade:** o seletor de data do aparelho, obrigatória. Uma data no passado é aceita, com o aviso "Essa data já passou: o orçamento vai aparecer como expirado.".
+  - **Desconto maior que o valor:** é aceito e limitado à base (RN-15a, RN-17), com o aviso "O desconto ficou limitado ao valor.".
 - Se faltar algo exigido pela RN-13 ao tentar compartilhar, o campo faltante é destacado com uma mensagem direta, ex.: "Informe o valor do item 2 para enviar".
 - Na primeira vez, se o perfil estiver vazio, aparece uma dica **não bloqueante**: "Adicione seu nome e logo para o orçamento ficar com a sua cara →".
 - Perto do botão de compartilhar, um atalho **Compartilhar no WhatsApp** abre `wa.me` com o link. Não é envio automático: é o próprio app do usuário que abre.

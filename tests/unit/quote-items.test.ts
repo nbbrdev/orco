@@ -2,20 +2,29 @@ import { describe, expect, it } from "vitest";
 
 import {
   type CatalogSuggestion,
+  describeDiscount,
   fillFromCatalog,
   formatQuoteNumber,
+  isDiscountCapped,
   type ItemDraft,
-  itemsTotal,
   lineTotals,
+  NO_DISCOUNT,
   newItemDraft,
+  type OptionsDraft,
+  parseDiscount,
   parseItem,
+  parseOptions,
+  quoteTotals,
   suggestFromCatalog,
+  toDiscountDraft,
   toItemDraft,
+  toMoneyDiscount,
+  toOptionsDraft,
 } from "@/features/quotes/items";
 import { saveItemsSchema } from "@/features/quotes/schemas";
 
-// Itens do editor de orçamento (F-05, NBB-86/87): conferência dos campos (P3-A), totais, conversões,
-// unidade (C5-A) e sugestões do catálogo (C6-A).
+// Itens e opções do editor de orçamento (F-05, NBB-86/87/88): conferência dos campos (P3-A), totais
+// com descontos, conversões, unidade (C5-A), sugestões do catálogo (C6-A) e "Mais opções" (G2-A).
 
 const draft = (values: Partial<ItemDraft> = {}): ItemDraft => ({
   id: "6f9c2f5e-0b1a-4f7a-9d4e-1c2b3a4d5e6f",
@@ -24,6 +33,7 @@ const draft = (values: Partial<ItemDraft> = {}): ItemDraft => ({
   unit: "",
   unitPrice: "800",
   catalogItemId: null,
+  discount: NO_DISCOUNT,
   ...values,
 });
 
@@ -42,7 +52,26 @@ describe("parseItem", () => {
         unit: "h",
         unitPriceCents: 123456,
         catalogItemId: null,
+        discount: { type: null, value: 0 },
       },
+    });
+  });
+
+  it("converte o desconto do item: % em pontos-base, R$ em centavos (G1-A)", () => {
+    const percent = parseItem(draft({ discount: { type: "percent", value: "10,5" } }));
+    expect(percent.ok && percent.item.discount).toEqual({ type: "percent", value: 1050 });
+    const amount = parseItem(draft({ discount: { type: "amount", value: "80" } }));
+    expect(amount.ok && amount.item.discount).toEqual({ type: "amount", value: 8000 });
+  });
+
+  it("recusa desconto inválido", () => {
+    expect(parseItem(draft({ discount: { type: "percent", value: "101" } }))).toEqual({
+      ok: false,
+      errors: { discount: "Informe um percentual de 0 a 100, ex.: 10 ou 10,5" },
+    });
+    expect(parseItem(draft({ discount: { type: "amount", value: "dez" } }))).toEqual({
+      ok: false,
+      errors: { discount: "Informe um valor válido, ex.: 1.234,56" },
     });
   });
 
@@ -90,7 +119,26 @@ describe("parseItem", () => {
   });
 });
 
-describe("totais (RN-15, RN-16)", () => {
+describe("parseDiscount", () => {
+  it("sem tipo ou com valor vazio, é sem desconto", () => {
+    const none = { ok: true, discount: { type: null, value: 0 } };
+    expect(parseDiscount(NO_DISCOUNT)).toEqual(none);
+    expect(parseDiscount({ type: "percent", value: "  " })).toEqual(none);
+  });
+
+  it("aceita % com o símbolo e R$ com milhar", () => {
+    expect(parseDiscount({ type: "percent", value: "10%" })).toEqual({
+      ok: true,
+      discount: { type: "percent", value: 1000 },
+    });
+    expect(parseDiscount({ type: "amount", value: "1.234,56" })).toEqual({
+      ok: true,
+      discount: { type: "amount", value: 123456 },
+    });
+  });
+});
+
+describe("totais (RN-15 a RN-18)", () => {
   const parsed = (values: Partial<ItemDraft>) => {
     const result = parseItem(draft(values));
     if (!result.ok) throw new Error("item inválido");
@@ -102,15 +150,138 @@ describe("totais (RN-15, RN-16)", () => {
     expect(lineTotals(parsed({ unitPrice: "" })).totalCents).toBe(0);
   });
 
-  it("total = soma das linhas (exemplo da RN-16, sem descontos)", () => {
+  it("o desconto do item sai da linha (RN-15a)", () => {
     expect(
-      itemsTotal([
-        parsed({ unitPrice: "800" }),
+      lineTotals(parsed({ unitPrice: "800", discount: { type: "percent", value: "10" } })),
+    ).toEqual({ grossCents: 80000, discountCents: 8000, totalCents: 72000 });
+  });
+
+  it("exemplo da RN-16: itens com desconto e desconto geral", () => {
+    const totals = quoteTotals(
+      [
+        parsed({ unitPrice: "800", discount: { type: "percent", value: "10" } }),
         parsed({ unitPrice: "2.000" }),
         parsed({ unitPrice: "" }),
-      ]),
-    ).toBe(280000);
-    expect(itemsTotal([])).toBe(0);
+      ],
+      { type: "amount", value: 22000 },
+    );
+    expect(totals).toMatchObject({
+      subtotalCents: 272000,
+      discountCents: 22000,
+      totalCents: 250000,
+    });
+    expect(quoteTotals([], { type: null, value: 0 }).totalCents).toBe(0);
+  });
+
+  it("desconto em R$ maior que a base fica limitado a ela (G6-A)", () => {
+    const line = parsed({ unitPrice: "50", discount: { type: "amount", value: "80" } });
+    expect(lineTotals(line)).toEqual({ grossCents: 5000, discountCents: 5000, totalCents: 0 });
+    expect(isDiscountCapped(line.discount, 5000)).toBe(true);
+    expect(isDiscountCapped({ type: "amount", value: 5000 }, 5000)).toBe(false);
+    expect(isDiscountCapped({ type: "percent", value: 10000 }, 0)).toBe(false);
+  });
+});
+
+describe("descontos na tela", () => {
+  it("descreve o desconto ao lado do total", () => {
+    expect(describeDiscount({ type: "percent", value: 1000 }, 8000)).toBe("−10%");
+    expect(describeDiscount({ type: "amount", value: 9000 }, 5000)).toMatch(/^−R\$\s50,00$/u);
+    expect(describeDiscount({ type: "percent", value: 1000 }, 0)).toBe("");
+    expect(describeDiscount({ type: null, value: 0 }, 0)).toBe("");
+  });
+
+  it("converte entre o banco, o money.ts e o campo", () => {
+    expect(toMoneyDiscount({ type: "percent", value: 1050 })).toEqual({
+      type: "percent",
+      basisPoints: 1050,
+    });
+    expect(toMoneyDiscount({ type: "amount", value: 8000 })).toEqual({
+      type: "amount",
+      cents: 8000,
+    });
+    expect(toMoneyDiscount({ type: null, value: 0 })).toBeNull();
+    expect(toDiscountDraft({ type: "percent", value: 1050 })).toEqual({
+      type: "percent",
+      value: "10,5",
+    });
+    expect(toDiscountDraft({ type: "amount", value: 8000 })).toEqual({
+      type: "amount",
+      value: "80,00",
+    });
+    expect(toDiscountDraft({ type: null, value: 0 })).toEqual(NO_DISCOUNT);
+  });
+});
+
+describe("parseOptions (G2-A)", () => {
+  const options = (values: Partial<OptionsDraft> = {}): OptionsDraft => ({
+    discount: NO_DISCOUNT,
+    validUntil: "2026-10-18",
+    paymentTerms: " 50% na entrada ",
+    deliveryTime: "",
+    notes: "",
+    internalNotes: "",
+    ...values,
+  });
+
+  it("converte e troca texto vazio por nulo", () => {
+    expect(parseOptions(options({ discount: { type: "percent", value: "5" } }))).toEqual({
+      ok: true,
+      options: {
+        discount: { type: "percent", value: 500 },
+        validUntil: "2026-10-18",
+        paymentTerms: "50% na entrada",
+        deliveryTime: null,
+        notes: null,
+        internalNotes: null,
+      },
+    });
+  });
+
+  it("a validade é obrigatória e precisa ser uma data real (G5-A)", () => {
+    expect(parseOptions(options({ validUntil: "" }))).toEqual({
+      ok: false,
+      errors: { validUntil: "Informe a validade." },
+    });
+    expect(parseOptions(options({ validUntil: "2026-02-30" }))).toEqual({
+      ok: false,
+      errors: { validUntil: "Informe uma data válida." },
+    });
+  });
+
+  it("aceita validade no passado (G5-A: só avisa)", () => {
+    expect(parseOptions(options({ validUntil: "2020-01-01" })).ok).toBe(true);
+  });
+
+  it("recusa desconto inválido e textos longos demais", () => {
+    expect(
+      parseOptions(options({ discount: { type: "amount", value: "x" }, notes: "a".repeat(2001) })),
+    ).toEqual({
+      ok: false,
+      errors: {
+        discount: "Informe um valor válido, ex.: 1.234,56",
+        notes: "Use até 2000 caracteres.",
+      },
+    });
+  });
+
+  it("opções salvas voltam para os campos", () => {
+    expect(
+      toOptionsDraft({
+        discount: { type: "amount", value: 2000 },
+        validUntil: "2026-10-18",
+        paymentTerms: null,
+        deliveryTime: "15 dias",
+        notes: null,
+        internalNotes: "Cliente antigo",
+      }),
+    ).toEqual({
+      discount: { type: "amount", value: "20,00" },
+      validUntil: "2026-10-18",
+      paymentTerms: "",
+      deliveryTime: "15 dias",
+      notes: "",
+      internalNotes: "Cliente antigo",
+    });
   });
 });
 
@@ -123,6 +294,7 @@ describe("conversões", () => {
       unit: "",
       unitPrice: "",
       catalogItemId: null,
+      discount: NO_DISCOUNT,
     });
     expect(first.id).not.toBe(newItemDraft().id);
   });
@@ -136,6 +308,7 @@ describe("conversões", () => {
         unit: "h",
         unitPriceCents: 200000,
         catalogItemId: "c",
+        discount: { type: "percent", value: 1000 },
       }),
     ).toEqual({
       id: "x",
@@ -144,6 +317,7 @@ describe("conversões", () => {
       unit: "h",
       unitPrice: "2.000,00",
       catalogItemId: "c",
+      discount: { type: "percent", value: "10" },
     });
     expect(
       toItemDraft({
@@ -153,8 +327,9 @@ describe("conversões", () => {
         unit: null,
         unitPriceCents: null,
         catalogItemId: null,
+        discount: { type: null, value: 0 },
       }),
-    ).toMatchObject({ unit: "", unitPrice: "" });
+    ).toMatchObject({ unit: "", unitPrice: "", discount: NO_DISCOUNT });
   });
 
   it("número do orçamento com 4 dígitos (RN-12)", () => {
@@ -198,5 +373,14 @@ describe("saveItemsSchema", () => {
     expect(saveItemsSchema.safeParse({ items: [draft(), draft()] }).success).toBe(false);
     const many = Array.from({ length: 101 }, () => ({ ...draft(), id: crypto.randomUUID() }));
     expect(saveItemsSchema.safeParse({ items: many }).success).toBe(false);
+  });
+
+  it("item sem desconto vale como sem desconto; as opções são opcionais", () => {
+    // Como mandaria uma aba aberta antes da NBB-88, sem o campo do desconto.
+    const withoutDiscount: Partial<ItemDraft> = draft();
+    delete withoutDiscount.discount;
+    const parsed = saveItemsSchema.safeParse({ items: [withoutDiscount] });
+    expect(parsed.success && parsed.data.items[0]?.discount).toEqual(NO_DISCOUNT);
+    expect(parsed.success && parsed.data.options).toBeUndefined();
   });
 });
