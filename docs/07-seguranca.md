@@ -122,7 +122,9 @@
 
 - Tipos PNG, JPEG e WebP; **SVG proibido** (pode conter script). Tamanho de até 5 MB. A regra vale **no servidor** (e no client, só como UX). O redimensionamento no client (RN-05) é otimização, não controle de segurança.
 - O servidor confere o tipo pelo **conteúdo** do arquivo, não só pela extensão ou pelo `Content-Type` enviado.
-- Chave `{user_id}/{uuid}.webp` com UUID gerado pelo servidor; o `user_id` vem **da sessão**, nunca do navegador; o nome original é descartado ([05-dados.md](05-dados.md), ADR-0015).
+- Chave `{uuid}.{ext}` com UUID gerado pelo servidor, **sem o id da conta** (o endereço do logo é público e o §4 proíbe expor IDs internos); o perfil alterado é sempre o da sessão; o nome original é descartado ([05-dados.md](05-dados.md), ADR-0015, NBB-81).
+- O navegador reduz a imagem antes de enviar (RN-05); o servidor **não** a refaz (decisão L2 da NBB-81, sem a biblioteca `sharp`). Ele só confere os primeiros bytes e o tamanho.
+- Server Actions aceitam até 5 MB (`serverActions.bodySizeLimit`), o mesmo limite do Nginx (`client_max_body_size 5m`).
 - O RustFS não tem porta pública. As chaves de acesso a ele ficam só no servidor.
 
 ## 10. Rate limit e anti-abuso (ADR-0004)

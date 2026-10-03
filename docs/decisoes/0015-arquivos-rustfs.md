@@ -23,6 +23,13 @@ O único arquivo enviado pelos usuários no MVP é o **logo** do freelancer (RN-
 
 ## Consequências
 - **Revisão (2026-09-30, decisão do usuário):** o RustFS **fica fora do backup**, que é manual e só do banco (ADR-0012). Risco aceito: poucos clientes; se a VPS for perdida, os logos são enviados de novo. Como o app trata um logo que não existe mais fica para a NBB-42.
-- A **exclusão de conta** apaga explicitamente `logos/{user_id}/` no RustFS, porque o armazenamento não participa da cascata do banco.
+- A **exclusão de conta** apaga explicitamente o logo da conta no RustFS (pelo `profiles.logo_path`), porque o armazenamento não participa da cascata do banco.
+
+## Implementação (decidida pelo usuário em 2026-10-03, NBB-81)
+- **L1:** o app cria o bucket `logos` sozinho, na primeira vez que precisa (`src/lib/storage`), em todos os ambientes.
+- **L2:** o navegador reduz a imagem para até 1024 px e tenta WebP; o Safari não gera WebP pelo canvas, então lá vai PNG (mantém a transparência). O servidor confere o tipo pelos primeiros bytes e o tamanho, sem refazer a imagem (sem a biblioteca `sharp`).
+- **L3:** upload por Server Action, com o limite aumentado para 5 MB (`serverActions.bodySizeLimit`), igual ao Nginx.
+- **L4:** a chave é só `{uuid}.{ext}`, **sem o `user_id`**, porque o endereço é público e o docs/07 §4 proíbe expor IDs internos. A rota é `/api/p/logos/{arquivo}`, com cache imutável. Isso substitui a chave `{user_id}/{uuid}.webp` prevista acima.
+- **L5:** o RustFS também entra como serviço no CI, e os testes de integração usam o RustFS de verdade.
 - Novas variáveis de ambiente: endpoint, bucket e chaves do RustFS (só no servidor).
 - Risco aceito: RustFS é recente. Mitigação: versão fixa e a portabilidade garantida pelo S3.

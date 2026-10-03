@@ -33,3 +33,40 @@ test("editar o perfil salva ao sair do campo e atualiza a prévia (F-14)", async
   await expect(page.getByLabel("Instagram")).toHaveValue("@meunegocio");
   await expect(page.getByLabel("CPF ou CNPJ")).toHaveValue("");
 });
+
+// PNG de 1×1 px: o navegador reduz/converte (L2) e o servidor confere pelos bytes.
+const PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+  "base64",
+);
+
+test("enviar, ver na prévia e remover o logo (NBB-81)", async ({ page }) => {
+  await useOwnIp(page);
+  await signUpAndConfirm(page, "senha-logo-123");
+  await page.goto("/app/perfil");
+
+  await page
+    .getByLabel("Arquivo do logo")
+    .setInputFiles({ name: "logo.png", mimeType: "image/png", buffer: PNG });
+  await expect(page.getByRole("img", { name: "Seu logo" })).toBeVisible();
+  const preview = page.getByRole("region", { name: "Prévia do cabeçalho do orçamento" });
+  await expect(preview.locator("img")).toHaveAttribute("src", /^\/api\/p\/logos\/[0-9a-f-]+\.\w+$/);
+
+  await page.reload();
+  await expect(page.getByRole("img", { name: "Seu logo" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Remover" }).click();
+  await expect(page.getByRole("img", { name: "Seu logo" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Enviar logo" })).toBeVisible();
+});
+
+test("arquivo que não é imagem é recusado no navegador (RN-05)", async ({ page }) => {
+  await useOwnIp(page);
+  await signUpAndConfirm(page, "senha-logo-456");
+  await page.goto("/app/perfil");
+
+  await page
+    .getByLabel("Arquivo do logo")
+    .setInputFiles({ name: "logo.svg", mimeType: "image/svg+xml", buffer: Buffer.from("<svg/>") });
+  await expect(page.getByText("Use uma imagem PNG, JPEG ou WebP de até 5 MB.")).toBeVisible();
+});

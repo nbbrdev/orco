@@ -13,6 +13,11 @@ const nextConfig: NextConfig = {
   // Só no `npm run dev`: libera abrir o app pelo IP do PC na rede local (ex.: no celular, na mesma
   // Wi-Fi). Faixas privadas: nenhum site da internet tem esses endereços. Cada `*` = um número do IP.
   allowedDevOrigins: ["192.168.*.*", "10.*.*.*"],
+  // Upload do logo pela Server Action (NBB-81, L3): até 5 MB, o mesmo limite da RN-05 e do Nginx
+  // (`client_max_body_size 5m`). O padrão do Next é 1 MB.
+  experimental: {
+    serverActions: { bodySizeLimit: "5mb" },
+  },
   async headers() {
     return securityHeaders;
   },
