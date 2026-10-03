@@ -1,18 +1,18 @@
 "use client";
 
-import { Plus } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { LogoIcon } from "@/components/brand/logo-icon";
-import { buttonVariants } from "@/components/ui/button";
-import { isActive, NAV_ITEMS, NEW_QUOTE_HREF } from "@/features/app-shell/nav-items";
+import { isActive, isQuoteEditor, NAV_ITEMS } from "@/features/app-shell/nav-items";
+import { NewQuoteButton } from "@/features/quotes/components/new-quote-button";
 import { cn } from "@/lib/utils";
 
 // Barras de navegação do app logado (NBB-41, N2):
 // - celular: barra inferior fixa com os 4 itens e o botão flutuante "+ Novo orçamento";
 // - a partir de `md`: barra no topo com o logo, os 4 itens e o botão "+ Novo orçamento".
-// O item da página atual fica com a cor da marca (N5).
+// O item da página atual fica com a cor da marca (N5). O "Novo orçamento" é um formulário, não um
+// link (NBB-86 P1-A).
 
 export function AppTopBar() {
   const pathname = usePathname();
@@ -30,7 +30,7 @@ export function AppTopBar() {
         </Link>
         <nav aria-label="Principal" className="flex flex-1 items-center gap-1">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-            const active = isActive(pathname, href) && !isActive(pathname, NEW_QUOTE_HREF);
+            const active = isActive(pathname, href);
             return (
               <Link
                 key={href}
@@ -47,10 +47,7 @@ export function AppTopBar() {
             );
           })}
         </nav>
-        <Link href={NEW_QUOTE_HREF} className={buttonVariants()}>
-          <Plus aria-hidden="true" />
-          Novo orçamento
-        </Link>
+        <NewQuoteButton />
       </div>
     </header>
   );
@@ -61,20 +58,15 @@ export function AppBottomBar() {
 
   return (
     <>
-      <Link
-        href={NEW_QUOTE_HREF}
-        aria-label="Novo orçamento"
-        className="fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-colors outline-none hover:bg-primary-hover focus-visible:ring-3 focus-visible:ring-ring/50 md:hidden"
-      >
-        <Plus className="size-6" aria-hidden="true" />
-      </Link>
+      {/* No editor, o rodapé com o total ocupa esse canto (NBB-86). */}
+      {isQuoteEditor(pathname) ? null : <NewQuoteButton variant="fab" />}
       <nav
         aria-label="Principal"
         className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         <ul className="grid h-16 grid-cols-4">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-            const active = isActive(pathname, href) && !isActive(pathname, NEW_QUOTE_HREF);
+            const active = isActive(pathname, href);
             return (
               <li key={href}>
                 <Link

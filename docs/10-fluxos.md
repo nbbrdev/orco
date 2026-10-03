@@ -134,6 +134,12 @@ Total R$ 2.800,00  [Visualizar] [Compartilhar]
 - Item novo digitado no editor: a opção **☐ salvar no catálogo** vem **desmarcada**.
 - Total, subtotal e desconto são recalculados a cada digitação (RN-15 a RN-18).
 - Salvamento automático com indicador discreto "Salvo" (RN-21).
+- **Como ficou a parte 1 do editor** (NBB-86, 2026-10-03):
+  - **Novo orçamento** é um botão (formulário), não um link: só um toque de verdade cria o rascunho, e o editor abre em `/app/orcamentos/<id>` com um item vazio, quantidade 1. No limite do mês (RN-38), volta para a lista com "Você chegou ao limite de 200 orçamentos neste mês. O limite volta no dia 1º.".
+  - Cada item é um cartão editável: descrição; quantidade e valor lado a lado; total da linha. O menu **⋯** do item tem **Remover**, sem confirmação.
+  - **Reordenar:** arrastando o item pela alça (⠿); pelo teclado, espaço, setas e espaço.
+  - Salva o orçamento inteiro ~800 ms depois da última mudança ("Salvando…" / "Salvo ✓"). Campo inválido fica destacado e nada é salvo até corrigir ("Corrija os campos destacados para salvar").
+  - Rodapé fixo só com o total; **Visualizar** e **Compartilhar** chegam com o PDF e o envio (M5/M6). No limite de 100 itens, "Este orçamento chegou ao limite de 100 itens." e o **Adicionar item** some.
 - Se faltar algo exigido pela RN-13 ao tentar compartilhar, o campo faltante é destacado com uma mensagem direta, ex.: "Informe o valor do item 2 para enviar".
 - Na primeira vez, se o perfil estiver vazio, aparece uma dica **não bloqueante**: "Adicione seu nome e logo para o orçamento ficar com a sua cara →".
 - Perto do botão de compartilhar, um atalho **Compartilhar no WhatsApp** abre `wa.me` com o link. Não é envio automático: é o próprio app do usuário que abre.

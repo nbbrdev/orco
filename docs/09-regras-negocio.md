@@ -37,7 +37,7 @@
 |---|---|---|
 | RN-12 | **Numeração:** sequencial por usuário, começando em 1, atribuída na criação e exibida como `Nº 0001`. Números nunca são reutilizados, então lacunas por exclusão são aceitas. | ✅ |
 | RN-13 | Um rascunho pode ter qualquer campo vazio. Para **enviar**, exige ao menos 1 item; **todo** item precisa ter descrição, quantidade > 0 e valor unitário preenchido (R$ 0,00 é válido). O **cliente é opcional**: sem cliente, o PDF e o link omitem o bloco do destinatário. | ✅ |
-| RN-14 | Item: descrição (obrigatória), quantidade (> 0, até 3 casas decimais, ex.: 1,5 h), unidade (opcional), valor unitário (≥ R$ 0,00), **desconto do item** (opcional). Limite de 100 itens por orçamento. | ✅ |
+| RN-14 | Item: descrição (obrigatória), quantidade (> 0, até 3 casas decimais, ex.: 1,5 h), unidade (opcional), valor unitário (≥ R$ 0,00), **desconto do item** (opcional). Limite de 100 itens por orçamento. A ordem dos itens é a da tela e pode ser mudada arrastando (incluído em 2026-10-03, NBB-86). | ✅ |
 | RN-15 | Todos os valores monetários são inteiros em **centavos**, com arredondamento **meio-para-cima** ao centavo (ex.: R$ 49,995 → R$ 50,00). Bruto da linha = `arredonda(quantidade × valor unitário)`. Total da linha = bruto da linha − desconto do item. | ✅ |
 | RN-15a | **Desconto do item:** percentual (0–100%, até 2 casas) ou valor fixo em R$, aplicado sobre o bruto da linha. Nunca excede o bruto da linha. No editor, fica **escondido até ser pedido** (menu "⋯" do item → "Adicionar desconto"). | ✅ |
 | RN-15b | **Exibição para o cliente** (PDF e link): a coluna de desconto por item só aparece se algum item tiver desconto, e a linha de desconto geral só aparece se ele existir. | ✅ |

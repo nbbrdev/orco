@@ -43,6 +43,7 @@ Uma ferramenta web para **um freelancer** criar, enviar e acompanhar **orçament
 ### Orçamentos
 - Criar, editar, listar (com filtro por status), buscar e excluir orçamentos.
 - Itens com descrição, quantidade, unidade, valor unitário e desconto por item (% ou R$, opcional); desconto geral (% ou R$); validade; **condições de pagamento**; **prazo de execução**; observações.
+- **Reordenar os itens** arrastando (incluído em 2026-10-03, NBB-86).
 - Numeração sequencial automática por usuário.
 - Salvamento automático.
 - Status: `rascunho → enviado → aprovado | recusado | expirado` (ver [09-regras-negocio.md](09-regras-negocio.md)).

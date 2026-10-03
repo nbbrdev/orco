@@ -6,11 +6,14 @@ import {
   calculateLine,
   calculateQuote,
   formatBRL,
+  formatBRLInput,
   formatPercent,
   formatQuantity,
+  numericToQuantity,
   parseBRL,
   parsePercent,
   parseQuantity,
+  quantityToNumeric,
 } from "@/lib/money";
 
 describe("calculateLine (RN-15)", () => {
@@ -208,5 +211,39 @@ describe("parsePercent", () => {
 
   it.each(["100,01", "abc", "-10", "10,555"])("rejects %s", (input) => {
     expect(parsePercent(input)).toBeNull();
+  });
+});
+
+describe("formatBRLInput (NBB-86)", () => {
+  it("formats without the R$ prefix", () => {
+    expect(formatBRLInput(123456)).toBe("1.234,56");
+    expect(formatBRLInput(0)).toBe("0,00");
+  });
+});
+
+describe("quantity in the database, numeric(12,3) (ADR-0006, NBB-86)", () => {
+  it.each([
+    [1500, "1.500"],
+    [1000, "1.000"],
+    [1, "0.001"],
+    [0, "0.000"],
+    [MAX_QUANTITY_MILLI, "999999999.999"],
+  ])("milli %i → %s and back", (milli, text) => {
+    expect(quantityToNumeric(milli)).toBe(text);
+    expect(numericToQuantity(text)).toBe(milli);
+  });
+
+  it("accepts numeric text with fewer decimals", () => {
+    expect(numericToQuantity("2")).toBe(2000);
+    expect(numericToQuantity("1.5")).toBe(1500);
+  });
+
+  it("rejects invalid values", () => {
+    expect(() => quantityToNumeric(-1)).toThrow(RangeError);
+    expect(() => quantityToNumeric(1.5)).toThrow(RangeError);
+    expect(() => quantityToNumeric(MAX_QUANTITY_MILLI + 1)).toThrow(RangeError);
+    expect(() => numericToQuantity("1,5")).toThrow(RangeError);
+    expect(() => numericToQuantity("-1")).toThrow(RangeError);
+    expect(() => numericToQuantity("1.5555")).toThrow(RangeError);
   });
 });

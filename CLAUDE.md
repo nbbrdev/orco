@@ -17,7 +17,7 @@ Produção: https://orco.nbbrdev.com · Repo: `nbbrdev/orco` (público) · Linea
 
 Ordem da M4 (decidida com o usuário em 2026-10-03; só a `v0.4.0` no fim, o staging recebe cada merge):
 1. NBB-46: schema de orçamentos (quotes, quote_items, RLS, numeração, triggers de status e limites);
-2. NBB-47: editor de orçamento (fluxo principal, F-05), que pode ser dividido em partes no planejamento dela;
+2. NBB-47: editor de orçamento (fluxo principal, F-05), dividido em NBB-86 (rascunho, itens, total, salvamento e reordenação), NBB-87 (cliente e catálogo) e NBB-88 (descontos e "Mais opções");
 3. NBB-48: lista de orçamentos (abas por status, busca, estado vazio);
 4. NBB-49: duplicar, excluir e prorrogar a validade.
 

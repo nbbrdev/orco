@@ -84,7 +84,8 @@ test("sem login, as páginas do app mandam para o /entrar (P5)", async ({ page }
     "/app/clientes",
     "/app/catalogo",
     "/app/perfil",
-    "/app/orcamentos/novo",
+    "/app/orcamentos",
+    "/app/orcamentos/00000000-0000-4000-8000-000000000000",
   ]) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/entrar$/);
