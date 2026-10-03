@@ -13,11 +13,15 @@ Produção: https://orco.nbbrdev.com · Repo: `nbbrdev/orco` (público) · Linea
 - Mudou `docs/`? Atualize o Linear Doc correspondente na mesma sessão, e vice-versa.
 
 ## Fase atual
-**M3: Clientes & Catálogo** (meta: `v0.3.0`). A **M2** foi concluída em 2026-10-03, com a `v0.2.0` no ar (cadastro e login com e-mail e Google, recuperação de senha, perfil e logo, exclusão de conta, PWA e tema, E2E no CI, trava de cobertura de 80%).
+**M4: Orçamentos** (meta: `v0.4.0`). A **M3** foi concluída em 2026-10-03, com a `v0.3.0` no ar (clientes e catálogo com RLS e limites por trigger, máscaras de telefone e CPF/CNPJ).
 
-Ordem da M3 (decidida com o usuário em 2026-10-03; só a `v0.3.0` no fim, o staging recebe cada merge):
-1. NBB-44: clientes (schema, RLS e CRUD);
-2. NBB-45: catálogo (schema, RLS e CRUD).
+Ordem da M4 (decidida com o usuário em 2026-10-03; só a `v0.4.0` no fim, o staging recebe cada merge):
+1. NBB-46: schema de orçamentos (quotes, quote_items, RLS, numeração, triggers de status e limites);
+2. NBB-47: editor de orçamento (fluxo principal, F-05), que pode ser dividido em partes no planejamento dela;
+3. NBB-48: lista de orçamentos (abas por status, busca, estado vazio);
+4. NBB-49: duplicar, excluir e prorrogar a validade.
+
+A NBB-46 e a NBB-47 trazem itens herdados da M3 no checklist (RN-09, RF-13, RN-11, RN-20, estado vazio do catálogo).
 
 A base da VPS (compartilhada entre projetos) fica no repositório privado `nbbrdev/vps` (projeto "VPS" no Linear).
 
