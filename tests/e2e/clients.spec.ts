@@ -2,7 +2,8 @@ import { expect, test } from "@playwright/test";
 
 import { signUpAndConfirm, useOwnIp } from "./helpers";
 
-// Clientes (F-15, NBB-44): criar no painel, buscar, editar e excluir com confirmação.
+// Clientes (F-15, NBB-44): criar no painel, buscar, editar e excluir com confirmação. Telefone e
+// CPF/CNPJ com máscara (NBB-84).
 
 test("criar, buscar, editar e excluir um cliente (F-15)", async ({ page }) => {
   await useOwnIp(page);
@@ -21,7 +22,14 @@ test("criar, buscar, editar e excluir um cliente (F-15)", async ({ page }) => {
   await panel.getByRole("button", { name: "Salvar" }).click();
   await expect(panel.getByText("CPF ou CNPJ inválido")).toBeVisible();
 
-  await panel.getByLabel("CPF ou CNPJ").fill("529.982.247-25");
+  // Máscaras enquanto digita (NBB-84): só os números viram (11) 91234-5678 e 529.982.247-25.
+  const document = panel.getByLabel("CPF ou CNPJ");
+  await document.clear();
+  await document.pressSequentially("52998224725");
+  await expect(document).toHaveValue("529.982.247-25");
+  const phone = panel.getByLabel("Telefone");
+  await phone.pressSequentially("11912345678");
+  await expect(phone).toHaveValue("(11) 91234-5678");
   await panel.getByLabel("Observações internas").fill("Prefere WhatsApp");
   await panel.getByRole("button", { name: "Salvar" }).click();
   await expect(panel).toBeHidden();

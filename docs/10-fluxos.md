@@ -250,6 +250,7 @@ Rodapé ........... "Orçô v0.4.0" · link "Novidades" (notas da versão no Git
 ```
 - Tudo opcional, salvo automaticamente.
 - **Salvamento:** cada campo se salva ao perder o foco, com "Salvando… / Salvo ✓" ao lado do nome e o erro embaixo do campo. O valor volta já limpo: site com `https://`, Instagram como `@usuario`, CPF/CNPJ formatado (NBB-42).
+- **Máscaras** (NBB-84, aqui e nos clientes, F-15): telefone brasileiro com DDD, `(11) 91234-5678` ou `(11) 1234-5678`; CPF `000.000.000-00` até 11 caracteres e CNPJ `00.000.000/0000-00` a partir do 12º ou com letra (alfanumérico, em maiúsculas). Formatam enquanto se digita, sem tirar o cursor do lugar.
 - **Logo** (NBB-81): no topo de "Sua marca", a miniatura com **Enviar logo** / **Trocar** e **Remover**. O navegador reduz a imagem antes de enviar; o logo aparece na prévia. Arquivo inválido: "Use uma imagem PNG, JPEG ou WebP de até 5 MB."
 - **O que já existe** (NBB-42): prévia, Sua marca, Contato, Pagamento, Padrões, Notificações (só o e-mail), Conta (Sair e **Excluir minha conta**, NBB-43) e, no rodapé, a versão com o link **Novidades** (abre numa aba nova a página da versão no GitHub Releases; no staging e no local, a lista de versões). Chega depois: o push (issue de push).
 - **Aparência** (NBB-60): três botões, **Automático / Claro / Escuro**. O tema vale na hora e fica salvo neste aparelho.
@@ -267,6 +268,7 @@ Rodapé ........... "Orçô v0.4.0" · link "Novidades" (notas da versão no Git
 - **Implementado na NBB-44 (2026-10-03):**
   - a lista carrega todos os clientes, e a busca filtra na hora, por nome, e-mail ou CPF/CNPJ, sem diferenciar acentos nem maiúsculas;
   - o painel salva só ao tocar em **Salvar**;
+  - telefone e CPF/CNPJ com as mesmas máscaras do perfil (NBB-84, F-14);
   - o **Excluir** fica no painel de edição e pede confirmação numa janela;
   - no limite de 1.000 clientes (RN-38), a mensagem é "Você chegou ao limite de 1.000 clientes. Exclua um cliente que não usa mais para cadastrar outro.".
 - **Fica para a M4, com os orçamentos:** a lista de orçamentos do cliente (RF-13), o atalho **Novo orçamento para este cliente**, a pergunta sobre os rascunhos (RN-20) e o bloqueio da exclusão (RN-09). Até lá, excluir um cliente sempre é permitido.

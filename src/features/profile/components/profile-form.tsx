@@ -20,6 +20,7 @@ import { ThemeSelector } from "@/features/profile/components/theme-selector";
 import { ProfileTextField } from "@/features/profile/components/profile-field";
 import type { ProfileField, ProfileValues } from "@/features/profile/schemas";
 import { formatDocument } from "@/lib/document";
+import { maskDocument, maskPhone } from "@/lib/masks";
 
 // Perfil do freelancer (F-14, NBB-42): a prévia do cabeçalho no topo (D5) e as seções (D6), com o
 // logo (NBB-81). Cada campo se salva sozinho ao perder o foco (D3); a prévia acompanha o que foi salvo.
@@ -86,6 +87,7 @@ export function ProfileForm({
             inputMode="tel"
             autoComplete="tel"
             placeholder="(11) 91234-5678"
+            mask={maskPhone}
           />
           <ProfileTextField
             field="contactEmail"
@@ -116,6 +118,7 @@ export function ProfileForm({
             label="CPF ou CNPJ"
             value={values.document ? formatDocument(values.document) : ""}
             onSaved={onSaved("document")}
+            mask={maskDocument}
           />
         </FieldGroup>
       </FieldSet>

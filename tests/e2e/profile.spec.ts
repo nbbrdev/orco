@@ -28,7 +28,16 @@ test("editar o perfil salva ao sair do campo e atualiza a prévia (F-14)", async
   await document.blur();
   await expect(page.getByText("CPF ou CNPJ inválido")).toBeVisible();
 
+  // Telefone com máscara (NBB-84): fixo com DDD vira (11) 3234-5678.
+  const phone = page.getByLabel("Telefone");
+  await phone.pressSequentially("1132345678");
+  await expect(phone).toHaveValue("(11) 3234-5678");
+  await phone.blur();
+  // Nome comercial, Instagram e Telefone salvos.
+  await expect(page.getByText("Salvo ✓")).toHaveCount(3);
+
   await page.reload();
+  await expect(page.getByLabel("Telefone")).toHaveValue("(11) 3234-5678");
   await expect(page.getByLabel("Nome comercial")).toHaveValue("Estúdio Teste");
   await expect(page.getByLabel("Instagram")).toHaveValue("@meunegocio");
   await expect(page.getByLabel("CPF ou CNPJ")).toHaveValue("");

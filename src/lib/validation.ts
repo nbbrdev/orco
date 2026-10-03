@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { normalizeDocument } from "@/lib/document";
+import { maskPhone } from "@/lib/masks";
 
 // Validação e limpeza dos campos que se repetem entre o perfil (F-14) e os clientes (F-15): texto
 // opcional, telefone, e-mail e CPF/CNPJ (RN-08). Texto vazio vira `null` (campo apagado).
@@ -14,12 +15,22 @@ export function optionalText(max: number) {
     .transform((value) => value || null);
 }
 
-/** Telefone (RN-08): só o formato, sem conferir o número. */
+/**
+ * Telefone brasileiro com DDD (RN-08, NBB-84 M7-A): 10 dígitos (fixo) ou 11 (celular), sem conferir
+ * se o número existe. É guardado no formato da máscara: (11) 91234-5678.
+ */
 export function optionalPhone(max: number) {
-  return optionalText(max).refine(
-    (value) => value === null || /^[0-9()+\-\s]{8,}$/.test(value),
-    "Informe um telefone válido, ex.: (11) 91234-5678",
-  );
+  return optionalText(max)
+    .refine(
+      (value) =>
+        value === null || (/^[0-9()\-\s]+$/.test(value) && /^\d{10,11}$/.test(digitsOf(value))),
+      "Informe o telefone com DDD, ex.: (11) 91234-5678",
+    )
+    .transform((value) => (value === null ? null : maskPhone(value)));
+}
+
+function digitsOf(value: string): string {
+  return value.replace(/\D/g, "");
 }
 
 /** E-mail (RN-08): só o formato; guardado em minúsculas. */
