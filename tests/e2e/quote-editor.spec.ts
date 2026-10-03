@@ -65,10 +65,13 @@ test("reordenar arrastando e remover pelo menu (R1, R2, R3)", async ({ page }) =
   await page.getByLabel("Descrição do item 2").fill("Segundo");
   await waitSaved(page);
 
-  // Arrastar pelo teclado: foco na alça, espaço pega, seta para cima, espaço solta.
+  // Arrastar pelo teclado: foco na alça, espaço pega, seta para cima, espaço solta. Cada passo espera
+  // o aviso para leitor de tela, porque o @dnd-kit mede a lista logo depois de pegar o item.
   await page.getByRole("button", { name: "Arrastar o item 2 para reordenar" }).focus();
   await page.keyboard.press("Space");
+  await expect(page.getByText("Item 2 pego para mover.")).toBeAttached();
   await page.keyboard.press("ArrowUp");
+  await expect(page.getByText("Na posição 1.")).toBeAttached();
   await page.keyboard.press("Space");
   await expect(page.getByLabel("Descrição do item 1")).toHaveValue("Segundo");
   await waitSaved(page);
