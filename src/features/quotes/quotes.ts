@@ -111,7 +111,10 @@ export async function getQuoteForEditor(userId: string, id: string): Promise<Edi
       .orderBy(asc(quoteItems.position), asc(quoteItems.createdAt));
     return {
       ...quote,
-      items: items.map((item) => ({ ...item, quantityMilli: numericToQuantity(item.quantity) })),
+      items: items.map(({ quantity, ...item }) => ({
+        ...item,
+        quantityMilli: numericToQuantity(quantity),
+      })),
     };
   });
 }
