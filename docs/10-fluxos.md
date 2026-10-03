@@ -292,7 +292,7 @@ Rodapé ........... "Orçô v0.4.0" · link "Novidades" (notas da versão no Git
 4. **iPhone sem o app instalado:** em vez de pedir permissão (não funcionaria), o cartão explica: *"No iPhone, adicione o Orçô à tela inicial para receber notificações"*, com instruções curtas (Compartilhar → Adicionar à Tela de Início).
 
 **Instalar o app (PWA):**
-- Android/desktop: quando o navegador oferece a instalação, o perfil mostra **Instalar o Orçô**; o banner nativo do navegador também funciona.
+- Android/desktop: quando o navegador oferece a instalação, o perfil mostra **Instalar o Orçô**. O banner automático do navegador fica desligado, para nada surgir sozinho no meio de outra tela (decidido em 2026-10-03, NBB-60). No computador, o ícone de instalar na barra de endereço do Chrome continua funcionando.
 - iPhone: instrução "Compartilhar → Adicionar à Tela de Início" no perfil.
 
 **Notificações recebidas (exemplos):**
