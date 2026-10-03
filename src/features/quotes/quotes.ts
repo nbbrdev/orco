@@ -125,6 +125,8 @@ export type EditorQuote = {
   status: "draft" | "sent" | "approved" | "rejected";
   client: QuoteClient | null;
   items: ParsedItem[];
+  /** Respondido e ainda não visto: ao abrir, o selo "novo" da lista some (RN-42, NBB-48 L4-A). */
+  responseUnseen: boolean;
   /** "Mais opções" (NBB-88 G2-A). */
   options: ParsedOptions;
 };
@@ -153,6 +155,8 @@ export async function getQuoteForEditor(userId: string, id: string): Promise<Edi
         deliveryTime: quotes.deliveryTime,
         notes: quotes.notes,
         internalNotes: quotes.internalNotes,
+        respondedAt: quotes.respondedAt,
+        responseSeenAt: quotes.responseSeenAt,
       })
       .from(quotes)
       .where(eq(quotes.id, id));
@@ -193,6 +197,7 @@ export async function getQuoteForEditor(userId: string, id: string): Promise<Edi
         quantityMilli: numericToQuantity(quantity),
         discount: { type: discountType, value: discountValue },
       })),
+      responseUnseen: quote.respondedAt !== null && quote.responseSeenAt === null,
       options: {
         discount: { type: quote.discountType, value: quote.discountValue },
         validUntil: quote.validUntil,

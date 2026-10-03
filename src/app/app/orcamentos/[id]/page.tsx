@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { listCatalogItems } from "@/features/catalog/catalog";
 import { listClients } from "@/features/clients/clients";
+import { MarkResponseSeen } from "@/features/quotes/components/mark-response-seen";
 import { QuoteEditor } from "@/features/quotes/components/quote-editor";
 import { newItemDraft, toItemDraft, toOptionsDraft } from "@/features/quotes/items";
 import { getQuoteForEditor } from "@/features/quotes/quotes";
@@ -30,6 +31,7 @@ export default async function QuotePage({ params }: PageProps<"/app/orcamentos/[
 
   return (
     <div className="mx-auto w-full max-w-3xl">
+      {quote.responseUnseen ? <MarkResponseSeen quoteId={quote.id} /> : null}
       <QuoteEditor
         quoteId={quote.id}
         quoteNumber={quote.number}

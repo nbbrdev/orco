@@ -110,7 +110,8 @@ Migration `0005_catalog_items` (NBB-45, 2026-10-03).
 | reminder_sent_at | timestamptz null | lembrete de vencimento já enviado para a validade atual; zerado ao prorrogar (RN-43) |
 | view_count | int not null default 0 | RN-35 |
 
-Índices: `(user_id, status)`, `(user_id, created_at desc)`, `(client_id)`, `unique(public_token)`, `unique(id, user_id)` (alvo da FK dos itens).
+Índices: `(user_id, status)`, `(user_id, created_at desc)`, `(user_id, updated_at desc)` (ordem da lista, NBB-48), `(client_id)`, `unique(public_token)`, `unique(id, user_id)` (alvo da FK dos itens).
+**`updated_at` = última atividade** (migration `0008_quote_list`, NBB-48 L2-A): a lista ordena por ele. O trigger `app.set_quote_updated_at` não o muda quando só mudam os campos de acompanhamento (`view_count`, `first_viewed_at`, `response_seen_at`, `reminder_sent_at`): ver a resposta, uma visualização do cliente ou um lembrete não reordenam a lista. Qualquer outro update conta, inclusive o salvamento do editor que regrava os totais iguais.
 **RLS:** select/insert/delete/update onde `user_id = app.current_user_id()` (uma policy `FOR ALL`).
 **Criação** (migration `0006_quotes`, NBB-46): o trigger `app.prepare_new_quote` (`BEFORE INSERT`) dá o número, e todo orçamento nasce `draft`, na versão 1, com um token novo e sem as datas e a contagem da M6, não importa o que o app mande. O insert fica liberado em todas as colunas porque o Drizzle sempre lista todas; no **update**, a `app_user` só altera as colunas que o app preenche (sem `number`, `public_token`, `version`, `sent_at`, `responded_at`, a contagem e as datas da M6). O mesmo trigger conta o **limite de 200 orçamentos criados no mês** (RN-38) em `profiles.quotes_month_count`; acima disso, erro `OR003`, e o número não é gasto.
 **Regras no update** (trigger `app.check_quote_update`, migration `0007_quote_rules`, NBB-46). "Conteúdo" é o que o cliente vê: tudo menos as anotações internas, as datas, a contagem, a versão e o status.
@@ -189,7 +190,9 @@ PK `(key, window_start)`. Criada na NBB-39 (migration `0002_rate_limits`, escrit
 | Função | Executável por | Descrição |
 |---|---|---|
 | `app.handle_new_user()` | trigger `user_create_profile` em `auth.user` (`SECURITY DEFINER`) | cria o `profiles` da conta nova na mesma transação do cadastro (e-mail ou Google) |
-| `app.set_updated_at()` | trigger `BEFORE UPDATE` de cada tabela | mantém o `updated_at` (convenção) |
+| `app.set_updated_at()` | trigger `BEFORE UPDATE` de cada tabela (menos `quotes`) | mantém o `updated_at` (convenção) |
+| `app.set_quote_updated_at()` | trigger `BEFORE UPDATE` em `quotes` | o `updated_at` como última atividade: não muda quando só mudam visualizações, "visto" e lembrete (NBB-48) |
+| `app.normalize_search(text)` | `app_user` (busca da lista; `SECURITY DEFINER`) | minúsculas e sem acentos, pela extensão `unaccent` (no schema `extensions`, sem acesso do app), igual à busca de clientes no navegador (NBB-48 L5-A) |
 | `app.enforce_client_limit()` | trigger `BEFORE INSERT` em `clients` | limite de 1.000 clientes por conta (RN-38); erro `OR001` (NBB-44) |
 | `app.enforce_catalog_item_limit()` | trigger `BEFORE INSERT` em `catalog_items` | limite de 500 itens por conta (RN-38); erro `OR002` (NBB-45) |
 | `app.prepare_new_quote()` | trigger `BEFORE INSERT` em `quotes` (`SECURITY DEFINER`) | pega e incrementa `profiles.next_quote_number` com lock de linha (RN-12) e força os valores iniciais (rascunho, versão 1, token novo); conta o limite de 200 por mês (RN-38); confere que o orçamento é da conta da transação (NBB-46) |
