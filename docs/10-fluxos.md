@@ -276,6 +276,15 @@ Rodapé ........... "Orçô v0.4.0" · link "Novidades" (notas da versão no Git
 - Lista com busca. **Novo item**: nome (obrigatório), preço e unidade (opcionais) (RN-10).
 - Excluir não afeta orçamentos. Ao editar um item usado em rascunhos, aparece a pergunta "Atualizar também os N rascunhos que usam este item?" (RN-11).
 - Estado vazio: "Itens que você usa sempre ficam aqui. Você também pode salvá-los direto do orçamento."
+- **Implementado na NBB-45 (2026-10-03),** no mesmo padrão dos clientes (F-15):
+  - busca pelo nome, sem diferenciar acentos nem maiúsculas;
+  - painel com **Salvar** e **Excluir** com confirmação;
+  - o preço é digitado em reais ("800", "1.234,56"), até R$ 9.999.999,99; vazio = sem preço;
+  - a unidade é texto livre (ex.: h, un, m²);
+  - na lista, cada item mostra "R$ 800,00 / h" ou "Sem preço";
+  - no limite de 500 itens (RN-38): "Você chegou ao limite de 500 itens no catálogo. Exclua um item que não usa mais para cadastrar outro.".
+  - **Estado vazio até a M4:** "Itens que você usa sempre ficam aqui. Toque em Novo item para cadastrar o primeiro." A frase sobre salvar direto do orçamento volta quando o editor existir (NBB-47).
+- **Fica para a M4:** a pergunta sobre os rascunhos ao editar um item (RN-11).
 
 ## F-17 — Excluir conta · ✅
 

@@ -12,32 +12,32 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { ClientForm } from "@/features/clients/components/client-form";
-import type { ClientRow } from "@/features/clients/schemas";
-import { searchClients } from "@/features/clients/search";
+import { CatalogItemForm } from "@/features/catalog/components/catalog-item-form";
+import { describePrice } from "@/features/catalog/price";
+import type { CatalogItemRow } from "@/features/catalog/schemas";
+import { searchCatalogItems } from "@/features/catalog/search";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { formatDocument } from "@/lib/document";
 
-// Lista de clientes (F-15, NBB-44): todos os clientes chegam de uma vez e a busca filtra aqui, na
-// hora (K4-A). Novo e editar abrem o mesmo painel (K5-A): na lateral no computador, de baixo no
-// celular.
+// Catálogo (F-16, NBB-45), no mesmo padrão da lista de clientes: todos os itens chegam de uma vez e
+// a busca filtra aqui; novo e editar abrem o mesmo painel (lateral no computador, de baixo no
+// celular).
 
-const byName = (a: ClientRow, b: ClientRow) => a.name.localeCompare(b.name, "pt-BR");
+const byName = (a: CatalogItemRow, b: CatalogItemRow) => a.name.localeCompare(b.name, "pt-BR");
 
-/** Painel aberto: `null` fechado, "new" para um cliente novo, ou o cliente em edição. */
-type Panel = null | "new" | ClientRow;
+/** Painel aberto: `null` fechado, "new" para um item novo, ou o item em edição. */
+type Panel = null | "new" | CatalogItemRow;
 
-export function ClientList({ initial }: { initial: ClientRow[] }) {
+export function CatalogList({ initial }: { initial: CatalogItemRow[] }) {
   const [list, setList] = useState(initial);
   const [term, setTerm] = useState("");
   const [panel, setPanel] = useState<Panel>(null);
   const wide = useMediaQuery("(min-width: 640px)");
 
   const editing = panel !== null && panel !== "new" ? panel : null;
-  const found = searchClients(list, term);
+  const found = searchCatalogItems(list, term);
 
-  function onSaved(client: ClientRow) {
-    setList((current) => [...current.filter((item) => item.id !== client.id), client].sort(byName));
+  function onSaved(item: CatalogItemRow) {
+    setList((current) => [...current.filter((other) => other.id !== item.id), item].sort(byName));
     setPanel(null);
   }
 
@@ -49,16 +49,17 @@ export function ClientList({ initial }: { initial: ClientRow[] }) {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold">Clientes</h1>
+        <h1 className="text-2xl font-semibold">Catálogo</h1>
         <Button type="button" onClick={() => setPanel("new")}>
           <Plus aria-hidden="true" />
-          Novo cliente
+          Novo item
         </Button>
       </div>
 
       {list.length === 0 ? (
+        // I5-B: a frase "Você também pode salvá-los direto do orçamento." volta com o editor (NBB-47).
         <p className="text-muted-foreground">
-          Nenhum cliente ainda. Toque em Novo cliente para cadastrar o primeiro.
+          Itens que você usa sempre ficam aqui. Toque em Novo item para cadastrar o primeiro.
         </p>
       ) : (
         <>
@@ -69,8 +70,8 @@ export function ClientList({ initial }: { initial: ClientRow[] }) {
             />
             <Input
               type="search"
-              aria-label="Buscar clientes"
-              placeholder="Buscar por nome, e-mail ou CPF/CNPJ"
+              aria-label="Buscar no catálogo"
+              placeholder="Buscar pelo nome"
               value={term}
               onChange={(event) => setTerm(event.target.value)}
               className="pl-9"
@@ -78,18 +79,20 @@ export function ClientList({ initial }: { initial: ClientRow[] }) {
           </div>
 
           {found.length === 0 ? (
-            <p className="text-muted-foreground">Nenhum cliente encontrado.</p>
+            <p className="text-muted-foreground">Nenhum item encontrado.</p>
           ) : (
-            <ul aria-label="Clientes" className="flex flex-col divide-y rounded-lg border">
-              {found.map((client) => (
-                <li key={client.id}>
+            <ul aria-label="Itens do catálogo" className="flex flex-col divide-y rounded-lg border">
+              {found.map((item) => (
+                <li key={item.id}>
                   <button
                     type="button"
-                    onClick={() => setPanel(client)}
+                    onClick={() => setPanel(item)}
                     className="flex w-full flex-col items-start gap-0.5 px-4 py-3 text-left outline-none hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50"
                   >
-                    <span className="font-medium">{client.name}</span>
-                    <Details client={client} />
+                    <span className="font-medium">{item.name}</span>
+                    <span className="text-sm text-muted-foreground tabular-nums">
+                      {describePrice(item)}
+                    </span>
                   </button>
                 </li>
               ))}
@@ -104,14 +107,14 @@ export function ClientList({ initial }: { initial: ClientRow[] }) {
           className="overflow-y-auto data-[side=bottom]:max-h-[90dvh] data-[side=right]:sm:max-w-md"
         >
           <SheetHeader>
-            <SheetTitle>{editing ? "Editar cliente" : "Novo cliente"}</SheetTitle>
+            <SheetTitle>{editing ? "Editar item" : "Novo item"}</SheetTitle>
             <SheetDescription>Só o nome é obrigatório.</SheetDescription>
           </SheetHeader>
           <div className="px-4 pb-4">
             {panel !== null ? (
-              <ClientForm
+              <CatalogItemForm
                 key={editing?.id ?? "new"}
-                client={editing}
+                item={editing}
                 onSaved={onSaved}
                 onDeleted={onDeleted}
               />
@@ -121,16 +124,4 @@ export function ClientList({ initial }: { initial: ClientRow[] }) {
       </Sheet>
     </div>
   );
-}
-
-/** Contatos do cliente, numa linha só, embaixo do nome. */
-function Details({ client }: { client: ClientRow }) {
-  const details = [
-    client.email,
-    client.phone,
-    client.document ? formatDocument(client.document) : null,
-  ].filter(Boolean);
-  return details.length > 0 ? (
-    <span className="text-sm text-muted-foreground">{details.join(" · ")}</span>
-  ) : null;
 }

@@ -76,10 +76,14 @@ Migration `0004_clients` (NBB-44, 2026-10-03). A FK de `quotes.client_id`, que i
 |---|---|---|
 | id, user_id, timestamps | | |
 | name | text not null | 1–200 |
-| unit | text null | ≤ 10 |
-| unit_price_cents | bigint null | ≥ 0 quando informado; opcional (RN-10) |
+| unit | text null | ≤ 10, texto livre (RN-10) |
+| unit_price_cents | bigint null | opcional (RN-10); 0 a 999.999.999 (R$ 9.999.999,99, NBB-45 I3-A) |
 
-**RLS:** CRUD onde `user_id = app.current_user_id()`.
+Índice: `(user_id, name)`. **RLS:** CRUD onde `user_id = app.current_user_id()` (uma policy `FOR ALL`). Mesmo padrão dos clientes: `GRANT UPDATE` só em `name`, `unit` e `unit_price_cents`; `updated_at` pelo trigger `app.set_updated_at`.
+
+**Limite de 500 itens por conta (RN-38):** trigger `app.enforce_catalog_item_limit`, igual ao dos clientes (trava a linha do perfil antes de contar); lança o erro `OR002`.
+
+Migration `0005_catalog_items` (NBB-45, 2026-10-03).
 
 ### `quotes`
 | Coluna | Tipo | Notas |
@@ -178,6 +182,8 @@ PK `(key, window_start)`. Criada na NBB-39 (migration `0002_rate_limits`, escrit
 |---|---|---|
 | `app.handle_new_user()` | trigger `user_create_profile` em `auth.user` (`SECURITY DEFINER`) | cria o `profiles` da conta nova na mesma transação do cadastro (e-mail ou Google) |
 | `app.set_updated_at()` | trigger `BEFORE UPDATE` de cada tabela | mantém o `updated_at` (convenção) |
+| `app.enforce_client_limit()` | trigger `BEFORE INSERT` em `clients` | limite de 1.000 clientes por conta (RN-38); erro `OR001` (NBB-44) |
+| `app.enforce_catalog_item_limit()` | trigger `BEFORE INSERT` em `catalog_items` | limite de 500 itens por conta (RN-38); erro `OR002` (NBB-45) |
 | `assign_quote_number()` | trigger em `quotes` | pega e incrementa `profiles.next_quote_number` com lock de linha |
 | `get_public_quote(token)` | `app_user` (só o servidor chama) | retorna campos mínimos do orçamento + perfil público; registra `viewed` (RN-35); aplica RN-31 |
 | `respond_to_quote(token, decision, name, reason, ip, ua)` | `app_user` (só o servidor chama) | valida RN-32, grava status + evento (RN-34) em transação |
