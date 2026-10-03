@@ -26,6 +26,7 @@ Uma ferramenta web para **um freelancer** criar, enviar e acompanhar **orçament
 - Aviso por e-mail sempre que a senha da conta é alterada (segurança; incluído em 2026-09-28, NBB-37).
 - Proteção do cadastro contra robôs, sem CAPTCHA e sem passo extra: limite por IP, campo "isca" invisível e teto diário de e-mails (RN-46; decidido em 2026-09-29, no lugar do Cloudflare Turnstile).
 - Exclusão da própria conta (apaga todos os dados).
+- Aviso por e-mail quando a conta é excluída (segurança; incluído em 2026-10-03, NBB-82).
 
 ### Perfil do freelancer (opcional, completável a qualquer momento)
 - Nome de exibição, nome comercial, logo, telefone, e-mail de contato, CPF/CNPJ, site, Instagram e dados de pagamento (texto informativo, ex.: chave Pix).
