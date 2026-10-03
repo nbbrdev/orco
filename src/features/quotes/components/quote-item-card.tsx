@@ -2,7 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { EllipsisVertical, GripVertical, Trash2 } from "lucide-react";
+import { BookmarkPlus, EllipsisVertical, GripVertical, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -12,19 +12,25 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import type { ItemDraft, ItemErrors, ItemField } from "@/features/quotes/items";
+import type { CatalogSuggestion, ItemDraft, ItemErrors, ItemField } from "@/features/quotes/items";
 import { cn } from "@/lib/utils";
 
-// Um item do orçamento como cartão editável (NBB-86 P4-A): descrição em cima; quantidade, valor e o
-// total da linha embaixo. A alça (⠿) arrasta para reordenar (R2-B) e o menu "⋯" tem o Remover
-// (R3-A); na NBB-88, o menu ganha o desconto do item.
+import { DescriptionField } from "./description-field";
+
+// Um item do orçamento como cartão editável (NBB-86 P4-A): descrição (com sugestões do catálogo,
+// NBB-87 C6-A) em cima; quantidade, unidade, valor e o total da linha embaixo. A alça (⠿) arrasta
+// para reordenar (R2-B) e o menu "⋯" tem "Salvar no catálogo" (C7-B) e "Remover" (R3-A); na NBB-88,
+// o menu ganha o desconto do item.
 
 export function QuoteItemCard({
   item,
   index,
   errors,
   lineTotal,
+  catalog,
   onChange,
+  onPick,
+  onSaveToCatalog,
   onRemove,
 }: {
   item: ItemDraft;
@@ -33,7 +39,11 @@ export function QuoteItemCard({
   errors: ItemErrors;
   /** Total da linha já formatado, ou vazio se a linha ainda não tem valor válido. */
   lineTotal: string;
+  /** Itens do catálogo, para as sugestões da descrição (C6-A). */
+  catalog: readonly CatalogSuggestion[];
   onChange: (field: ItemField, value: string) => void;
+  onPick: (suggestion: CatalogSuggestion) => void;
+  onSaveToCatalog: () => void;
   onRemove: () => void;
 }) {
   const {
@@ -71,17 +81,18 @@ export function QuoteItemCard({
 
       <div className="flex min-w-0 flex-1 flex-col gap-2 md:flex-row md:items-start">
         <Field error={errors.description} errorId={errorId("description")} className="md:flex-1">
-          <Input
-            aria-label={`Descrição do ${label}`}
-            placeholder="Descrição"
+          <DescriptionField
+            label={`Descrição do ${label}`}
             value={item.description}
-            onChange={(event) => onChange("description", event.target.value)}
-            aria-invalid={!!errors.description}
-            aria-describedby={errors.description ? errorId("description") : undefined}
+            catalog={catalog}
+            invalid={!!errors.description}
+            describedBy={errors.description ? errorId("description") : undefined}
+            onChange={(value) => onChange("description", value)}
+            onPick={onPick}
           />
         </Field>
         <div className="flex items-start gap-2">
-          <Field error={errors.quantity} errorId={errorId("quantity")} className="w-16">
+          <Field error={errors.quantity} errorId={errorId("quantity")} className="w-14">
             <Input
               aria-label={`Quantidade do ${label}`}
               inputMode="decimal"
@@ -89,6 +100,17 @@ export function QuoteItemCard({
               onChange={(event) => onChange("quantity", event.target.value)}
               aria-invalid={!!errors.quantity}
               aria-describedby={errors.quantity ? errorId("quantity") : undefined}
+            />
+          </Field>
+          {/* Unidade entre a quantidade e o valor: "1 [h] × 800,00" (C5-A). */}
+          <Field error={errors.unit} errorId={errorId("unit")} className="w-12 md:w-16">
+            <Input
+              aria-label={`Unidade do ${label}`}
+              placeholder="un"
+              value={item.unit}
+              onChange={(event) => onChange("unit", event.target.value)}
+              aria-invalid={!!errors.unit}
+              aria-describedby={errors.unit ? errorId("unit") : undefined}
             />
           </Field>
           <span className="pt-1.5 text-muted-foreground" aria-hidden="true">
@@ -123,7 +145,14 @@ export function QuoteItemCard({
             <EllipsisVertical aria-hidden="true" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
+        <DropdownMenuContent align="end" className="w-48">
+          {/* Só para itens que ainda não vêm do catálogo (C7-B). */}
+          {item.catalogItemId ? null : (
+            <DropdownMenuItem onSelect={onSaveToCatalog}>
+              <BookmarkPlus aria-hidden="true" />
+              Salvar no catálogo
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem variant="destructive" onSelect={onRemove}>
             <Trash2 aria-hidden="true" />
             Remover

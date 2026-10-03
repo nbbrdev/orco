@@ -2,7 +2,19 @@
 
 import { redirect } from "next/navigation";
 
-import { createQuote, saveQuoteItems, type SaveItemsResult } from "@/features/quotes/quotes";
+import { z } from "zod";
+
+import {
+  createClientForQuote,
+  type CreateClientResult,
+  createQuote,
+  saveItemToCatalog,
+  saveQuoteItems,
+  type SaveItemsResult,
+  type SaveToCatalogResult,
+  setQuoteClient,
+  type SetClientResult,
+} from "@/features/quotes/quotes";
 import { requireSessionUser } from "@/lib/auth/session";
 
 // Server Actions do editor de orçamento (F-05, NBB-86): casca fina sobre
@@ -32,5 +44,58 @@ export async function saveQuoteItemsAction(id: string, input: unknown): Promise<
   } catch (error) {
     console.error("Falha ao salvar o orçamento.", error);
     return { status: "error" };
+  }
+}
+
+const ERROR = { status: "error" as const, message: "Não foi possível salvar. Tente de novo." };
+
+/** Escolhe (ou tira, com `clientId` nulo) o cliente do orçamento (NBB-87 C2-A). */
+export async function setQuoteClientAction(
+  id: string,
+  clientId: string | null,
+): Promise<SetClientResult | typeof ERROR> {
+  const user = await requireSessionUser();
+  try {
+    return await setQuoteClient(user.id, id, clientId);
+  } catch (error) {
+    console.error("Falha ao escolher o cliente do orçamento.", error);
+    return ERROR;
+  }
+}
+
+/** "Criar 'Fulano'" no editor (C4-A, RF-12). */
+export async function createClientForQuoteAction(
+  id: string,
+  name: string,
+): Promise<CreateClientResult | typeof ERROR> {
+  const user = await requireSessionUser();
+  try {
+    return await createClientForQuote(user.id, id, z.string().parse(name));
+  } catch (error) {
+    console.error("Falha ao criar o cliente pelo orçamento.", error);
+    return ERROR;
+  }
+}
+
+const catalogDraft = z.object({
+  description: z.string().max(5000),
+  unit: z.string().max(50),
+  unitPrice: z.string().max(50),
+});
+
+/** "Salvar no catálogo" no menu do item (C7-B). */
+export async function saveItemToCatalogAction(
+  input: unknown,
+): Promise<SaveToCatalogResult | typeof ERROR> {
+  const user = await requireSessionUser();
+  const parsed = catalogDraft.safeParse(input);
+  if (!parsed.success) {
+    return ERROR;
+  }
+  try {
+    return await saveItemToCatalog(user.id, parsed.data);
+  } catch (error) {
+    console.error("Falha ao salvar o item no catálogo.", error);
+    return ERROR;
   }
 }

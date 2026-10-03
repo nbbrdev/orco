@@ -131,7 +131,7 @@ Total R$ 2.800,00  [Visualizar] [Compartilhar]
 
 **Detalhes:**
 - O editor abre com número, validade padrão (RN-19) e observações padrão do perfil já preenchidos.
-- Item novo digitado no editor: a opção **☐ salvar no catálogo** vem **desmarcada**.
+- Item novo digitado no editor: **Salvar no catálogo** fica no menu **⋯** do item, e não numa caixinha no cartão (decidido em 2026-10-03, NBB-87 C7-B: o cartão fica mais limpo no celular, e continua sendo um toque).
 - Total, subtotal e desconto são recalculados a cada digitação (RN-15 a RN-18).
 - Salvamento automático com indicador discreto "Salvo" (RN-21).
 - **Como ficou a parte 1 do editor** (NBB-86, 2026-10-03):
@@ -140,6 +140,10 @@ Total R$ 2.800,00  [Visualizar] [Compartilhar]
   - **Reordenar:** arrastando o item pela alça (⠿); pelo teclado, espaço, setas e espaço.
   - Salva o orçamento inteiro ~800 ms depois da última mudança ("Salvando…" / "Salvo ✓"). Campo inválido fica destacado e nada é salvo até corrigir ("Corrija os campos destacados para salvar").
   - Rodapé fixo só com o total; **Visualizar** e **Compartilhar** chegam com o PDF e o envio (M5/M6). No limite de 100 itens, "Este orçamento chegou ao limite de 100 itens." e o **Adicionar item** some.
+- **Como ficou a parte 2 do editor** (NBB-87, 2026-10-03):
+  - **Cliente:** o campo **Escolher cliente (opcional)** busca entre os clientes enquanto se digita (sem acentos) e oferece **Criar "Fulano"** no fim, que cria o cliente só com o nome (RN-07) e já o escolhe. Escolhido, aparecem o nome e os contatos, com **Trocar** e **×** (tirar). O orçamento guarda uma cópia dos dados (RN-20), salva na hora.
+  - **Unidade:** um campo pequeno entre a quantidade e o valor ("1 [h] × 800,00").
+  - **Catálogo:** ao digitar a descrição, aparecem sugestões do catálogo; escolher uma preenche descrição, unidade e valor, e o item guarda de onde veio (RN-11). **Salvar no catálogo**, no menu **⋯**, cria o item no catálogo e liga a linha a ele (some do menu depois).
 - Se faltar algo exigido pela RN-13 ao tentar compartilhar, o campo faltante é destacado com uma mensagem direta, ex.: "Informe o valor do item 2 para enviar".
 - Na primeira vez, se o perfil estiver vazio, aparece uma dica **não bloqueante**: "Adicione seu nome e logo para o orçamento ficar com a sua cara →".
 - Perto do botão de compartilhar, um atalho **Compartilhar no WhatsApp** abre `wa.me` com o link. Não é envio automático: é o próprio app do usuário que abre.
@@ -291,7 +295,7 @@ Rodapé ........... "Orçô v0.4.0" · link "Novidades" (notas da versão no Git
   - a unidade é texto livre (ex.: h, un, m²);
   - na lista, cada item mostra "R$ 800,00 / h" ou "Sem preço";
   - no limite de 500 itens (RN-38): "Você chegou ao limite de 500 itens no catálogo. Exclua um item que não usa mais para cadastrar outro.".
-  - **Estado vazio até a M4:** "Itens que você usa sempre ficam aqui. Toque em Novo item para cadastrar o primeiro." A frase sobre salvar direto do orçamento volta quando o editor existir (NBB-47).
+  - **Estado vazio:** até a NBB-87, "Itens que você usa sempre ficam aqui. Toque em Novo item para cadastrar o primeiro."; com o **Salvar no catálogo** no editor (NBB-87, 2026-10-03), voltou ao texto do F-16.
 - **Fica para a M4:** a pergunta sobre os rascunhos ao editar um item (RN-11).
 
 ## F-17 — Excluir conta · ✅

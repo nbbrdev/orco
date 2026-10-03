@@ -13,7 +13,9 @@ export const saveItemsSchema = z.object({
         id: z.uuid(),
         description: z.string().max(5000),
         quantity: z.string().max(50),
+        unit: z.string().max(50),
         unitPrice: z.string().max(50),
+        catalogItemId: z.uuid().nullable(),
       }),
     )
     .max(MAX_ITEMS_PER_QUOTE)

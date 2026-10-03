@@ -3,7 +3,11 @@ import "server-only";
 import { and, asc, eq, inArray, notInArray } from "drizzle-orm";
 import { z } from "zod";
 
+import { saveCatalogItem } from "@/features/catalog/catalog";
+import { saveClient } from "@/features/clients/clients";
 import {
+  type CatalogSuggestion,
+  type ItemDraft,
   type ItemErrors,
   itemsTotal,
   lineTotals,
@@ -14,6 +18,8 @@ import { saveItemsSchema } from "@/features/quotes/schemas";
 import { withUserDb } from "@/lib/db";
 import { DB_ERROR_CODES, hasPostgresCode } from "@/lib/db/errors";
 import {
+  catalogItems,
+  clients,
   MAX_ITEMS_PER_QUOTE,
   MAX_QUOTES_PER_MONTH,
   profiles,
@@ -79,10 +85,21 @@ export async function createQuote(userId: string): Promise<CreateQuoteResult> {
   }
 }
 
+/** A cópia dos dados do cliente guardada no orçamento (RN-20). */
+export type QuoteClient = {
+  id: string | null;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  document: string | null;
+  address: string | null;
+};
+
 export type EditorQuote = {
   id: string;
   number: number;
   status: "draft" | "sent" | "approved" | "rejected";
+  client: QuoteClient | null;
   items: ParsedItem[];
 };
 
@@ -93,7 +110,17 @@ export async function getQuoteForEditor(userId: string, id: string): Promise<Edi
   }
   return withUserDb(userId, async (tx) => {
     const [quote] = await tx
-      .select({ id: quotes.id, number: quotes.number, status: quotes.status })
+      .select({
+        id: quotes.id,
+        number: quotes.number,
+        status: quotes.status,
+        clientId: quotes.clientId,
+        clientName: quotes.clientName,
+        clientEmail: quotes.clientEmail,
+        clientPhone: quotes.clientPhone,
+        clientDocument: quotes.clientDocument,
+        clientAddress: quotes.clientAddress,
+      })
       .from(quotes)
       .where(eq(quotes.id, id));
     if (!quote) {
@@ -104,13 +131,28 @@ export async function getQuoteForEditor(userId: string, id: string): Promise<Edi
         id: quoteItems.id,
         description: quoteItems.description,
         quantity: quoteItems.quantity,
+        unit: quoteItems.unit,
         unitPriceCents: quoteItems.unitPriceCents,
+        catalogItemId: quoteItems.catalogItemId,
       })
       .from(quoteItems)
       .where(eq(quoteItems.quoteId, id))
       .orderBy(asc(quoteItems.position), asc(quoteItems.createdAt));
     return {
-      ...quote,
+      id: quote.id,
+      number: quote.number,
+      status: quote.status,
+      client:
+        quote.clientName === null
+          ? null
+          : {
+              id: quote.clientId,
+              name: quote.clientName,
+              email: quote.clientEmail,
+              phone: quote.clientPhone,
+              document: quote.clientDocument,
+              address: quote.clientAddress,
+            },
       items: items.map(({ quantity, ...item }) => ({
         ...item,
         quantityMilli: numericToQuantity(quantity),
@@ -184,13 +226,34 @@ export async function saveQuoteItems(
           : [],
       );
 
+      // Item do catálogo excluído enquanto o editor estava aberto: o item continua, só sem a origem
+      // (como faz o ON DELETE SET NULL, RN-11).
+      const catalogIds = [
+        ...new Set(parsed.flatMap((item) => (item.catalogItemId ? [item.catalogItemId] : []))),
+      ];
+      const existingCatalog = new Set(
+        catalogIds.length > 0
+          ? (
+              await tx
+                .select({ id: catalogItems.id })
+                .from(catalogItems)
+                .where(inArray(catalogItems.id, catalogIds))
+            ).map((row) => row.id)
+          : [],
+      );
+
       for (const [position, item] of parsed.entries()) {
         const totals = lineTotals(item);
         const values = {
           position,
           description: item.description,
           quantity: quantityToNumeric(item.quantityMilli),
+          unit: item.unit,
           unitPriceCents: item.unitPriceCents,
+          catalogItemId:
+            item.catalogItemId && existingCatalog.has(item.catalogItemId)
+              ? item.catalogItemId
+              : null,
           grossCents: totals.grossCents,
           lineTotalCents: totals.totalCents,
         };
@@ -221,4 +284,125 @@ export async function saveQuoteItems(
     }
     throw error;
   }
+}
+
+export type SetClientResult =
+  | { status: "saved"; client: QuoteClient | null }
+  | { status: "locked"; message: string }
+  | { status: "not_found" };
+
+/**
+ * Escolhe o cliente do orçamento (C2-A) ou tira (`clientId` nulo). Guarda uma cópia dos dados dele
+ * (RN-20): mudar o cliente depois não muda este orçamento.
+ */
+export async function setQuoteClient(
+  userId: string,
+  id: string,
+  clientId: string | null,
+): Promise<SetClientResult> {
+  if (
+    !quoteId.safeParse(id).success ||
+    (clientId !== null && !quoteId.safeParse(clientId).success)
+  ) {
+    return { status: "not_found" };
+  }
+  try {
+    return await withUserDb(userId, async (tx) => {
+      let client: QuoteClient | null = null;
+      if (clientId !== null) {
+        const [row] = await tx
+          .select({
+            id: clients.id,
+            name: clients.name,
+            email: clients.email,
+            phone: clients.phone,
+            document: clients.document,
+            address: clients.address,
+          })
+          .from(clients)
+          .where(eq(clients.id, clientId));
+        if (!row) {
+          return { status: "not_found" } as const;
+        }
+        client = row;
+      }
+      const updated = await tx
+        .update(quotes)
+        .set({
+          clientId: client?.id ?? null,
+          clientName: client?.name ?? null,
+          clientEmail: client?.email ?? null,
+          clientPhone: client?.phone ?? null,
+          clientDocument: client?.document ?? null,
+          clientAddress: client?.address ?? null,
+        })
+        .where(eq(quotes.id, id))
+        .returning({ id: quotes.id });
+      return updated.length > 0
+        ? ({ status: "saved", client } as const)
+        : ({ status: "not_found" } as const);
+    });
+  } catch (error) {
+    if (hasPostgresCode(error, DB_ERROR_CODES.quoteLocked)) {
+      return { status: "locked", message: LOCKED_MESSAGE };
+    }
+    throw error;
+  }
+}
+
+export type CreateClientResult = SetClientResult | { status: "invalid" | "limit"; message: string };
+
+/** "Criar 'Fulano'" (C4-A, RF-12): cria o cliente só com o nome (RN-07) e já o escolhe. */
+export async function createClientForQuote(
+  userId: string,
+  id: string,
+  name: string,
+): Promise<CreateClientResult> {
+  const created = await saveClient(userId, null, {
+    name,
+    email: "",
+    phone: "",
+    document: "",
+    address: "",
+    internalNotes: "",
+  });
+  if (created.status === "invalid") {
+    return { status: "invalid", message: created.errors.name ?? "Nome inválido." };
+  }
+  if (created.status === "limit") {
+    return { status: "limit", message: created.message };
+  }
+  if (created.status !== "saved") {
+    return { status: "not_found" };
+  }
+  return setQuoteClient(userId, id, created.client.id);
+}
+
+export type SaveToCatalogResult =
+  { status: "saved"; item: CatalogSuggestion } | { status: "invalid" | "limit"; message: string };
+
+/**
+ * "Salvar no catálogo" (C7-B): cria o item do catálogo a partir do item do orçamento (descrição,
+ * unidade e valor). O editor liga o item a ele no próximo salvamento.
+ */
+export async function saveItemToCatalog(
+  userId: string,
+  draft: Pick<ItemDraft, "description" | "unit" | "unitPrice">,
+): Promise<SaveToCatalogResult> {
+  if (!draft.description.trim()) {
+    return { status: "invalid", message: "Preencha a descrição para salvar no catálogo." };
+  }
+  const result = await saveCatalogItem(userId, null, {
+    name: draft.description,
+    unit: draft.unit,
+    unitPrice: draft.unitPrice,
+  });
+  if (result.status === "saved") {
+    return { status: "saved", item: result.item };
+  }
+  if (result.status === "limit") {
+    return { status: "limit", message: result.message };
+  }
+  const message = result.status === "invalid" ? Object.values(result.errors)[0] : undefined;
+  return { status: "invalid", message: message ?? "Não foi possível salvar no catálogo." };
 }

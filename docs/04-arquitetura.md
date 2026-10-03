@@ -10,7 +10,7 @@
 |---|---|---|
 | Framework | **Next.js 16** (App Router, Turbopack, React Compiler ligado) + React 19 Server Components + Server Actions. No Next 16 o antigo `middleware.ts` chama-se **`proxy.ts`** | 0001 |
 | Linguagem / runtime | TypeScript `strict`, **Node 24 LTS**, **npm** | 0001 |
-| UI | Tailwind CSS 4 + shadcn/ui (base Radix, preset Nova, pacote `cn`) + lucide-react; tokens do doc 12 em `src/app/globals.css`. Arrastar para reordenar os itens: `@dnd-kit` (NBB-86) | 0001 |
+| UI | Tailwind CSS 4 + shadcn/ui (base Radix, preset Nova, pacote `cn`) + lucide-react; tokens do doc 12 em `src/app/globals.css`. Arrastar para reordenar os itens: `@dnd-kit` (NBB-86). Campos que buscam enquanto se digita (cliente e catálogo no editor): Combobox do shadcn, com `cmdk` (NBB-87) | 0001 |
 | Formulários / validação | React Hook Form + Zod (schemas compartilhados client/server) | 0001 |
 | Banco | **PostgreSQL 17** próprio, um por ambiente (container) | 0014 |
 | Acesso ao banco / migrações | **Drizzle** (schema em TS, consultas tipadas) + `drizzle-kit` (migrations SQL revisadas) | 0014 |
