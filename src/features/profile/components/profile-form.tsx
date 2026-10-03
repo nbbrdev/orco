@@ -12,9 +12,11 @@ import {
   FieldSet,
 } from "@/components/ui/field";
 import { Switch } from "@/components/ui/switch";
+import { InstallApp } from "@/features/app-shell/components/install-app";
 import { saveProfileFieldAction } from "@/features/profile/actions";
 import { LogoField } from "@/features/profile/components/logo-field";
 import { LogoImage } from "@/features/profile/components/logo-image";
+import { ThemeSelector } from "@/features/profile/components/theme-selector";
 import { ProfileTextField } from "@/features/profile/components/profile-field";
 import type { ProfileField, ProfileValues } from "@/features/profile/schemas";
 import { formatDocument } from "@/lib/document";
@@ -170,11 +172,17 @@ export function ProfileForm({
       </FieldSet>
 
       <FieldSet>
+        <FieldLegend>Aparência</FieldLegend>
+        <ThemeSelector />
+      </FieldSet>
+
+      <FieldSet>
         <FieldLegend>Notificações</FieldLegend>
         <EmailNotificationsSwitch
           checked={values.emailNotifications}
           onSaved={onSaved("emailNotifications")}
         />
+        <InstallApp />
       </FieldSet>
     </div>
   );

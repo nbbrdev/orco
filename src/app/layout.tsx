@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { headers } from "next/headers";
 
+import { ServiceWorker } from "@/components/service-worker";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
@@ -19,6 +20,9 @@ export const metadata: Metadata = {
   description:
     "Orçamentos simples para freelancers: crie, envie por link e receba a aprovação do cliente em minutos.",
   applicationName: "Orçô",
+  // Ícone da tela inicial do iPhone (NBB-60). O favicon é o src/app/icon.svg; o manifesto fica em
+  // src/app/manifest.ts.
+  icons: { apple: "/icons/apple-touch-icon.png" },
 };
 
 export const viewport: Viewport = {
@@ -38,6 +42,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="pt-BR" className={`${inter.variable} h-full`} suppressHydrationWarning>
       <body className="flex min-h-full flex-col">
         <ThemeProvider nonce={nonce}>{children}</ThemeProvider>
+        <ServiceWorker />
       </body>
     </html>
   );

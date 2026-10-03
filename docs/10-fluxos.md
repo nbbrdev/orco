@@ -251,7 +251,12 @@ Rodapé ........... "Orçô v0.4.0" · link "Novidades" (notas da versão no Git
 - Tudo opcional, salvo automaticamente.
 - **Salvamento:** cada campo se salva ao perder o foco, com "Salvando… / Salvo ✓" ao lado do nome e o erro embaixo do campo. O valor volta já limpo: site com `https://`, Instagram como `@usuario`, CPF/CNPJ formatado (NBB-42).
 - **Logo** (NBB-81): no topo de "Sua marca", a miniatura com **Enviar logo** / **Trocar** e **Remover**. O navegador reduz a imagem antes de enviar; o logo aparece na prévia. Arquivo inválido: "Use uma imagem PNG, JPEG ou WebP de até 5 MB."
-- **O que já existe** (NBB-42): prévia, Sua marca, Contato, Pagamento, Padrões, Notificações (só o e-mail), Conta (Sair e **Excluir minha conta**, NBB-43) e, no rodapé, a versão com o link **Novidades** (abre numa aba nova a página da versão no GitHub Releases; no staging e no local, a lista de versões). Chegam depois: Aparência (NBB-60), push e "Instalar" (NBB-60 e push).
+- **O que já existe** (NBB-42): prévia, Sua marca, Contato, Pagamento, Padrões, Notificações (só o e-mail), Conta (Sair e **Excluir minha conta**, NBB-43) e, no rodapé, a versão com o link **Novidades** (abre numa aba nova a página da versão no GitHub Releases; no staging e no local, a lista de versões). Chega depois: o push (issue de push).
+- **Aparência** (NBB-60): três botões, **Automático / Claro / Escuro**. O tema vale na hora e fica salvo neste aparelho.
+- **Instalar** (NBB-60), na seção Notificações:
+  - Android e computador: o botão **Instalar o Orçô**, só quando o navegador oferece;
+  - iPhone: a instrução "toque em Compartilhar e depois em Adicionar à Tela de Início";
+  - já instalado: nada.
 
 ## F-15 — Gerenciar clientes · ✅
 
@@ -287,7 +292,7 @@ Rodapé ........... "Orçô v0.4.0" · link "Novidades" (notas da versão no Git
 4. **iPhone sem o app instalado:** em vez de pedir permissão (não funcionaria), o cartão explica: *"No iPhone, adicione o Orçô à tela inicial para receber notificações"*, com instruções curtas (Compartilhar → Adicionar à Tela de Início).
 
 **Instalar o app (PWA):**
-- Android/desktop: quando o navegador oferece a instalação, o perfil mostra **Instalar o Orçô**; o banner nativo do navegador também funciona.
+- Android/desktop: quando o navegador oferece a instalação, o perfil mostra **Instalar o Orçô**. O banner automático do navegador fica desligado, para nada surgir sozinho no meio de outra tela (decidido em 2026-10-03, NBB-60). No computador, o ícone de instalar na barra de endereço do Chrome continua funcionando.
 - iPhone: instrução "Compartilhar → Adicionar à Tela de Início" no perfil.
 
 **Notificações recebidas (exemplos):**
