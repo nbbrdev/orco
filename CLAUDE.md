@@ -13,15 +13,13 @@ Produção: https://orco.nbbrdev.com · Repo: `nbbrdev/orco` (público) · Linea
 - Mudou `docs/`? Atualize o Linear Doc correspondente na mesma sessão, e vice-versa.
 
 ## Fase atual
-**M4: Orçamentos** (meta: `v0.4.0`). A **M3** foi concluída em 2026-10-03, com a `v0.3.0` no ar (clientes e catálogo com RLS e limites por trigger, máscaras de telefone e CPF/CNPJ).
+**M5: PDF** (meta: `v0.5.0`). A **M4** foi concluída em 2026-10-03, com a `v0.4.0` no ar (orçamentos com numeração, status e trava no banco; editor com itens, descontos e salvamento automático; lista com abas e busca; duplicar, excluir e prorrogar).
 
-Ordem da M4 (decidida com o usuário em 2026-10-03; só a `v0.4.0` no fim, o staging recebe cada merge):
-1. NBB-46: schema de orçamentos (quotes, quote_items, RLS, numeração, triggers de status e limites);
-2. NBB-47: editor de orçamento (fluxo principal, F-05), dividido em NBB-86 (rascunho, itens, total, salvamento e reordenação), NBB-87 (cliente e catálogo) e NBB-88 (descontos e "Mais opções");
-3. NBB-48: lista de orçamentos (abas por status, busca, estado vazio);
-4. NBB-49: duplicar, excluir e prorrogar a validade.
+Ordem da M5 (decidida com o usuário em 2026-10-03; só a `v0.5.0` no fim, o staging recebe cada merge):
+1. NBB-50: template do PDF com react-pdf e a marca do freelancer;
+2. NBB-51: rotas de PDF (prévia, download do dono e download público).
 
-A NBB-46 e a NBB-47 trazem itens herdados da M3 no checklist (RN-09, RF-13, RN-11, RN-20, estado vazio do catálogo).
+Lembretes para a M6, na NBB-53: no modo leitura de aprovado/recusado, só as anotações internas são salvas (RN-20a); registrar visualizações não pode mudar o `updated_at` (o trigger `app.set_quote_updated_at` já cuida disso).
 
 A base da VPS (compartilhada entre projetos) fica no repositório privado `nbbrdev/vps` (projeto "VPS" no Linear).
 
