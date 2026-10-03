@@ -250,7 +250,7 @@ Rodapé ........... "Orçô v0.4.0" · link "Novidades" (notas da versão no Git
 ```
 - Tudo opcional, salvo automaticamente.
 - **Salvamento:** cada campo se salva ao perder o foco, com "Salvando… / Salvo ✓" ao lado do nome e o erro embaixo do campo. O valor volta já limpo: site com `https://`, Instagram como `@usuario`, CPF/CNPJ formatado (NBB-42).
-- **O que já existe** (NBB-42): prévia, Sua marca (sem o logo), Contato, Pagamento, Padrões, Notificações (só o e-mail), Conta (Sair) e a versão no rodapé. Chegam depois: o logo (issue própria), Aparência (NBB-60), push e "Instalar" (NBB-60 e push) e "Excluir minha conta" (NBB-43).
+- **O que já existe** (NBB-42): prévia, Sua marca (sem o logo), Contato, Pagamento, Padrões, Notificações (só o e-mail), Conta (Sair) e, no rodapé, a versão com o link **Novidades** (abre numa aba nova a página da versão no GitHub Releases; no staging e no local, a lista de versões). Chegam depois: o logo (issue própria), Aparência (NBB-60), push e "Instalar" (NBB-60 e push) e "Excluir minha conta" (NBB-43).
 
 ## F-15 — Gerenciar clientes · ✅
 
