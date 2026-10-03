@@ -32,11 +32,17 @@ export default defineConfig({
     // integração executaram (o código de banco só roda na integração). Precisa do banco local ligado.
     coverage: {
       provider: "v8",
-      // Todos os arquivos entram no relatório, mesmo sem teste nenhum (aparecem com 0%).
-      include: ["src/lib/**/*.ts"],
+      // Todos os arquivos entram no relatório, mesmo sem teste nenhum (aparecem com 0%). Além de
+      // src/lib, a lógica de servidor de src/features (NBB-73, C1); os componentes .tsx ficam de fora,
+      // porque quem os testa é o E2E, que não entra nesta conta.
+      include: ["src/lib/**/*.ts", "src/features/**/*.ts"],
       reporter: ["text", "html"],
-      // Regras de cálculo e datas exigem 100% de cobertura (RNF-14).
       thresholds: {
+        // Trava geral (NBB-73, C2): o CI falha se a cobertura cair abaixo disso.
+        lines: 80,
+        statements: 80,
+        functions: 80,
+        // Regras de cálculo e datas exigem 100% de cobertura (RNF-14).
         "src/lib/money.ts": { statements: 100, branches: 100, functions: 100, lines: 100 },
         "src/lib/dates.ts": { statements: 100, branches: 100, functions: 100, lines: 100 },
       },
