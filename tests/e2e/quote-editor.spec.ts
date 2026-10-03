@@ -155,3 +155,52 @@ test("cliente e catálogo no editor (NBB-87)", async ({ page }) => {
     page.getByRole("list", { name: "Itens do catálogo" }).getByText("Site institucional"),
   ).toBeVisible();
 });
+
+test("orçamentos no painel do cliente e rascunhos atualizados (NBB-87)", async ({ page }) => {
+  await useOwnIp(page);
+  await signUpAndConfirm(page, "senha-editor-321");
+
+  await page.goto("/app/clientes");
+  await page.getByRole("button", { name: "Novo cliente" }).click();
+  const newPanel = page.getByRole("dialog", { name: "Novo cliente" });
+  await newPanel.getByLabel("Nome").fill("Ana Lima");
+  await newPanel.getByRole("button", { name: "Salvar" }).click();
+  await expect(newPanel).toBeHidden();
+
+  // Painel do cliente: ainda sem orçamentos, e o atalho cria um já com ele (D1-A, D2-A).
+  const list = page.getByRole("list", { name: "Clientes" });
+  await list.getByText("Ana Lima").click();
+  await expect(page.getByText("Nenhum orçamento para este cliente ainda.")).toBeVisible();
+  await page.getByRole("button", { name: "Novo orçamento para este cliente" }).click();
+  await expect(page).toHaveURL(/\/app\/orcamentos\/[0-9a-f-]{36}$/);
+  await expect(page.getByRole("region", { name: "Cliente" }).getByText("Ana Lima")).toBeVisible();
+  await page.getByRole("combobox", { name: "Descrição do item 1" }).fill("Logo");
+  await page.getByLabel("Valor do item 1 (R$)").fill("800");
+  await waitSaved(page);
+
+  // O orçamento aparece no painel, e mudar o cliente pergunta pelos rascunhos (RN-20, D3-A).
+  await page.goto("/app/clientes");
+  await list.getByText("Ana Lima").click();
+  const editPanel = page.getByRole("dialog", { name: "Editar cliente" });
+  const clientQuotes = editPanel.getByRole("list", { name: "Orçamentos do cliente" });
+  await expect(clientQuotes.getByText("Nº 0001")).toBeVisible();
+  await expect(clientQuotes.getByText("Rascunho")).toBeVisible();
+  await expect(clientQuotes.getByText(/R\$\s800,00/u)).toBeVisible();
+
+  await editPanel.getByLabel("Nome").fill("Ana Souza");
+  await editPanel.getByRole("button", { name: "Salvar" }).click();
+  const question = page.getByRole("alertdialog", {
+    name: "Atualizar também o rascunho deste cliente?",
+  });
+  // O painel fecha ao salvar, e a pergunta abre em seguida.
+  await question.getByRole("button", { name: "Atualizar" }).click();
+  await expect(question).toBeHidden();
+
+  await list.getByText("Ana Souza").click();
+  await page
+    .getByRole("dialog", { name: "Editar cliente" })
+    .getByRole("link", { name: /Nº 0001/ })
+    .click();
+  await expect(page).toHaveURL(/\/app\/orcamentos\/[0-9a-f-]{36}$/);
+  await expect(page.getByRole("region", { name: "Cliente" }).getByText("Ana Souza")).toBeVisible();
+});
