@@ -32,8 +32,8 @@ Esta pasta é a **fonte da verdade do conteúdo** do projeto. O **planejamento e
 | M0 | Documentação & Negócio | Escopo, regras, fluxos e mapa **validados** ✅ | — |
 | M1 | Setup técnico | Repo, CI/CodeQL/Dependabot, Next.js, Postgres + Drizzle + RLS, VPS com Docker e Nginx, deploy automatizado, backup manual ✅ (no ar em 2026-10-01) | `0.1.0` |
 | M2 | Auth & Perfil | Cadastro, login, Google, perfil e logo, PWA e tema ✅ (no ar em 2026-10-03) | `0.2.0` |
-| M3 | Clientes & Catálogo | CRUDs ← *fase atual* | `0.3.0` |
-| M4 | Orçamentos | Editor, cálculo, status, duplicar | `0.4.0` |
+| M3 | Clientes & Catálogo | CRUDs ✅ (no ar em 2026-10-03) | `0.3.0` |
+| M4 | Orçamentos | Editor, cálculo, status, duplicar ← *fase atual* | `0.4.0` |
 | M5 | PDF | PDF com marca | `0.5.0` |
 | M6 | Link público + aprovação | Página do cliente, aprovar/recusar, notificações (e-mail, push, lembrete) | `0.6.0` |
 | M7 | Hardening & Lançamento | Usabilidade, performance, segurança, LGPD, go-live | **`1.0.0`** |
