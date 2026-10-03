@@ -75,3 +75,34 @@ test("lista com busca e abas (F-09)", async ({ page, isMobile }) => {
   await cards(page).nth(1).getByRole("link").click();
   await expect(page.getByRole("heading", { name: "Orçamento Nº 0001" })).toBeVisible();
 });
+
+test("duplicar e excluir pelo menu do orçamento (F-12, F-13)", async ({ page }) => {
+  await useOwnIp(page);
+  await signUpAndConfirm(page, "senha-lista-456");
+  await page.getByRole("button", { name: "Criar primeiro orçamento" }).click();
+  await expect(page).toHaveURL(/\/app\/orcamentos\/[0-9a-f-]{36}$/);
+
+  // Duplicar logo depois de digitar: a cópia leva o que ainda estava para salvar.
+  await page.getByLabel("Descrição do item 1").fill("Logo");
+  await page.getByLabel("Valor do item 1 (R$)").fill("800");
+  await page.getByRole("button", { name: "Ações do orçamento" }).click();
+  await page.getByRole("menuitem", { name: "Duplicar" }).click();
+  await expect(page.getByRole("heading", { name: "Orçamento Nº 0002" })).toBeVisible();
+  await expect(page.getByLabel("Descrição do item 1")).toHaveValue("Logo");
+  await expect(page.getByLabel("Total do orçamento")).toHaveText(/R\$\s800,00/u);
+
+  // Excluir pede confirmação (RN-29); Cancelar não exclui.
+  await page.getByRole("button", { name: "Ações do orçamento" }).click();
+  await page.getByRole("menuitem", { name: "Excluir" }).click();
+  const confirm = page.getByRole("alertdialog", { name: "Excluir o orçamento Nº 0002?" });
+  await expect(confirm.getByText("O link deixará de funcionar.")).toBeVisible();
+  await confirm.getByRole("button", { name: "Cancelar" }).click();
+  await expect(confirm).toBeHidden();
+
+  await page.getByRole("button", { name: "Ações do orçamento" }).click();
+  await page.getByRole("menuitem", { name: "Excluir" }).click();
+  await confirm.getByRole("button", { name: "Excluir" }).click();
+  await expect(page).toHaveURL(/\/app\/orcamentos$/);
+  await expect(cards(page)).toHaveCount(1);
+  await expect(cards(page).first()).toContainText("Nº 0001");
+});

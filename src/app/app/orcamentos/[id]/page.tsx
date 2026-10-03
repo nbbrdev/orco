@@ -35,6 +35,8 @@ export default async function QuotePage({ params }: PageProps<"/app/orcamentos/[
       <QuoteEditor
         quoteId={quote.id}
         quoteNumber={quote.number}
+        quoteStatus={quote.status}
+        defaultValidityDays={quote.defaultValidityDays}
         initialItems={items}
         initialOptions={toOptionsDraft(quote.options)}
         initialClient={quote.client}

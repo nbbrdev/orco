@@ -246,14 +246,24 @@ Igual ao F-07, mas com **Recusar** → "Quer dizer o motivo?" (opcional), com ch
 
 - O status `expirado` é calculado automaticamente (RN-26).
 - No orçamento expirado, o botão **Prorrogar validade** abre um seletor de data com a sugestão **hoje + validade padrão do perfil** (ex.: +15 dias). Ao salvar, o orçamento volta a `enviado` (RN-27) e o mesmo link continua valendo.
+- **Como ficou** (NBB-49, 2026-10-03):
+  - no topo do editor do expirado, o aviso "Este orçamento venceu em dd/mm." com **Prorrogar validade**;
+  - a janela pede a **Nova validade**, a partir de hoje ("Escolha uma data a partir de hoje.");
+  - a nova data entra no salvamento automático do editor, como mudar a validade em **Mais opções**, e sobe a versão como qualquer alteração de um enviado (RN-24).
 
 ## F-12 — Duplicar orçamento · ✅
 
 - Menu do orçamento → **Duplicar** → abre o editor com um novo rascunho (RN-28).
+- **Como ficou** (NBB-49, 2026-10-03):
+  - o menu é o **⋯** no topo do editor (não nos cartões da lista);
+  - antes de copiar, o editor salva o que ainda estava pendente;
+  - o cliente vem com os dados **atuais** do cadastro; itens, descontos, condições, prazo e observações vêm do original; a validade é recalculada; as anotações internas ficam de fora;
+  - duplicar conta no limite de 200 por mês (RN-38), com a mesma mensagem do **Novo orçamento**.
 
 ## F-13 — Excluir orçamento / regenerar link · ✅
 
 - **Excluir**: menu → confirmação "Excluir o orçamento Nº 0001? O link deixará de funcionar." (RN-29).
+- **Como ficou** (NBB-49, 2026-10-03): **Excluir** fica no mesmo menu **⋯** do editor; depois de confirmar, a pessoa volta para a lista, sem mensagem. O número excluído não é reaproveitado.
 - **Gerar novo link**: menu → confirmação "O link atual deixará de funcionar." → novo token (RN-36).
 
 ## F-14 — Completar perfil · ✅

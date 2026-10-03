@@ -10,6 +10,7 @@ import {
   type CreateClientResult,
   createQuote,
   listClientQuotes,
+  MONTHLY_LIMIT_MESSAGE,
   saveItemToCatalog,
   saveQuoteItems,
   type SaveItemsResult,
@@ -20,6 +21,7 @@ import {
   updateClientDrafts,
 } from "@/features/quotes/quotes";
 import { listQuotes, markResponseSeen, type QuotePage } from "@/features/quotes/list";
+import { deleteQuote, duplicateQuote, type DuplicateQuoteResult } from "@/features/quotes/manage";
 import { parseListFilters } from "@/features/quotes/list-filters";
 import { requireSessionUser } from "@/lib/auth/session";
 
@@ -49,6 +51,40 @@ export async function createQuoteForClientAction(clientId: string): Promise<void
       ? `/app/orcamentos/${result.id}`
       : "/app/orcamentos?aviso=limite-mensal",
   );
+}
+
+/**
+ * "Duplicar" (F-12, NBB-49 P2-A): abre o editor do rascunho novo. No limite do mês, fica no editor
+ * com a mensagem (P3).
+ */
+export async function duplicateQuoteAction(id: string): Promise<{ message: string }> {
+  const user = await requireSessionUser();
+  let result: DuplicateQuoteResult;
+  try {
+    result = await duplicateQuote(user.id, id);
+  } catch (error) {
+    console.error("Falha ao duplicar o orçamento.", error);
+    return { message: "Não foi possível duplicar. Tente de novo." };
+  }
+  if (result.status === "limit") {
+    return { message: MONTHLY_LIMIT_MESSAGE };
+  }
+  if (result.status === "not_found") {
+    return { message: "Este orçamento não existe mais." };
+  }
+  redirect(`/app/orcamentos/${result.id}`);
+}
+
+/** "Excluir" (F-13, RN-29, NBB-49 P4-A): volta para a lista. */
+export async function deleteQuoteAction(id: string): Promise<{ message: string }> {
+  const user = await requireSessionUser();
+  try {
+    await deleteQuote(user.id, id);
+  } catch (error) {
+    console.error("Falha ao excluir o orçamento.", error);
+    return { message: "Não foi possível excluir. Tente de novo." };
+  }
+  redirect("/app/orcamentos");
 }
 
 /** Orçamentos do cliente, para o painel dele (RF-13, D1-A). */
