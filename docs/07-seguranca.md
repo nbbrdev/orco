@@ -172,7 +172,7 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 
 - Lockfile (`package-lock.json`) commitado; CI com `npm ci` (instala exatamente o lockfile e falha se ele estiver desatualizado).
 - Dependabot (npm, github-actions e imagens Docker) semanal; alertas e atualizações de segurança ativos. Imagens de terceiros (Postgres, RustFS, Node) com **versão fixa**.
-- `npm audit --audit-level=high` no CI.
+- `npm audit --audit-level=high --omit=dev` no CI: só as dependências de produção, que rodam no servidor. Ferramentas de desenvolvimento (ex.: o CLI do shadcn, que fica em `devDependencies`) não travam o CI; os alertas delas chegam pelo Dependabot (decidido em 2026-10-02, depois do alerta do `braces` sem correção, NBB-42).
 - **Scripts de instalação de dependências** (`preinstall`/`install`/`postinstall`) só rodam com aprovação explícita, registrada em `allowScripts` no `package.json` (npm 11). Padrão: **negar**, a menos que o pacote realmente precise do script. Cada aprovação é decidida no PR. Ex.: `unrs-resolver` negado (o binário nativo já vem pelas `optionalDependencies`).
 - CodeQL `security-extended` em todo PR (bloqueante).
 - Actions de terceiros fixadas por SHA; `permissions:` mínimas em cada workflow.
