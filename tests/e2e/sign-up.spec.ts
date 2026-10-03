@@ -6,9 +6,11 @@ import { signUpAndConfirm, useOwnIp } from "./helpers";
 
 test("cadastro com e-mail e senha, confirmação e entrada logada (F-01)", async ({ page }) => {
   await useOwnIp(page);
-  const email = await signUpAndConfirm(page, "senha-e2e-1234");
+  await signUpAndConfirm(page, "senha-e2e-1234");
 
-  await expect(page.getByRole("heading", { name: `Você entrou como ${email}` })).toBeVisible();
+  // Logado na tela de orçamentos, que ainda está vazia (F-09).
+  await expect(page.getByRole("heading", { name: "Orçamentos" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Criar primeiro orçamento" })).toBeVisible();
 });
 
 test("link de confirmação inválido leva ao login com aviso (F-01)", async ({ page }) => {

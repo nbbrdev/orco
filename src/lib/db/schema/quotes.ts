@@ -23,29 +23,15 @@ import {
 
 import { user } from "./auth";
 import { clients } from "./clients";
+import { MAX_ITEM_PRICE_CENTS, QUOTE_LIMITS } from "./quote-limits";
+
+export * from "./quote-limits";
 
 /** Status guardado. "Expirado" não é guardado: é calculado pela validade (RN-26). */
 export const quoteStatus = pgEnum("quote_status", ["draft", "sent", "approved", "rejected"]);
 
 /** Tipo de desconto: percentual em pontos-base ou valor em centavos (RN-15a, RN-17, ADR-0006). */
 export const discountType = pgEnum("discount_type", ["percent", "amount"]);
-
-/** Limites de tamanho dos textos (docs/05). Os mesmos números valem no Zod. */
-export const QUOTE_LIMITS = {
-  clientName: 120,
-  clientEmail: 254,
-  clientPhone: 20,
-  clientAddress: 300,
-  paymentTerms: 500,
-  deliveryTime: 500,
-  notes: 2000,
-  internalNotes: 2000,
-  itemDescription: 500,
-  itemUnit: 10,
-} as const;
-
-/** Maior valor unitário de um item: R$ 9.999.999,99, o mesmo teto do catálogo (NBB-45 I3-A). */
-export const MAX_ITEM_PRICE_CENTS = 999_999_999;
 
 const length = (column: unknown, max: number) =>
   sql`char_length(${column}) <= ${sql.raw(String(max))}`;

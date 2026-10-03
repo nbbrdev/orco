@@ -139,6 +139,11 @@ export function formatBRL(cents: Cents): string {
   return brlFormatter.format(cents / 100);
 }
 
+/** Valor para um campo de texto, sem o "R$": 123456 → "1.234,56". */
+export function formatBRLInput(cents: Cents): string {
+  return formatBRL(cents).replace(/^R\$\s*/u, "");
+}
+
 /** Formata milésimos como quantidade: 1500 → "1,5". */
 export function formatQuantity(quantityMilli: QuantityMilli): string {
   assertNonNegativeInteger(quantityMilli, "quantityMilli");
@@ -180,6 +185,32 @@ export function parseQuantity(input: string): QuantityMilli | null {
   const value = parseBrazilianDecimal(input, 3);
   if (value === null || value === 0n || value > BigInt(MAX_QUANTITY_MILLI)) return null;
   return Number(value);
+}
+
+// ---------------------------------------------------------------------------
+// Quantidade no banco: `numeric(12,3)` chega e vai como texto ("1.500"), nunca como ponto flutuante.
+// ---------------------------------------------------------------------------
+
+/** Milésimos → texto do `numeric(12,3)`: 1500 → "1.500". */
+export function quantityToNumeric(quantityMilli: QuantityMilli): string {
+  assertNonNegativeInteger(quantityMilli, "quantityMilli");
+  if (quantityMilli > MAX_QUANTITY_MILLI) {
+    throw new RangeError(
+      `quantityMilli must be at most ${MAX_QUANTITY_MILLI}, got ${quantityMilli}`,
+    );
+  }
+  const digits = String(quantityMilli).padStart(4, "0");
+  return `${digits.slice(0, -3)}.${digits.slice(-3)}`;
+}
+
+/** Texto do `numeric(12,3)` → milésimos: "1.500" → 1500, "2" → 2000. */
+export function numericToQuantity(value: string): QuantityMilli {
+  const match = /^(\d+)(?:\.(\d{1,3}))?$/.exec(value);
+  if (!match) {
+    throw new RangeError(`invalid numeric quantity "${value}"`);
+  }
+  const [, integerPart = "", fractionPart = ""] = match;
+  return toSafeNumber(BigInt(integerPart + fractionPart.padEnd(3, "0")));
 }
 
 /** "10,5" ou "10,5%" → 1050 pontos-base; `null` se inválido ou acima de 100%. */
