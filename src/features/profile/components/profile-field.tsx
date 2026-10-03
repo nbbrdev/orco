@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 
+import { MaskedInput } from "@/components/masked-input";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +23,8 @@ type TextFieldProps = {
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
   type?: "text" | "email" | "tel" | "number";
   autoComplete?: string;
+  /** Máscara aplicada enquanto digita (NBB-84), ex.: maskPhone. */
+  mask?: (value: string) => string;
 };
 
 export function ProfileTextField({
@@ -35,6 +38,7 @@ export function ProfileTextField({
   inputMode,
   type = "text",
   autoComplete = "off",
+  mask,
 }: TextFieldProps) {
   const [draft, setDraft] = useState(value);
   const [saved, setSaved] = useState(value);
@@ -82,6 +86,15 @@ export function ProfileTextField({
       </div>
       {multiline ? (
         <Textarea {...common} rows={3} onChange={(event) => setDraft(event.target.value)} />
+      ) : mask ? (
+        <MaskedInput
+          {...common}
+          type={type}
+          inputMode={inputMode}
+          autoComplete={autoComplete}
+          mask={mask}
+          onValueChange={setDraft}
+        />
       ) : (
         <Input
           {...common}

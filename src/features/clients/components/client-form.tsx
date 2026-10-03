@@ -13,6 +13,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { MaskedInput } from "@/components/masked-input";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { deleteClientAction, saveClientAction } from "@/features/clients/actions";
 import type { ClientField, ClientRow } from "@/features/clients/schemas";
 import { formatDocument } from "@/lib/document";
+import { maskDocument, maskPhone } from "@/lib/masks";
 
 // Formulário do cliente no painel (F-15, NBB-44): só o nome é obrigatório (RN-07) e nada é gravado
 // até tocar em Salvar (K6-A). Na edição, o Excluir pede confirmação (K7-A).
@@ -92,6 +94,17 @@ export function ClientForm({
     };
   }
 
+  /** Mesmo que `field`, para um campo com máscara (NBB-84). */
+  function masked(name: ClientField, mask: (value: string) => string) {
+    return {
+      id: `client-${name}`,
+      value: draft[name],
+      "aria-invalid": !!errors[name],
+      mask,
+      onValueChange: (value: string) => setDraft((current) => ({ ...current, [name]: value })),
+    };
+  }
+
   return (
     <form onSubmit={save} className="flex flex-col gap-6" noValidate>
       <FieldGroup>
@@ -107,8 +120,8 @@ export function ClientForm({
         </Field>
         <Field data-invalid={!!errors.phone}>
           <FieldLabel htmlFor="client-phone">Telefone</FieldLabel>
-          <Input
-            {...field("phone")}
+          <MaskedInput
+            {...masked("phone", maskPhone)}
             type="tel"
             inputMode="tel"
             autoComplete="off"
@@ -118,7 +131,7 @@ export function ClientForm({
         </Field>
         <Field data-invalid={!!errors.document}>
           <FieldLabel htmlFor="client-document">CPF ou CNPJ</FieldLabel>
-          <Input {...field("document")} autoComplete="off" />
+          <MaskedInput {...masked("document", maskDocument)} autoComplete="off" />
           {errors.document ? <FieldError>{errors.document}</FieldError> : null}
         </Field>
         <Field data-invalid={!!errors.address}>

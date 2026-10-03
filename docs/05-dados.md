@@ -35,7 +35,7 @@
 | display_name | text null | ≤ 80 |
 | business_name | text null | ≤ 120 |
 | document | text null | CPF (11 dígitos) ou CNPJ (12 letras/números + 2 dígitos, formato alfanumérico da Receita), sem pontuação; dígito verificador conferido no servidor (RN-08, `src/lib/document.ts`) |
-| phone | text null | ≤ 20 |
+| phone | text null | ≤ 20; brasileiro com DDD, no formato `(11) 91234-5678` (RN-08, NBB-84) |
 | contact_email | text null | ≤ 254 |
 | logo_path | text null | chave do objeto no bucket `logos` do RustFS |
 | website | text null | URL http(s), ≤ 200 |
@@ -60,7 +60,7 @@ Migration `0003_profiles` (NBB-42, 2026-10-02): a tabela completa já nasce com 
 | id, user_id, timestamps | | |
 | name | text not null | 1–120 (RN-07) |
 | email | text null | ≤ 254; só o formato (RN-08) |
-| phone | text null | ≤ 20; só o formato (RN-08) |
+| phone | text null | ≤ 20; brasileiro com DDD, no formato `(11) 91234-5678` (RN-08, NBB-84) |
 | document | text null | mesmo formato do `profiles.document`; dígito verificador conferido no servidor (RN-08) |
 | address | text null | ≤ 300 |
 | internal_notes | text null | ≤ 2000, **privado**, fora do snapshot (RN-07) |
