@@ -13,23 +13,27 @@ import {
 } from "@/components/ui/field";
 import { Switch } from "@/components/ui/switch";
 import { saveProfileFieldAction } from "@/features/profile/actions";
+import { LogoField } from "@/features/profile/components/logo-field";
 import { ProfileTextField } from "@/features/profile/components/profile-field";
 import type { ProfileField, ProfileValues } from "@/features/profile/schemas";
 import { formatDocument } from "@/lib/document";
 
-// Perfil do freelancer (F-14, NBB-42): a prévia do cabeçalho no topo (D5) e as seções desta issue
-// (D6). Cada campo se salva sozinho ao perder o foco (D3); a prévia acompanha o que foi salvo.
+// Perfil do freelancer (F-14, NBB-42): a prévia do cabeçalho no topo (D5) e as seções (D6), com o
+// logo (NBB-81). Cada campo se salva sozinho ao perder o foco (D3); a prévia acompanha o que foi salvo.
 
 const text = (value: string | number | null) => (value === null ? "" : String(value));
 
 export function ProfileForm({
   initial,
+  initialLogoUrl,
   accountEmail,
 }: {
   initial: ProfileValues;
+  initialLogoUrl: string | null;
   accountEmail: string;
 }) {
   const [values, setValues] = useState(initial);
+  const [logoUrl, setLogoUrl] = useState(initialLogoUrl);
 
   function onSaved(field: ProfileField) {
     return (value: ProfileValues[ProfileField]) =>
@@ -38,11 +42,12 @@ export function ProfileForm({
 
   return (
     <div className="flex flex-col gap-10">
-      <HeaderPreview values={values} accountEmail={accountEmail} />
+      <HeaderPreview values={values} logoUrl={logoUrl} accountEmail={accountEmail} />
 
       <FieldSet>
         <FieldLegend>Sua marca</FieldLegend>
         <FieldGroup>
+          <LogoField logoUrl={logoUrl} onChange={setLogoUrl} />
           <ProfileTextField
             field="displayName"
             label="Seu nome"
@@ -212,7 +217,15 @@ function EmailNotificationsSwitch({
 }
 
 /** Prévia do cabeçalho do orçamento (D5). Nome pela ordem da RN-04: comercial → seu nome → e-mail. */
-function HeaderPreview({ values, accountEmail }: { values: ProfileValues; accountEmail: string }) {
+function HeaderPreview({
+  values,
+  logoUrl,
+  accountEmail,
+}: {
+  values: ProfileValues;
+  logoUrl: string | null;
+  accountEmail: string;
+}) {
   const name = values.businessName ?? values.displayName ?? accountEmail;
   const contacts = [
     values.phone,
@@ -227,15 +240,21 @@ function HeaderPreview({ values, accountEmail }: { values: ProfileValues; accoun
       <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
         Como o cliente vê
       </p>
-      <div className="rounded-lg border border-b-2 border-border border-b-primary p-4">
-        <p className="text-lg font-semibold">{name}</p>
-        {contacts.length > 0 ? (
-          <p className="text-sm text-muted-foreground">{contacts.join(" · ")}</p>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            Preencha os campos abaixo para o orçamento ficar com a sua cara.
-          </p>
-        )}
+      <div className="flex items-center gap-4 rounded-lg border border-b-2 border-border border-b-primary p-4">
+        {logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- imagem da nossa própria rota, já pequena
+          <img src={logoUrl} alt="" className="size-14 shrink-0 object-contain" />
+        ) : null}
+        <div className="min-w-0">
+          <p className="text-lg font-semibold">{name}</p>
+          {contacts.length > 0 ? (
+            <p className="text-sm text-muted-foreground">{contacts.join(" · ")}</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Preencha os campos abaixo para o orçamento ficar com a sua cara.
+            </p>
+          )}
+        </div>
       </div>
     </section>
   );

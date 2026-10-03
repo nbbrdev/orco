@@ -162,10 +162,11 @@ PK `(key, window_start)`. Criada na NBB-39 (migration `0002_rate_limits`, escrit
 
 ## Arquivos (RustFS, ADR-0015)
 
-- Bucket `logos` no RustFS do ambiente. Chave `{user_id}/{uuid}.webp`, com UUID gerado pelo servidor.
-- **Escrita** (envio, troca, remoção) só pelo servidor, depois de validar a sessão: o `user_id` da chave é sempre o da sessão, nunca um valor vindo do navegador.
-- **Leitura** por uma rota do app, permitida para quem tem a chave (UUID inadivinhável), porque o logo aparece na página pública e no PDF.
-- Tipos `image/png`, `image/jpeg`, `image/webp` e até 5 MB, validados no servidor (RN-05). Na prática, chega um WebP de até 1024 px, já redimensionado no navegador.
+- Bucket `logos` no RustFS do ambiente, criado pelo próprio app na primeira vez que precisa dele (NBB-81, L1).
+- Chave `{uuid}.{webp|png|jpg}`, com o UUID gerado pelo servidor e **sem o id da conta**, porque o endereço do logo é público (NBB-81, L4). O perfil guarda a chave em `profiles.logo_path`; só existe um logo por conta.
+- **Escrita** (envio, troca, remoção) só pelo servidor, depois de validar a sessão: o perfil alterado é sempre o da sessão (`withUserDb`). Na troca e na remoção, o arquivo anterior é apagado.
+- **Leitura** pela rota pública `/api/p/logos/{uuid}.{ext}` (liberada do Basic Auth no staging, como `/p/*`), com cache "imutável": trocar o logo gera outro nome.
+- Tipos PNG, JPEG e WebP e até 5 MB, conferidos no servidor pelos primeiros bytes do arquivo (RN-05). Na prática, chega um WebP (ou PNG, no Safari) de até 1024 px, já reduzido no navegador.
 
 ## Funções
 
@@ -185,4 +186,4 @@ Todas as funções `SECURITY DEFINER` pertencem à `orco_owner` e usam `set sear
 
 ## Exclusão de conta
 
-Server Action (sessão validada) → remove os objetos em `logos/{user_id}/` no RustFS → o Better Auth apaga o usuário (role `app_auth`) → a cascata (`on delete cascade`) apaga todas as tabelas do produto. O RustFS não participa da cascata, por isso a remoção explícita.
+Server Action (sessão validada) → remove o logo do RustFS (pelo `profiles.logo_path`) → o Better Auth apaga o usuário (role `app_auth`) → a cascata (`on delete cascade`) apaga todas as tabelas do produto. O RustFS não participa da cascata, por isso a remoção explícita.
