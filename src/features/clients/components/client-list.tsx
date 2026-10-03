@@ -15,6 +15,10 @@ import {
 import { ClientForm } from "@/features/clients/components/client-form";
 import type { ClientRow } from "@/features/clients/schemas";
 import { searchClients } from "@/features/clients/search";
+import { updateClientDraftsAction } from "@/features/quotes/actions";
+import { ClientQuotes } from "@/features/quotes/components/client-quotes";
+import { UpdateDraftsDialog } from "@/features/quotes/components/update-drafts-dialog";
+import { updateDraftsQuestion } from "@/features/quotes/status";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { formatDocument } from "@/lib/document";
 
@@ -31,14 +35,19 @@ export function ClientList({ initial }: { initial: ClientRow[] }) {
   const [list, setList] = useState(initial);
   const [term, setTerm] = useState("");
   const [panel, setPanel] = useState<Panel>(null);
+  // Cliente salvo que é usado em rascunhos: abre a pergunta da RN-20 (NBB-87 D3-A).
+  const [drafts, setDrafts] = useState<{ clientId: string; count: number } | null>(null);
   const wide = useMediaQuery("(min-width: 640px)");
 
   const editing = panel !== null && panel !== "new" ? panel : null;
   const found = searchClients(list, term);
 
-  function onSaved(client: ClientRow) {
+  function onSaved(client: ClientRow, draftCount: number) {
     setList((current) => [...current.filter((item) => item.id !== client.id), client].sort(byName));
     setPanel(null);
+    if (draftCount > 0) {
+      setDrafts({ clientId: client.id, count: draftCount });
+    }
   }
 
   function onDeleted(id: string) {
@@ -107,7 +116,7 @@ export function ClientList({ initial }: { initial: ClientRow[] }) {
             <SheetTitle>{editing ? "Editar cliente" : "Novo cliente"}</SheetTitle>
             <SheetDescription>Só o nome é obrigatório.</SheetDescription>
           </SheetHeader>
-          <div className="px-4 pb-4">
+          <div className="flex flex-col gap-8 px-4 pb-4">
             {panel !== null ? (
               <ClientForm
                 key={editing?.id ?? "new"}
@@ -116,9 +125,17 @@ export function ClientList({ initial }: { initial: ClientRow[] }) {
                 onDeleted={onDeleted}
               />
             ) : null}
+            {/* Na edição, os orçamentos do cliente e o atalho para um novo (RF-13, NBB-87). */}
+            {editing ? <ClientQuotes key={editing.id} clientId={editing.id} /> : null}
           </div>
         </SheetContent>
       </Sheet>
+
+      <UpdateDraftsDialog
+        question={drafts ? updateDraftsQuestion(drafts.count, "client") : null}
+        onUpdate={() => updateClientDraftsAction(drafts?.clientId ?? "")}
+        onDone={() => setDrafts(null)}
+      />
     </div>
   );
 }

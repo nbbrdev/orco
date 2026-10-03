@@ -16,6 +16,9 @@ import { CatalogItemForm } from "@/features/catalog/components/catalog-item-form
 import { describePrice } from "@/features/catalog/price";
 import type { CatalogItemRow } from "@/features/catalog/schemas";
 import { searchCatalogItems } from "@/features/catalog/search";
+import { updateCatalogItemDraftsAction } from "@/features/quotes/actions";
+import { UpdateDraftsDialog } from "@/features/quotes/components/update-drafts-dialog";
+import { updateDraftsQuestion } from "@/features/quotes/status";
 import { useMediaQuery } from "@/hooks/use-media-query";
 
 // Catálogo (F-16, NBB-45), no mesmo padrão da lista de clientes: todos os itens chegam de uma vez e
@@ -31,14 +34,19 @@ export function CatalogList({ initial }: { initial: CatalogItemRow[] }) {
   const [list, setList] = useState(initial);
   const [term, setTerm] = useState("");
   const [panel, setPanel] = useState<Panel>(null);
+  // Item salvo que é usado em rascunhos: abre a pergunta da RN-11 (NBB-87 D4-A).
+  const [drafts, setDrafts] = useState<{ itemId: string; count: number } | null>(null);
   const wide = useMediaQuery("(min-width: 640px)");
 
   const editing = panel !== null && panel !== "new" ? panel : null;
   const found = searchCatalogItems(list, term);
 
-  function onSaved(item: CatalogItemRow) {
+  function onSaved(item: CatalogItemRow, draftCount: number) {
     setList((current) => [...current.filter((other) => other.id !== item.id), item].sort(byName));
     setPanel(null);
+    if (draftCount > 0) {
+      setDrafts({ itemId: item.id, count: draftCount });
+    }
   }
 
   function onDeleted(id: string) {
@@ -122,6 +130,12 @@ export function CatalogList({ initial }: { initial: CatalogItemRow[] }) {
           </div>
         </SheetContent>
       </Sheet>
+
+      <UpdateDraftsDialog
+        question={drafts ? updateDraftsQuestion(drafts.count, "catalogItem") : null}
+        onUpdate={() => updateCatalogItemDraftsAction(drafts?.itemId ?? "")}
+        onDone={() => setDrafts(null)}
+      />
     </div>
   );
 }

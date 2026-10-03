@@ -281,7 +281,11 @@ Rodapé ........... "Orçô v0.4.0" · link "Novidades" (notas da versão no Git
   - telefone e CPF/CNPJ com as mesmas máscaras do perfil (NBB-84, F-14);
   - o **Excluir** fica no painel de edição e pede confirmação numa janela;
   - no limite de 1.000 clientes (RN-38), a mensagem é "Você chegou ao limite de 1.000 clientes. Exclua um cliente que não usa mais para cadastrar outro.".
-- **Fica para a M4, com os orçamentos:** a lista de orçamentos do cliente (RF-13), o atalho **Novo orçamento para este cliente**, a pergunta sobre os rascunhos (RN-20) e o bloqueio da exclusão (RN-09). Até lá, excluir um cliente sempre é permitido.
+- **Com os orçamentos** (NBB-46 e NBB-87, 2026-10-03):
+  - o painel de edição do cliente mostra os orçamentos dele, do mais novo ao mais antigo (número, status e total; "Expirado" calculado pela data), e tocar abre o editor (RF-13);
+  - **Novo orçamento para este cliente** cria o rascunho já com o cliente e abre o editor;
+  - ao salvar um cliente usado em rascunhos, o painel fecha e aparece "Atualizar também os N rascunhos deste cliente?" (**Atualizar** / **Agora não**); só os rascunhos mudam (RN-20);
+  - um cliente com orçamentos não pode ser excluído, com a mensagem da RN-09.
 
 ## F-16 — Gerenciar catálogo · ✅
 
@@ -296,7 +300,7 @@ Rodapé ........... "Orçô v0.4.0" · link "Novidades" (notas da versão no Git
   - na lista, cada item mostra "R$ 800,00 / h" ou "Sem preço";
   - no limite de 500 itens (RN-38): "Você chegou ao limite de 500 itens no catálogo. Exclua um item que não usa mais para cadastrar outro.".
   - **Estado vazio:** até a NBB-87, "Itens que você usa sempre ficam aqui. Toque em Novo item para cadastrar o primeiro."; com o **Salvar no catálogo** no editor (NBB-87, 2026-10-03), voltou ao texto do F-16.
-- **Fica para a M4:** a pergunta sobre os rascunhos ao editar um item (RN-11).
+- **Rascunhos** (NBB-87, 2026-10-03): ao salvar um item usado em rascunhos, o painel fecha e aparece "Atualizar também os N rascunhos que usam este item?" (**Atualizar** / **Agora não**). Atualizar troca descrição, unidade e valor nas linhas desses rascunhos, mantém a quantidade e recalcula os totais (RN-11).
 
 ## F-17 — Excluir conta · ✅
 

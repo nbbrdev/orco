@@ -40,7 +40,8 @@ export function CatalogItemForm({
 }: {
   /** Item em edição, ou `null` para um novo. */
   item: CatalogItemRow | null;
-  onSaved: (item: CatalogItemRow) => void;
+  /** Salvo. `drafts`: quantos rascunhos usam o item, para a pergunta da RN-11 (NBB-87 D4-A). */
+  onSaved: (item: CatalogItemRow, drafts: number) => void;
   onDeleted: (id: string) => void;
 }) {
   const [draft, setDraft] = useState(() => toDraft(item));
@@ -55,7 +56,7 @@ export function CatalogItemForm({
       setErrors(result.status === "invalid" ? result.errors : {});
       if (result.status === "saved") {
         setMessage(null);
-        onSaved(result.item);
+        onSaved(result.item, result.drafts);
       } else if (result.status === "limit" || result.status === "error") {
         setMessage(result.message);
       } else if (result.status === "not_found") {
