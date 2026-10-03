@@ -9,10 +9,14 @@ import {
   type CatalogSuggestion,
   type ItemDraft,
   type ItemErrors,
-  itemsTotal,
   lineTotals,
+  type OptionsErrors,
   type ParsedItem,
+  type ParsedOptions,
   parseItem,
+  parseOptions,
+  quoteTotals,
+  type StoredDiscount,
 } from "@/features/quotes/items";
 import { saveItemsSchema } from "@/features/quotes/schemas";
 import { type DisplayStatus, displayStatus } from "@/features/quotes/status";
@@ -121,6 +125,8 @@ export type EditorQuote = {
   status: "draft" | "sent" | "approved" | "rejected";
   client: QuoteClient | null;
   items: ParsedItem[];
+  /** "Mais opções" (NBB-88 G2-A). */
+  options: ParsedOptions;
 };
 
 /** O orçamento e os itens, na ordem salva, para abrir o editor. `null` se não existe ou é de outra conta. */
@@ -140,6 +146,13 @@ export async function getQuoteForEditor(userId: string, id: string): Promise<Edi
         clientPhone: quotes.clientPhone,
         clientDocument: quotes.clientDocument,
         clientAddress: quotes.clientAddress,
+        discountType: quotes.discountType,
+        discountValue: quotes.discountValue,
+        validUntil: quotes.validUntil,
+        paymentTerms: quotes.paymentTerms,
+        deliveryTime: quotes.deliveryTime,
+        notes: quotes.notes,
+        internalNotes: quotes.internalNotes,
       })
       .from(quotes)
       .where(eq(quotes.id, id));
@@ -154,6 +167,8 @@ export async function getQuoteForEditor(userId: string, id: string): Promise<Edi
         unit: quoteItems.unit,
         unitPriceCents: quoteItems.unitPriceCents,
         catalogItemId: quoteItems.catalogItemId,
+        discountType: quoteItems.discountType,
+        discountValue: quoteItems.discountValue,
       })
       .from(quoteItems)
       .where(eq(quoteItems.quoteId, id))
@@ -173,24 +188,34 @@ export async function getQuoteForEditor(userId: string, id: string): Promise<Edi
               document: quote.clientDocument,
               address: quote.clientAddress,
             },
-      items: items.map(({ quantity, ...item }) => ({
+      items: items.map(({ quantity, discountType, discountValue, ...item }) => ({
         ...item,
         quantityMilli: numericToQuantity(quantity),
+        discount: { type: discountType, value: discountValue },
       })),
+      options: {
+        discount: { type: quote.discountType, value: quote.discountValue },
+        validUntil: quote.validUntil,
+        paymentTerms: quote.paymentTerms,
+        deliveryTime: quote.deliveryTime,
+        notes: quote.notes,
+        internalNotes: quote.internalNotes,
+      },
     };
   });
 }
 
 export type SaveItemsResult =
   | { status: "saved"; totalCents: number }
-  | { status: "invalid"; errors: Record<string, ItemErrors> }
+  | { status: "invalid"; errors: Record<string, ItemErrors>; optionErrors?: OptionsErrors }
   | { status: "limit" | "locked"; message: string }
   | { status: "not_found" };
 
 /**
- * Salva os itens do orçamento como estão na tela (P2-A), numa transação só: apaga os que saíram,
- * atualiza os que já existiam, insere os novos, grava a ordem (R1-A) e recalcula o total. O banco
- * sobe a versão uma vez por transação, se o orçamento já foi enviado (RN-24).
+ * Salva o orçamento como está na tela (P2-A, G3-A), numa transação só: apaga os itens que saíram,
+ * atualiza os que já existiam, insere os novos, grava a ordem (R1-A) e as "Mais opções", e recalcula
+ * os totais com os descontos (RN-15 a RN-18). Sem as opções, mantém o desconto geral já salvo. O
+ * banco sobe a versão uma vez por transação, se o orçamento já foi enviado (RN-24).
  */
 export async function saveQuoteItems(
   userId: string,
@@ -215,16 +240,23 @@ export async function saveQuoteItems(
       errors[draft.id] = result.errors;
     }
   }
-  if (Object.keys(errors).length > 0) {
-    return { status: "invalid", errors };
+  const options = shape.data.options ? parseOptions(shape.data.options) : null;
+  if (Object.keys(errors).length > 0 || (options && !options.ok)) {
+    return {
+      status: "invalid",
+      errors,
+      ...(options && !options.ok ? { optionErrors: options.errors } : {}),
+    };
   }
 
-  const totalCents = itemsTotal(parsed);
   try {
-    const found = await withUserDb(userId, async (tx) => {
-      const [quote] = await tx.select({ id: quotes.id }).from(quotes).where(eq(quotes.id, id));
+    const totalCents = await withUserDb(userId, async (tx) => {
+      const [quote] = await tx
+        .select({ discountType: quotes.discountType, discountValue: quotes.discountValue })
+        .from(quotes)
+        .where(eq(quotes.id, id));
       if (!quote) {
-        return false;
+        return null;
       }
 
       const ids = parsed.map((item) => item.id);
@@ -274,7 +306,10 @@ export async function saveQuoteItems(
             item.catalogItemId && existingCatalog.has(item.catalogItemId)
               ? item.catalogItemId
               : null,
+          discountType: item.discount.type,
+          discountValue: item.discount.value,
           grossCents: totals.grossCents,
+          discountCents: totals.discountCents,
           lineTotalCents: totals.totalCents,
         };
         if (existing.has(item.id)) {
@@ -287,14 +322,32 @@ export async function saveQuoteItems(
         }
       }
 
-      // Sem descontos ainda (chegam na NBB-88): o total é o subtotal.
+      const discount: StoredDiscount = options?.ok
+        ? options.options.discount
+        : { type: quote.discountType, value: quote.discountValue };
+      const totals = quoteTotals(parsed, discount);
       await tx
         .update(quotes)
-        .set({ subtotalCents: totalCents, discountCents: 0, totalCents })
+        .set({
+          ...(options?.ok
+            ? {
+                discountType: discount.type,
+                discountValue: discount.value,
+                validUntil: options.options.validUntil,
+                paymentTerms: options.options.paymentTerms,
+                deliveryTime: options.options.deliveryTime,
+                notes: options.options.notes,
+                internalNotes: options.options.internalNotes,
+              }
+            : {}),
+          subtotalCents: totals.subtotalCents,
+          discountCents: totals.discountCents,
+          totalCents: totals.totalCents,
+        })
         .where(eq(quotes.id, id));
-      return true;
+      return totals.totalCents;
     });
-    return found ? { status: "saved", totalCents } : { status: "not_found" };
+    return totalCents === null ? { status: "not_found" } : { status: "saved", totalCents };
   } catch (error) {
     if (hasPostgresCode(error, DB_ERROR_CODES.quoteItemLimit)) {
       return { status: "limit", message: ITEM_LIMIT_MESSAGE };
@@ -520,8 +573,8 @@ export async function countCatalogItemDrafts(userId: string, itemId: string): Pr
 
 /**
  * "Atualizar também os N rascunhos que usam este item?" → Atualizar (RN-11, D4-A): nas linhas dos
- * **rascunhos** ligadas ao item, troca descrição, unidade e valor (a quantidade fica) e recalcula os
- * totais da linha e do orçamento.
+ * **rascunhos** ligadas ao item, troca descrição, unidade e valor (a quantidade e o desconto ficam) e
+ * recalcula os totais da linha e do orçamento, com os descontos (NBB-88).
  */
 export async function updateCatalogItemDrafts(userId: string, itemId: string): Promise<number> {
   if (!quoteId.safeParse(itemId).success) {
@@ -540,7 +593,13 @@ export async function updateCatalogItemDrafts(userId: string, itemId: string): P
       return 0;
     }
     const lines = await tx
-      .select({ id: quoteItems.id, quoteId: quoteItems.quoteId, quantity: quoteItems.quantity })
+      .select({
+        id: quoteItems.id,
+        quoteId: quoteItems.quoteId,
+        quantity: quoteItems.quantity,
+        discountType: quoteItems.discountType,
+        discountValue: quoteItems.discountValue,
+      })
       .from(quoteItems)
       .innerJoin(quotes, eq(quotes.id, quoteItems.quoteId))
       .where(and(eq(quoteItems.catalogItemId, itemId), eq(quotes.status, "draft")));
@@ -553,6 +612,7 @@ export async function updateCatalogItemDrafts(userId: string, itemId: string): P
         unit: entry.unit,
         unitPriceCents: entry.unitPriceCents,
         catalogItemId: itemId,
+        discount: { type: line.discountType, value: line.discountValue },
       });
       await tx
         .update(quoteItems)
@@ -561,6 +621,7 @@ export async function updateCatalogItemDrafts(userId: string, itemId: string): P
           unit: entry.unit,
           unitPriceCents: entry.unitPriceCents,
           grossCents: totals.grossCents,
+          discountCents: totals.discountCents,
           lineTotalCents: totals.totalCents,
         })
         .where(eq(quoteItems.id, line.id));
@@ -568,11 +629,20 @@ export async function updateCatalogItemDrafts(userId: string, itemId: string): P
 
     const quoteIds = [...new Set(lines.map((line) => line.quoteId))];
     for (const id of quoteIds) {
+      const [quote] = await tx
+        .select({ discountType: quotes.discountType, discountValue: quotes.discountValue })
+        .from(quotes)
+        .where(eq(quotes.id, id));
       const quoteLines = await tx
-        .select({ quantity: quoteItems.quantity, unitPriceCents: quoteItems.unitPriceCents })
+        .select({
+          quantity: quoteItems.quantity,
+          unitPriceCents: quoteItems.unitPriceCents,
+          discountType: quoteItems.discountType,
+          discountValue: quoteItems.discountValue,
+        })
         .from(quoteItems)
         .where(eq(quoteItems.quoteId, id));
-      const totalCents = itemsTotal(
+      const totals = quoteTotals(
         quoteLines.map((quoteLine, index) => ({
           id: String(index),
           description: "",
@@ -580,12 +650,17 @@ export async function updateCatalogItemDrafts(userId: string, itemId: string): P
           unit: null,
           unitPriceCents: quoteLine.unitPriceCents,
           catalogItemId: null,
+          discount: { type: quoteLine.discountType, value: quoteLine.discountValue },
         })),
+        { type: quote?.discountType ?? null, value: quote?.discountValue ?? 0 },
       );
-      // Sem descontos ainda (chegam na NBB-88): o total é o subtotal.
       await tx
         .update(quotes)
-        .set({ subtotalCents: totalCents, discountCents: 0, totalCents })
+        .set({
+          subtotalCents: totals.subtotalCents,
+          discountCents: totals.discountCents,
+          totalCents: totals.totalCents,
+        })
         .where(eq(quotes.id, id));
     }
     return quoteIds.length;

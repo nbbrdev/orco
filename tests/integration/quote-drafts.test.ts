@@ -17,7 +17,7 @@ import {
   updateClientDrafts,
 } from "@/features/quotes/quotes";
 import { closeDb, getAuthDb, withUserDb } from "@/lib/db";
-import { quotes, user } from "@/lib/db/schema";
+import { quoteItems, quotes, user } from "@/lib/db/schema";
 
 // Orçamentos a partir do cliente e do catálogo (NBB-87, PR 2) contra o Postgres real: a lista do
 // cliente (RF-13), o "Novo orçamento para este cliente" e a atualização dos rascunhos quando o cliente
@@ -187,5 +187,46 @@ describe("rascunhos do item do catálogo (RN-11, D4-A)", () => {
     expect((await getQuoteForEditor(userA, sent))?.items[0]?.description).toBe("Hora");
     expect(await countCatalogItemDrafts(userA, "x")).toBe(0);
     expect(await updateCatalogItemDrafts(userA, randomUUID())).toBe(0);
+  });
+
+  it("mantém os descontos do item e o geral ao recalcular (NBB-88)", async () => {
+    const saved = await saveCatalogItem(userA, null, { name: "Logo", unit: "", unitPrice: "800" });
+    if (saved.status !== "saved") throw new Error("Item não criado.");
+    const itemId = saved.item.id;
+
+    const draft = await newQuote(userA);
+    const line = {
+      id: randomUUID(),
+      description: "Logo",
+      quantity: "1",
+      unit: "",
+      unitPrice: "800",
+      catalogItemId: itemId,
+      discount: { type: "percent", value: "10" },
+    };
+    await saveQuoteItems(userA, draft, {
+      items: [line],
+      options: {
+        discount: { type: "amount", value: "100" },
+        validUntil: "2026-12-31",
+        paymentTerms: "",
+        deliveryTime: "",
+        notes: "",
+        internalNotes: "",
+      },
+    });
+
+    await saveCatalogItem(userA, itemId, { name: "Logo", unit: "", unitPrice: "1.000" });
+    expect(await updateCatalogItemDrafts(userA, itemId)).toBe(1);
+
+    const [row] = await withUserDb(userA, (tx) =>
+      tx.select().from(quoteItems).where(eq(quoteItems.id, line.id)),
+    );
+    expect(row).toMatchObject({ grossCents: 100000, discountCents: 10000, lineTotalCents: 90000 });
+    const [totals] = await withUserDb(userA, (tx) =>
+      tx.select().from(quotes).where(eq(quotes.id, draft)),
+    );
+    // 1.000,00 − 10% = 900,00; menos 100,00 de desconto geral = 800,00.
+    expect(totals).toMatchObject({ subtotalCents: 90000, discountCents: 10000, totalCents: 80000 });
   });
 });
