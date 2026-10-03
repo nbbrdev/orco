@@ -249,7 +249,8 @@ Conta ............ sair · excluir minha conta (F-17)
 Rodapé ........... "Orçô v0.4.0" · link "Novidades" (notas da versão no GitHub Releases)
 ```
 - Tudo opcional, salvo automaticamente.
-- Até a NBB-42, `/app/perfil` é provisório: só a seção **Conta**, com o e-mail e o **Sair** (NBB-41).
+- **Salvamento:** cada campo se salva ao perder o foco, com "Salvando… / Salvo ✓" ao lado do nome e o erro embaixo do campo. O valor volta já limpo: site com `https://`, Instagram como `@usuario`, CPF/CNPJ formatado (NBB-42).
+- **O que já existe** (NBB-42): prévia, Sua marca (sem o logo), Contato, Pagamento, Padrões, Notificações (só o e-mail), Conta (Sair) e a versão no rodapé. Chegam depois: o logo (issue própria), Aparência (NBB-60), push e "Instalar" (NBB-60 e push) e "Excluir minha conta" (NBB-43).
 
 ## F-15 — Gerenciar clientes · ✅
 

@@ -46,7 +46,8 @@
   - `app_auth`: **só** as tabelas de login;
   - `app_user`: **só** as tabelas do produto, com RLS.
 - O app **nunca** se conecta como `orco_owner`, `postgres` ou qualquer role com `BYPASSRLS`.
-- Toda policy de dono usa `user_id = app.current_user_id()`.
+- Toda policy de dono usa `user_id = app.current_user_id()` (em `profiles`, `id = app.current_user_id()`).
+- **Permissão por coluna** quando a tabela tem colunas que só o sistema mexe: em `profiles`, a `app_user` não pode alterar o `id`, o contador de orçamentos nem as datas (NBB-42).
 - Todo acesso a dados do produto passa por `withUserDb(userId, fn)`. Ela abre uma transação com `set_config('app.user_id', …, true)`, que vale **só nessa transação**. Fora dela, nenhuma linha é visível.
 - `PUBLIC` não tem acesso a tabelas nem `execute` em funções; cada permissão é concedida à role certa.
 - Transições de status e travas (RN-25) garantidas por trigger no banco, não só na UI.

@@ -31,10 +31,10 @@
 ### `profiles`
 | Coluna | Tipo | Notas |
 |---|---|---|
-| id | uuid PK → auth.user | criado por trigger no cadastro |
+| id | uuid PK → auth.user (`on delete cascade`) | criado pelo trigger `app.handle_new_user` no cadastro |
 | display_name | text null | ≤ 80 |
 | business_name | text null | ≤ 120 |
-| document | text null | CPF/CNPJ só com dígitos, validado (RN-08) |
+| document | text null | CPF (11 dígitos) ou CNPJ (12 letras/números + 2 dígitos, formato alfanumérico da Receita), sem pontuação; dígito verificador conferido no servidor (RN-08, `src/lib/document.ts`) |
 | phone | text null | ≤ 20 |
 | contact_email | text null | ≤ 254 |
 | logo_path | text null | chave do objeto no bucket `logos` do RustFS |
@@ -48,8 +48,11 @@
 | next_quote_number | int not null default 1 | contador (RN-12) |
 | email_notifications | boolean not null default true | respostas + lembretes por e-mail (RN-41) |
 | push_prompted_at | timestamptz null | quando a permissão de push já foi pedida, para não pedir de novo (RN-45) |
+| created_at, updated_at | timestamptz | `updated_at` pelo trigger `app.set_updated_at` |
 
-**RLS:** select/update onde `id = app.current_user_id()`. Sem insert (feito pelo trigger) nem delete (feito em cascata).
+**RLS:** select/update onde `id = app.current_user_id()`. Sem insert (feito pelo trigger) nem delete (feito em cascata). A `app_user` só pode alterar as colunas editáveis pela pessoa: `id`, `next_quote_number` e as datas ficam fora do `GRANT UPDATE` (NBB-42). Uma única policy de insert, para a `orco_owner`, que roda o trigger.
+
+Migration `0003_profiles` (NBB-42, 2026-10-02): a tabela completa já nasce com todas as colunas, mesmo as usadas só mais tarde (`logo_path`, `next_quote_number`, `push_prompted_at`), e cria o perfil das contas que já existiam.
 
 ### `clients`
 | Coluna | Tipo | Notas |
@@ -168,7 +171,8 @@ PK `(key, window_start)`. Criada na NBB-39 (migration `0002_rate_limits`, escrit
 
 | Função | Executável por | Descrição |
 |---|---|---|
-| `handle_new_user()` | trigger em `auth.user` | cria `profiles` |
+| `app.handle_new_user()` | trigger `user_create_profile` em `auth.user` (`SECURITY DEFINER`) | cria o `profiles` da conta nova na mesma transação do cadastro (e-mail ou Google) |
+| `app.set_updated_at()` | trigger `BEFORE UPDATE` de cada tabela | mantém o `updated_at` (convenção) |
 | `assign_quote_number()` | trigger em `quotes` | pega e incrementa `profiles.next_quote_number` com lock de linha |
 | `get_public_quote(token)` | `app_user` (só o servidor chama) | retorna campos mínimos do orçamento + perfil público; registra `viewed` (RN-35); aplica RN-31 |
 | `respond_to_quote(token, decision, name, reason, ip, ua)` | `app_user` (só o servidor chama) | valida RN-32, grava status + evento (RN-34) em transação |

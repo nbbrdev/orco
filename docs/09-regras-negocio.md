@@ -21,7 +21,7 @@
 | # | Regra | Status |
 |---|---|---|
 | RN-07 | Só o **nome** do cliente é obrigatório. E-mail, telefone, CPF/CNPJ, endereço e **observações internas** são opcionais. As observações internas são privadas: nunca aparecem no orçamento, no PDF ou no link, e não entram no snapshot (RN-20). | ✅ |
-| RN-08 | Se informado, o CPF/CNPJ é validado pelo dígito verificador. E-mail e telefone são validados apenas no formato. | ✅ |
+| RN-08 | Se informado, o CPF/CNPJ é validado pelo dígito verificador. E-mail e telefone são validados apenas no formato. O CNPJ aceita também o formato **alfanumérico** da Receita, em vigor desde julho de 2026 (decidido em 2026-10-02, NBB-42). | ✅ |
 | RN-09 | **Não é possível excluir um cliente que tenha orçamentos.** A tela explica: "Este cliente tem N orçamentos. Exclua-os antes de excluir o cliente." A regra é garantida pelo banco (FK). Editar os dados de um cliente não altera orçamentos existentes (RN-20). | ✅ |
 
 ## Catálogo
