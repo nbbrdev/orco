@@ -186,4 +186,9 @@ Todas as funções `SECURITY DEFINER` pertencem à `orco_owner` e usam `set sear
 
 ## Exclusão de conta
 
-Server Action (sessão validada) → remove o logo do RustFS (pelo `profiles.logo_path`) → o Better Auth apaga o usuário (role `app_auth`) → a cascata (`on delete cascade`) apaga todas as tabelas do produto. O RustFS não participa da cascata, por isso a remoção explícita.
+Server Action (sessão validada + "EXCLUIR" digitado) → remove o logo do RustFS (pelo `profiles.logo_path`) → apaga a linha em `auth.user` pela role `app_auth` → a cascata (`on delete cascade`) apaga sessões, contas de login (senha e Google) e todas as tabelas do produto → limpa o cookie. O RustFS não participa da cascata, por isso a remoção explícita.
+
+Decidido em 2026-10-03 (NBB-43):
+- A Server Action apaga direto, sem o `deleteUser` do Better Auth. Ele exigiria login de menos de 24 h ou a senha, e quem entra com o Google não tem senha (E1).
+- Se o logo não puder ser apagado, **a conta não é apagada** e a pessoa tenta de novo: nada fica para trás (E2).
+- Código em `src/features/auth/delete-account.ts`.
