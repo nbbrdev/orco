@@ -46,7 +46,8 @@ export function ClientForm({
 }: {
   /** Cliente em edição, ou `null` para um novo. */
   client: ClientRow | null;
-  onSaved: (client: ClientRow) => void;
+  /** Salvo. `drafts`: quantos rascunhos usam o cliente, para a pergunta da RN-20 (NBB-87 D3-A). */
+  onSaved: (client: ClientRow, drafts: number) => void;
   onDeleted: (id: string) => void;
 }) {
   const [draft, setDraft] = useState(() => toDraft(client));
@@ -61,7 +62,7 @@ export function ClientForm({
       setErrors(result.status === "invalid" ? result.errors : {});
       if (result.status === "saved") {
         setMessage(null);
-        onSaved(result.client);
+        onSaved(result.client, result.drafts);
       } else if (result.status === "limit" || result.status === "error") {
         setMessage(result.message);
       } else if (result.status === "not_found") {

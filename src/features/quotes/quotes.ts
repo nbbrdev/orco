@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, eq, inArray, notInArray } from "drizzle-orm";
+import { and, asc, count, countDistinct, desc, eq, inArray, notInArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { saveCatalogItem } from "@/features/catalog/catalog";
@@ -15,6 +15,7 @@ import {
   parseItem,
 } from "@/features/quotes/items";
 import { saveItemsSchema } from "@/features/quotes/schemas";
+import { type DisplayStatus, displayStatus } from "@/features/quotes/status";
 import { withUserDb } from "@/lib/db";
 import { DB_ERROR_CODES, hasPostgresCode } from "@/lib/db/errors";
 import {
@@ -44,11 +45,29 @@ export type CreateQuoteResult = { status: "created"; id: string } | { status: "l
 /**
  * Cria um rascunho com os padrões do perfil (NBB-46 Q9-A): validade (hoje + N dias, RN-19),
  * observações, condições de pagamento e prazo de execução (RN-44). Número, status e token vêm do
- * banco (app.prepare_new_quote).
+ * banco (app.prepare_new_quote). Com `clientId` ("Novo orçamento para este cliente", NBB-87 D2-A),
+ * já nasce com a cópia dos dados dele (RN-20); se o cliente não existir mais, nasce sem cliente.
  */
-export async function createQuote(userId: string): Promise<CreateQuoteResult> {
+export async function createQuote(
+  userId: string,
+  clientId: string | null = null,
+): Promise<CreateQuoteResult> {
   try {
     const id = await withUserDb(userId, async (tx) => {
+      const [client] =
+        clientId !== null && quoteId.safeParse(clientId).success
+          ? await tx
+              .select({
+                clientId: clients.id,
+                clientName: clients.name,
+                clientEmail: clients.email,
+                clientPhone: clients.phone,
+                clientDocument: clients.document,
+                clientAddress: clients.address,
+              })
+              .from(clients)
+              .where(eq(clients.id, clientId))
+          : [];
       const [profile] = await tx
         .select({
           validityDays: profiles.defaultValidityDays,
@@ -69,6 +88,7 @@ export async function createQuote(userId: string): Promise<CreateQuoteResult> {
           notes: profile.notes,
           paymentTerms: profile.paymentTerms,
           deliveryTime: profile.deliveryTime,
+          ...client,
         })
         .returning({ id: quotes.id });
       if (!created) {
@@ -405,4 +425,169 @@ export async function saveItemToCatalog(
   }
   const message = result.status === "invalid" ? Object.values(result.errors)[0] : undefined;
   return { status: "invalid", message: message ?? "Não foi possível salvar no catálogo." };
+}
+
+export type ClientQuote = {
+  id: string;
+  number: number;
+  status: DisplayStatus;
+  totalCents: number;
+};
+
+/** Os orçamentos de um cliente, do mais novo ao mais antigo (RF-13, NBB-87 D1-A). */
+export async function listClientQuotes(userId: string, clientId: string): Promise<ClientQuote[]> {
+  if (!quoteId.safeParse(clientId).success) {
+    return [];
+  }
+  const rows = await withUserDb(userId, (tx) =>
+    tx
+      .select({
+        id: quotes.id,
+        number: quotes.number,
+        status: quotes.status,
+        validUntil: quotes.validUntil,
+        totalCents: quotes.totalCents,
+      })
+      .from(quotes)
+      .where(eq(quotes.clientId, clientId))
+      .orderBy(desc(quotes.number)),
+  );
+  return rows.map(({ validUntil, status, ...quote }) => ({
+    ...quote,
+    status: displayStatus(status, validUntil),
+  }));
+}
+
+/** Quantos rascunhos usam este cliente (RN-20, D3-A). */
+export async function countClientDrafts(userId: string, clientId: string): Promise<number> {
+  if (!quoteId.safeParse(clientId).success) {
+    return 0;
+  }
+  const [row] = await withUserDb(userId, (tx) =>
+    tx
+      .select({ total: count() })
+      .from(quotes)
+      .where(and(eq(quotes.clientId, clientId), eq(quotes.status, "draft"))),
+  );
+  return row?.total ?? 0;
+}
+
+/**
+ * "Atualizar também os N rascunhos deste cliente?" → Atualizar (RN-20, D3-A): copia os dados atuais
+ * do cliente para os **rascunhos** que o usam. Enviados, aprovados e recusados nunca mudam.
+ */
+export async function updateClientDrafts(userId: string, clientId: string): Promise<number> {
+  if (!quoteId.safeParse(clientId).success) {
+    return 0;
+  }
+  return withUserDb(userId, async (tx) => {
+    const [client] = await tx
+      .select({
+        clientName: clients.name,
+        clientEmail: clients.email,
+        clientPhone: clients.phone,
+        clientDocument: clients.document,
+        clientAddress: clients.address,
+      })
+      .from(clients)
+      .where(eq(clients.id, clientId));
+    if (!client) {
+      return 0;
+    }
+    const updated = await tx
+      .update(quotes)
+      .set(client)
+      .where(and(eq(quotes.clientId, clientId), eq(quotes.status, "draft")))
+      .returning({ id: quotes.id });
+    return updated.length;
+  });
+}
+
+/** Quantos rascunhos usam este item do catálogo (RN-11, D4-A). */
+export async function countCatalogItemDrafts(userId: string, itemId: string): Promise<number> {
+  if (!quoteId.safeParse(itemId).success) {
+    return 0;
+  }
+  const [row] = await withUserDb(userId, (tx) =>
+    tx
+      .select({ total: countDistinct(quoteItems.quoteId) })
+      .from(quoteItems)
+      .innerJoin(quotes, eq(quotes.id, quoteItems.quoteId))
+      .where(and(eq(quoteItems.catalogItemId, itemId), eq(quotes.status, "draft"))),
+  );
+  return row?.total ?? 0;
+}
+
+/**
+ * "Atualizar também os N rascunhos que usam este item?" → Atualizar (RN-11, D4-A): nas linhas dos
+ * **rascunhos** ligadas ao item, troca descrição, unidade e valor (a quantidade fica) e recalcula os
+ * totais da linha e do orçamento.
+ */
+export async function updateCatalogItemDrafts(userId: string, itemId: string): Promise<number> {
+  if (!quoteId.safeParse(itemId).success) {
+    return 0;
+  }
+  return withUserDb(userId, async (tx) => {
+    const [entry] = await tx
+      .select({
+        name: catalogItems.name,
+        unit: catalogItems.unit,
+        unitPriceCents: catalogItems.unitPriceCents,
+      })
+      .from(catalogItems)
+      .where(eq(catalogItems.id, itemId));
+    if (!entry) {
+      return 0;
+    }
+    const lines = await tx
+      .select({ id: quoteItems.id, quoteId: quoteItems.quoteId, quantity: quoteItems.quantity })
+      .from(quoteItems)
+      .innerJoin(quotes, eq(quotes.id, quoteItems.quoteId))
+      .where(and(eq(quoteItems.catalogItemId, itemId), eq(quotes.status, "draft")));
+
+    for (const line of lines) {
+      const totals = lineTotals({
+        id: line.id,
+        description: entry.name,
+        quantityMilli: numericToQuantity(line.quantity),
+        unit: entry.unit,
+        unitPriceCents: entry.unitPriceCents,
+        catalogItemId: itemId,
+      });
+      await tx
+        .update(quoteItems)
+        .set({
+          description: entry.name,
+          unit: entry.unit,
+          unitPriceCents: entry.unitPriceCents,
+          grossCents: totals.grossCents,
+          lineTotalCents: totals.totalCents,
+        })
+        .where(eq(quoteItems.id, line.id));
+    }
+
+    const quoteIds = [...new Set(lines.map((line) => line.quoteId))];
+    for (const id of quoteIds) {
+      const quoteLines = await tx
+        .select({ quantity: quoteItems.quantity, unitPriceCents: quoteItems.unitPriceCents })
+        .from(quoteItems)
+        .where(eq(quoteItems.quoteId, id));
+      const totalCents = itemsTotal(
+        quoteLines.map((quoteLine, index) => ({
+          id: String(index),
+          description: "",
+          quantityMilli: numericToQuantity(quoteLine.quantity),
+          unit: null,
+          unitPriceCents: quoteLine.unitPriceCents,
+          catalogItemId: null,
+        })),
+      );
+      // Sem descontos ainda (chegam na NBB-88): o total é o subtotal.
+      await tx
+        .update(quotes)
+        .set({ subtotalCents: totalCents, discountCents: 0, totalCents })
+        .where(eq(quotes.id, id));
+    }
+    return quoteIds.length;
+  });
 }
