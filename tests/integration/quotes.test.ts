@@ -173,14 +173,15 @@ describe("quotes: acesso", () => {
     ).toMatch(/quote_items_catalog_item_id_user_id_fk/);
   });
 
-  it("a app_user não muda número, token, versão, status, dono nem datas", async () => {
+  // O status a app_user pode mudar, com as regras do trigger (tests/integration/quote-rules.test.ts).
+  it("a app_user não muda número, token, versão, dono nem datas", async () => {
     const quote = await createQuote(userA);
     const attempts: Partial<typeof quotes.$inferInsert>[] = [
       { number: 50 },
       { publicToken: "b".repeat(43) },
       { version: 9 },
-      { status: "approved" },
       { userId: userB },
+      { sentAt: new Date() },
       { respondedAt: new Date() },
       { viewCount: 3 },
     ];
