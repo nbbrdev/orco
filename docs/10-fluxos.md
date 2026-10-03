@@ -227,6 +227,13 @@ Igual ao F-07, mas com **Recusar** → "Quer dizer o motivo?" (opcional), com ch
 - Filtros por status em abas: Todos · Rascunhos · Enviados · Aprovados · Recusados · Expirados.
 - Busca por cliente ou número.
 - Estado vazio: "Você ainda não tem orçamentos" + botão grande **Criar primeiro orçamento**.
+- **Como ficou** (NBB-48, 2026-10-03):
+  - a aba e a busca ficam na URL (`?status=enviados&busca=maria`), e o "voltar" do navegador mantém o filtro; o servidor traz 50 por vez, com **Mostrar mais**;
+  - o cartão mostra "Nº 0001 · Maria Silva" (ou "Sem cliente"), o total, o status, o selo **Novo** e "Visualizado em dd/mm"; tocar abre o orçamento, e abrir um respondido tira o selo **Novo**;
+  - "última atividade" é o `updated_at` do orçamento, que não muda com visualizações do cliente nem ao ver a resposta;
+  - as abas ficam numa fileira que rola para o lado no celular, sem contadores; **Enviados** mostra só os que estão dentro da validade, e **Expirados**, os vencidos (RN-26);
+  - a busca procura o número exato quando o texto é só dígitos ("12" encontra o Nº 0012); senão, procura no nome do cliente, sem diferenciar acentos nem maiúsculas;
+  - lista vazia: "Nenhum orçamento enviado." (e assim por aba); busca sem resultado: "Nenhum orçamento encontrado para "maria".".
 
 ## F-10 — Editar orçamento enviado · ✅
 

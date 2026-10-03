@@ -19,10 +19,12 @@ import {
   updateCatalogItemDrafts,
   updateClientDrafts,
 } from "@/features/quotes/quotes";
+import { listQuotes, markResponseSeen, type QuotePage } from "@/features/quotes/list";
+import { parseListFilters } from "@/features/quotes/list-filters";
 import { requireSessionUser } from "@/lib/auth/session";
 
-// Server Actions do editor de orçamento (F-05, NBB-86): casca fina sobre
-// src/features/quotes/quotes.ts. O usuário vem da sessão validada no servidor, nunca do navegador.
+// Server Actions do editor e da lista de orçamentos (F-05, F-09): casca fina sobre
+// src/features/quotes/quotes.ts e list.ts. O usuário vem da sessão validada no servidor, nunca do navegador.
 
 /**
  * "Novo orçamento" (P1-A): só um toque de verdade cria o rascunho, nunca o pré-carregamento de um
@@ -57,6 +59,40 @@ export async function listClientQuotesAction(clientId: string): Promise<ClientQu
   } catch (error) {
     console.error("Falha ao listar os orçamentos do cliente.", error);
     return null;
+  }
+}
+
+const listFiltersInput = z.object({ tab: z.string().max(20), search: z.string().max(200) });
+
+/** "Mostrar mais" na lista (NBB-48 L1-A): os próximos orçamentos da mesma aba e busca. */
+export async function listQuotesAction(
+  filters: unknown,
+  offset: number,
+): Promise<QuotePage | null> {
+  const user = await requireSessionUser();
+  const input = listFiltersInput.safeParse(filters);
+  if (!input.success) {
+    return null;
+  }
+  try {
+    return await listQuotes(
+      user.id,
+      parseListFilters({ status: input.data.tab, busca: input.data.search }),
+      offset,
+    );
+  } catch (error) {
+    console.error("Falha ao listar os orçamentos.", error);
+    return null;
+  }
+}
+
+/** Ao abrir um orçamento respondido, o selo "novo" some da lista (RN-42, NBB-48 L4-A). */
+export async function markResponseSeenAction(id: string): Promise<void> {
+  const user = await requireSessionUser();
+  try {
+    await markResponseSeen(user.id, id);
+  } catch (error) {
+    console.error("Falha ao marcar a resposta como vista.", error);
   }
 }
 

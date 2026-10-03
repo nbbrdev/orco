@@ -93,6 +93,8 @@ export const quotes = pgTable(
     unique("quotes_id_user_id_key").on(table.id, table.userId),
     index("quotes_user_id_status_idx").on(table.userId, table.status),
     index("quotes_user_id_created_at_idx").on(table.userId, table.createdAt.desc()),
+    // A lista ordena pela última atividade (NBB-48 L2-A).
+    index("quotes_user_id_updated_at_idx").on(table.userId, table.updatedAt.desc()),
     index("quotes_client_id_idx").on(table.clientId),
     // O cliente precisa ser da mesma conta. NO ACTION (e não RESTRICT): impede excluir um cliente
     // com orçamentos (RN-09), mas deixa a cascata da exclusão de conta funcionar.
