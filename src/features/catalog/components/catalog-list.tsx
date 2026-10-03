@@ -57,9 +57,9 @@ export function CatalogList({ initial }: { initial: CatalogItemRow[] }) {
       </div>
 
       {list.length === 0 ? (
-        // I5-B: a frase "Você também pode salvá-los direto do orçamento." volta com o editor (NBB-47).
+        // O texto do F-16, de volta com o "Salvar no catálogo" do editor (NBB-87 C7-B).
         <p className="text-muted-foreground">
-          Itens que você usa sempre ficam aqui. Toque em Novo item para cadastrar o primeiro.
+          Itens que você usa sempre ficam aqui. Você também pode salvá-los direto do orçamento.
         </p>
       ) : (
         <>

@@ -20,8 +20,11 @@ import { Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { saveQuoteItemsAction } from "@/features/quotes/actions";
+import type { ClientRow } from "@/features/clients/schemas";
+import { saveItemToCatalogAction, saveQuoteItemsAction } from "@/features/quotes/actions";
 import {
+  type CatalogSuggestion,
+  fillFromCatalog,
   formatQuoteNumber,
   type ItemDraft,
   type ItemErrors,
@@ -32,12 +35,15 @@ import {
   type ParsedItem,
   parseItem,
 } from "@/features/quotes/items";
+import type { QuoteClient } from "@/features/quotes/quotes";
 import { MAX_ITEMS_PER_QUOTE } from "@/lib/db/schema/quote-limits";
 import { formatBRL } from "@/lib/money";
 
+import { ClientPicker } from "./client-picker";
 import { QuoteItemCard } from "./quote-item-card";
 
-// Editor de orçamento, parte 1 (F-05, NBB-86): itens, total na hora e salvamento automático.
+// Editor de orçamento (F-05): cliente (NBB-87), itens, total na hora e salvamento automático (NBB-86).
+// - O cliente salva na hora em que é escolhido; os itens, pelo salvamento automático.
 // - Cada mudança agenda um salvamento do orçamento inteiro ~800 ms depois (P2-A, RN-21). Se algum
 //   campo estiver inválido, nada é salvo até corrigir (P3-A).
 // - Reordenar arrastando pela alça (R2-B), também pelo teclado (espaço, setas, espaço).
@@ -50,17 +56,26 @@ export function QuoteEditor({
   quoteId,
   quoteNumber,
   initialItems,
+  initialClient,
+  clients,
+  initialCatalog,
 }: {
   quoteId: string;
   quoteNumber: number;
   initialItems: ItemDraft[];
+  initialClient: QuoteClient | null;
+  clients: ClientRow[];
+  initialCatalog: CatalogSuggestion[];
 }) {
   const [items, setItems] = useState<ItemDraft[]>(initialItems);
+  const [catalog, setCatalog] = useState(initialCatalog);
   const [status, setStatus] = useState<SaveStatus>("saved");
   const [message, setMessage] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Só a resposta do último salvamento vale: uma resposta antiga não apaga um estado mais novo.
   const lastSave = useRef(0);
+  // Os itens mais recentes, para quem continua depois de esperar o servidor (ex.: salvar no catálogo).
+  const latest = useRef(initialItems);
 
   const parsed = items.map(parseItem);
   const valid = parsed.flatMap((result) => (result.ok ? [result.item] : []));
@@ -75,6 +90,7 @@ export function QuoteEditor({
   }, [status]);
 
   function update(next: ItemDraft[]) {
+    latest.current = next;
     setItems(next);
     if (timer.current) clearTimeout(timer.current);
     if (!next.every((item) => parseItem(item).ok)) {
@@ -110,6 +126,29 @@ export function QuoteEditor({
     update(items.filter((item) => item.id !== id));
   }
 
+  /** Sugestão do catálogo escolhida na descrição (C6-A). */
+  function pickFromCatalog(id: string, suggestion: CatalogSuggestion) {
+    update(items.map((item) => (item.id === id ? fillFromCatalog(item, suggestion) : item)));
+  }
+
+  /** "Salvar no catálogo" (C7-B): cria no catálogo e liga o item a ele. */
+  async function saveToCatalog(id: string) {
+    const item = latest.current.find((entry) => entry.id === id);
+    if (!item) return;
+    const result = await saveItemToCatalogAction(item);
+    if (result.status !== "saved") {
+      setMessage(result.message);
+      return;
+    }
+    setMessage(null);
+    setCatalog((current) => [...current, result.item]);
+    update(
+      latest.current.map((entry) =>
+        entry.id === id ? { ...entry, catalogItemId: result.item.id } : entry,
+      ),
+    );
+  }
+
   function addItem() {
     update([...items, newItemDraft()]);
   }
@@ -142,6 +181,8 @@ export function QuoteEditor({
         <SaveIndicator status={status} onRetry={() => void save(items)} />
       </div>
 
+      <ClientPicker quoteId={quoteId} clients={clients} initialClient={initialClient} />
+
       <section aria-labelledby="items-heading" className="flex flex-col gap-3">
         <h2 id="items-heading" className="text-base font-medium">
           Itens
@@ -169,7 +210,10 @@ export function QuoteEditor({
                     index={index}
                     errors={result && !result.ok ? result.errors : NO_ERRORS}
                     lineTotal={result?.ok ? formatLine(result.item) : ""}
+                    catalog={catalog}
                     onChange={(field, value) => changeItem(item.id, field, value)}
+                    onPick={(suggestion) => pickFromCatalog(item.id, suggestion)}
+                    onSaveToCatalog={() => void saveToCatalog(item.id)}
                     onRemove={() => removeItem(item.id)}
                   />
                 );

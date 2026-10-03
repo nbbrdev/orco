@@ -4,21 +4,27 @@ import { eq, inArray } from "drizzle-orm";
 import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { deleteCatalogItem } from "@/features/catalog/catalog";
+import { saveClient } from "@/features/clients/clients";
 import {
+  createClientForQuote,
   createQuote,
   getQuoteForEditor,
   ITEM_LIMIT_MESSAGE,
   LOCKED_MESSAGE,
+  saveItemToCatalog,
   saveQuoteItems,
+  setQuoteClient,
 } from "@/features/quotes/quotes";
 import { updateProfileField } from "@/features/profile/profile";
 import { closeDb, getAuthDb, withUserDb } from "@/lib/db";
 import { quoteItems, quotes, user } from "@/lib/db/schema";
 import { defaultValidUntil } from "@/lib/dates";
 
-// O "miolo" do editor (F-05, NBB-86) contra o Postgres real: criação com os padrões do perfil,
+// O "miolo" do editor (F-05, NBB-86/87) contra o Postgres real: criação com os padrões do perfil,
 // salvamento do orçamento inteiro (inserir, atualizar, apagar e reordenar numa transação), total
-// recalculado no servidor e os limites traduzidos em mensagem.
+// recalculado no servidor, os limites traduzidos em mensagem, o cliente com a cópia dos dados (RN-20)
+// e o catálogo (C6-A, C7-B).
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -49,7 +55,9 @@ const item = (description: string, quantity = "1", unitPrice = "") => ({
   id: randomUUID(),
   description,
   quantity,
+  unit: "",
   unitPrice,
+  catalogItemId: null as string | null,
 });
 
 let userA = "";
@@ -116,8 +124,22 @@ describe("saveQuoteItems", () => {
 
     const quote = await getQuoteForEditor(userA, quoteId);
     expect(quote?.items).toEqual([
-      { id: site.id, description: "Site", quantityMilli: 1000, unitPriceCents: 150000 },
-      { id: logo.id, description: "Logo", quantityMilli: 1000, unitPriceCents: 80000 },
+      {
+        id: site.id,
+        description: "Site",
+        quantityMilli: 1000,
+        unit: null,
+        unitPriceCents: 150000,
+        catalogItemId: null,
+      },
+      {
+        id: logo.id,
+        description: "Logo",
+        quantityMilli: 1000,
+        unit: null,
+        unitPriceCents: 80000,
+        catalogItemId: null,
+      },
     ]);
     const [saved] = await withUserDb(userA, (tx) =>
       tx.select().from(quotes).where(eq(quotes.id, quoteId)),
@@ -189,5 +211,100 @@ describe("saveQuoteItems", () => {
       status: "locked",
       message: LOCKED_MESSAGE,
     });
+  });
+});
+
+describe("cliente no orçamento (NBB-87)", () => {
+  const emptyClient = { email: "", phone: "", document: "", address: "", internalNotes: "" };
+
+  it("escolher guarda uma cópia; mudar o cliente depois não muda o orçamento (RN-20)", async () => {
+    const created = await saveClient(userA, null, {
+      ...emptyClient,
+      name: "Maria Silva",
+      email: "maria@example.com",
+      document: "529.982.247-25",
+    });
+    if (created.status !== "saved") throw new Error("Cliente não criado.");
+    const quoteId = await newQuote(userA);
+
+    expect(await setQuoteClient(userA, quoteId, created.client.id)).toMatchObject({
+      status: "saved",
+      client: { id: created.client.id, name: "Maria Silva", document: "52998224725" },
+    });
+
+    await saveClient(userA, created.client.id, { ...emptyClient, name: "Maria Souza" });
+    expect((await getQuoteForEditor(userA, quoteId))?.client).toMatchObject({
+      name: "Maria Silva",
+      email: "maria@example.com",
+    });
+
+    // Tirar o cliente.
+    expect(await setQuoteClient(userA, quoteId, null)).toEqual({ status: "saved", client: null });
+    expect((await getQuoteForEditor(userA, quoteId))?.client).toBeNull();
+  });
+
+  it("criar pelo editor cria só com o nome e já escolhe (C4-A, RF-12)", async () => {
+    const quoteId = await newQuote(userA);
+    const result = await createClientForQuote(userA, quoteId, "  Fulano  ");
+    expect(result).toMatchObject({ status: "saved", client: { name: "Fulano", email: null } });
+    expect(await createClientForQuote(userA, quoteId, "")).toEqual({
+      status: "invalid",
+      message: "Informe o nome do cliente.",
+    });
+  });
+
+  it("não escolhe cliente de outra conta", async () => {
+    const otherClient = await saveClient(userB, null, { ...emptyClient, name: "Do B" });
+    if (otherClient.status !== "saved") throw new Error("Cliente não criado.");
+    const quoteId = await newQuote(userA);
+    expect(await setQuoteClient(userA, quoteId, otherClient.client.id)).toEqual({
+      status: "not_found",
+    });
+    expect(await setQuoteClient(userB, quoteId, otherClient.client.id)).toEqual({
+      status: "not_found",
+    });
+  });
+});
+
+describe("catálogo no orçamento (NBB-87)", () => {
+  it("salvar no catálogo cria o item, e o orçamento guarda a origem com a unidade (C7-B)", async () => {
+    const saved = await saveItemToCatalog(userA, {
+      description: "Criação de logo",
+      unit: "un",
+      unitPrice: "800",
+    });
+    if (saved.status !== "saved") throw new Error("Item não salvo no catálogo.");
+    expect(saved.item).toMatchObject({
+      name: "Criação de logo",
+      unit: "un",
+      unitPriceCents: 80000,
+    });
+
+    const quoteId = await newQuote(userA);
+    const line = {
+      ...item("Criação de logo", "1", "800"),
+      unit: "un",
+      catalogItemId: saved.item.id,
+    };
+    await saveQuoteItems(userA, quoteId, { items: [line] });
+    expect((await getQuoteForEditor(userA, quoteId))?.items[0]).toMatchObject({
+      unit: "un",
+      catalogItemId: saved.item.id,
+    });
+
+    // Item do catálogo excluído enquanto o editor estava aberto: o item fica, só sem a origem.
+    await deleteCatalogItem(userA, saved.item.id);
+    expect((await saveQuoteItems(userA, quoteId, { items: [line] })).status).toBe("saved");
+    expect((await getQuoteForEditor(userA, quoteId))?.items[0]?.catalogItemId).toBeNull();
+  });
+
+  it("sem descrição ou com valor inválido, não salva no catálogo", async () => {
+    expect(await saveItemToCatalog(userA, { description: " ", unit: "", unitPrice: "" })).toEqual({
+      status: "invalid",
+      message: "Preencha a descrição para salvar no catálogo.",
+    });
+    expect(
+      await saveItemToCatalog(userA, { description: "Logo", unit: "", unitPrice: "abc" }),
+    ).toEqual({ status: "invalid", message: "Informe um preço válido, ex.: 1.234,56" });
   });
 });

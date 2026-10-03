@@ -93,3 +93,65 @@ test("reordenar arrastando e remover pelo menu (R1, R2, R3)", async ({ page }) =
   await page.reload();
   await expect(items(page).getByRole("listitem")).toHaveCount(1);
 });
+
+test("cliente e catálogo no editor (NBB-87)", async ({ page }) => {
+  await useOwnIp(page);
+  await signUpAndConfirm(page, "senha-editor-789");
+
+  // Um item no catálogo, para as sugestões.
+  await page.goto("/app/catalogo");
+  await expect(page.getByText("Você também pode salvá-los direto do orçamento.")).toBeVisible();
+  await page.getByRole("button", { name: "Novo item" }).click();
+  const newItem = page.getByRole("dialog", { name: "Novo item" });
+  await newItem.getByLabel("Nome").fill("Criação de logo");
+  await newItem.getByLabel("Preço (R$)").fill("800");
+  await newItem.getByLabel("Unidade").fill("un");
+  await newItem.getByRole("button", { name: "Salvar" }).click();
+  await expect(newItem).toBeHidden();
+
+  await page.goto("/app/orcamentos");
+  await page.getByRole("button", { name: "Criar primeiro orçamento" }).click();
+  await expect(page).toHaveURL(/\/app\/orcamentos\/[0-9a-f-]{36}$/);
+
+  // Cliente criado pelo editor, só com o nome (C4-A).
+  await page.getByRole("combobox", { name: "Escolher cliente (opcional)" }).click();
+  await page.getByRole("combobox", { name: "Buscar cliente" }).fill("Maria Silva");
+  await page.getByRole("option", { name: 'Criar "Maria Silva"' }).click();
+  const client = page.getByRole("region", { name: "Cliente" });
+  await expect(client.getByText("Maria Silva")).toBeVisible();
+
+  // Sugestão do catálogo ao digitar a descrição, sem acento (C6-A).
+  await page.getByRole("combobox", { name: "Descrição do item 1" }).fill("criacao");
+  await page.getByRole("option", { name: /Criação de logo/ }).click();
+  await expect(page.getByRole("combobox", { name: "Descrição do item 1" })).toHaveValue(
+    "Criação de logo",
+  );
+  await expect(page.getByLabel("Unidade do item 1")).toHaveValue("un");
+  await expect(page.getByLabel("Valor do item 1 (R$)")).toHaveValue("800,00");
+
+  // Item novo salvo no catálogo pelo menu (C7-B).
+  await page.getByRole("button", { name: "Adicionar item" }).click();
+  await page.getByRole("combobox", { name: "Descrição do item 2" }).fill("Site institucional");
+  await page.getByLabel("Valor do item 2 (R$)").fill("2.000");
+  await page.getByRole("button", { name: "Ações do item 2" }).click();
+  await page.getByRole("menuitem", { name: "Salvar no catálogo" }).click();
+  await page.getByRole("button", { name: "Ações do item 2" }).click();
+  await expect(page.getByRole("menuitem", { name: "Salvar no catálogo" })).toBeHidden();
+  await page.keyboard.press("Escape");
+  await waitSaved(page);
+
+  // Tudo continua depois de recarregar.
+  await page.reload();
+  await expect(client.getByText("Maria Silva")).toBeVisible();
+  await expect(page.getByLabel("Unidade do item 1")).toHaveValue("un");
+  await expect(page.getByLabel("Total do orçamento")).toHaveText(/R\$\s2\.800,00/u);
+
+  // Tirar o cliente.
+  await client.getByRole("button", { name: "Tirar o cliente" }).click();
+  await expect(page.getByRole("combobox", { name: "Escolher cliente (opcional)" })).toBeVisible();
+
+  await page.goto("/app/catalogo");
+  await expect(
+    page.getByRole("list", { name: "Itens do catálogo" }).getByText("Site institucional"),
+  ).toBeVisible();
+});

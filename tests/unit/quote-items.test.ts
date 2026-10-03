@@ -1,43 +1,57 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  type CatalogSuggestion,
+  fillFromCatalog,
   formatQuoteNumber,
+  type ItemDraft,
   itemsTotal,
   lineTotals,
   newItemDraft,
   parseItem,
+  suggestFromCatalog,
   toItemDraft,
 } from "@/features/quotes/items";
 import { saveItemsSchema } from "@/features/quotes/schemas";
 
-// Itens do editor de orçamento (F-05, NBB-86): conferência dos campos (P3-A), totais e conversões.
+// Itens do editor de orçamento (F-05, NBB-86/87): conferência dos campos (P3-A), totais, conversões,
+// unidade (C5-A) e sugestões do catálogo (C6-A).
 
-const draft = (values: Partial<Parameters<typeof parseItem>[0]> = {}) => ({
+const draft = (values: Partial<ItemDraft> = {}): ItemDraft => ({
   id: "6f9c2f5e-0b1a-4f7a-9d4e-1c2b3a4d5e6f",
   description: "Logo",
   quantity: "1",
+  unit: "",
   unitPrice: "800",
+  catalogItemId: null,
   ...values,
 });
 
 describe("parseItem", () => {
   it("converte quantidade em milésimos e valor em centavos", () => {
     expect(
-      parseItem(draft({ description: " Logo ", quantity: "1,5", unitPrice: "1.234,56" })),
+      parseItem(
+        draft({ description: " Logo ", quantity: "1,5", unit: " h ", unitPrice: "1.234,56" }),
+      ),
     ).toEqual({
       ok: true,
       item: {
         id: draft().id,
         description: "Logo",
         quantityMilli: 1500,
+        unit: "h",
         unitPriceCents: 123456,
+        catalogItemId: null,
       },
     });
   });
 
-  it("no rascunho, descrição e valor podem ficar vazios (RN-13)", () => {
-    const result = parseItem(draft({ description: "", unitPrice: "" }));
-    expect(result).toMatchObject({ ok: true, item: { description: "", unitPriceCents: null } });
+  it("no rascunho, descrição, unidade e valor podem ficar vazios (RN-13)", () => {
+    const result = parseItem(draft({ description: "", unit: "", unitPrice: "" }));
+    expect(result).toMatchObject({
+      ok: true,
+      item: { description: "", unit: null, unitPriceCents: null },
+    });
   });
 
   it("a quantidade precisa existir e ser maior que zero (RN-14)", () => {
@@ -64,16 +78,20 @@ describe("parseItem", () => {
     );
   });
 
-  it("recusa descrição longa demais", () => {
+  it("recusa descrição ou unidade longas demais", () => {
     expect(parseItem(draft({ description: "a".repeat(501) }))).toEqual({
       ok: false,
       errors: { description: "Use até 500 caracteres." },
+    });
+    expect(parseItem(draft({ unit: "a".repeat(11) }))).toEqual({
+      ok: false,
+      errors: { unit: "Use até 10 caracteres." },
     });
   });
 });
 
 describe("totais (RN-15, RN-16)", () => {
-  const parsed = (values: Partial<Parameters<typeof parseItem>[0]>) => {
+  const parsed = (values: Partial<ItemDraft>) => {
     const result = parseItem(draft(values));
     if (!result.ok) throw new Error("item inválido");
     return result.item;
@@ -97,25 +115,81 @@ describe("totais (RN-15, RN-16)", () => {
 });
 
 describe("conversões", () => {
-  it("item novo: vazio, quantidade 1 e um id próprio", () => {
+  it("item novo: vazio, quantidade 1, sem catálogo e um id próprio", () => {
     const first = newItemDraft();
-    expect(first).toMatchObject({ description: "", quantity: "1", unitPrice: "" });
+    expect(first).toMatchObject({
+      description: "",
+      quantity: "1",
+      unit: "",
+      unitPrice: "",
+      catalogItemId: null,
+    });
     expect(first.id).not.toBe(newItemDraft().id);
   });
 
   it("item salvo volta para os campos no formato brasileiro", () => {
     expect(
-      toItemDraft({ id: "x", description: "Site", quantityMilli: 1500, unitPriceCents: 200000 }),
-    ).toEqual({ id: "x", description: "Site", quantity: "1,5", unitPrice: "2.000,00" });
+      toItemDraft({
+        id: "x",
+        description: "Site",
+        quantityMilli: 1500,
+        unit: "h",
+        unitPriceCents: 200000,
+        catalogItemId: "c",
+      }),
+    ).toEqual({
+      id: "x",
+      description: "Site",
+      quantity: "1,5",
+      unit: "h",
+      unitPrice: "2.000,00",
+      catalogItemId: "c",
+    });
     expect(
-      toItemDraft({ id: "x", description: "", quantityMilli: 1000, unitPriceCents: null })
-        .unitPrice,
-    ).toBe("");
+      toItemDraft({
+        id: "x",
+        description: "",
+        quantityMilli: 1000,
+        unit: null,
+        unitPriceCents: null,
+        catalogItemId: null,
+      }),
+    ).toMatchObject({ unit: "", unitPrice: "" });
   });
 
   it("número do orçamento com 4 dígitos (RN-12)", () => {
     expect(formatQuoteNumber(1)).toBe("0001");
     expect(formatQuoteNumber(12345)).toBe("12345");
+  });
+});
+
+describe("catálogo no editor (C6-A)", () => {
+  const catalog: CatalogSuggestion[] = [
+    { id: "1", name: "Criação de logo", unit: "un", unitPriceCents: 80000 },
+    { id: "2", name: "Hora de consultoria", unit: "h", unitPriceCents: null },
+    { id: "3", name: "Site institucional", unit: null, unitPriceCents: 200000 },
+  ];
+
+  it("sugere pelo nome, sem acentos nem maiúsculas, até o limite", () => {
+    expect(suggestFromCatalog(catalog, "CRIACAO").map((entry) => entry.id)).toEqual(["1"]);
+    expect(suggestFromCatalog(catalog, "o", 2)).toHaveLength(2);
+    expect(suggestFromCatalog(catalog, "  ")).toEqual([]);
+  });
+
+  it("escolher preenche descrição, unidade e valor e guarda a origem", () => {
+    const filled = fillFromCatalog(draft({ quantity: "2" }), catalog[0] as CatalogSuggestion);
+    expect(filled).toMatchObject({
+      description: "Criação de logo",
+      quantity: "2",
+      unit: "un",
+      unitPrice: "800,00",
+      catalogItemId: "1",
+    });
+    expect(fillFromCatalog(draft(), catalog[1] as CatalogSuggestion)).toMatchObject({
+      unit: "h",
+      unitPrice: "",
+    });
+    expect(fillFromCatalog(draft(), catalog[2] as CatalogSuggestion).unit).toBe("");
   });
 });
 
