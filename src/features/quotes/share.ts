@@ -22,6 +22,11 @@ export function shareMessage(quoteNumber: number, url: string): string {
   return `Olá! Segue o orçamento Nº ${formatQuoteNumber(quoteNumber)}: ${url}`;
 }
 
+/** O aviso de alteração pelo WhatsApp (F-10): "Olá! Atualizei o orçamento Nº 0001: <link>". */
+export function updateMessage(quoteNumber: number, url: string): string {
+  return `Olá! Atualizei o orçamento Nº ${formatQuoteNumber(quoteNumber)}: ${url}`;
+}
+
 /**
  * Copia para a área de transferência. Precisa ser chamada logo no toque: depois de esperar o servidor,
  * o Safari recusa (C3-A). Devolve se deu certo.

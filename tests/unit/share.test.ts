@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { publicQuoteUrl, shareMessage } from "@/features/quotes/share";
+import { publicQuoteUrl, shareMessage, updateMessage } from "@/features/quotes/share";
 import { buildWhatsAppLink } from "@/lib/whatsapp";
 
 // Compartilhar o orçamento (F-06, NBB-54).
@@ -22,6 +22,12 @@ describe("shareMessage", () => {
   it("escreve a mensagem do F-06 com o número formatado", () => {
     expect(shareMessage(1, "https://orco.nbbrdev.com/p/x")).toBe(
       "Olá! Segue o orçamento Nº 0001: https://orco.nbbrdev.com/p/x",
+    );
+  });
+
+  it("escreve o aviso de alteração do F-10", () => {
+    expect(updateMessage(1, "https://orco.nbbrdev.com/p/x")).toBe(
+      "Olá! Atualizei o orçamento Nº 0001: https://orco.nbbrdev.com/p/x",
     );
   });
 

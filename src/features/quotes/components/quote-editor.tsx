@@ -59,6 +59,7 @@ import {
   NEW_LINK_NOTICE,
   publicQuoteUrl,
   shareMessage,
+  updateMessage,
 } from "@/features/quotes/share";
 import { displayStatus, type QuoteStatus } from "@/features/quotes/status";
 import { todayInAppTimeZone } from "@/lib/dates";
@@ -71,6 +72,7 @@ import { ExtendValidity } from "./extend-validity";
 import { MoreOptions } from "./more-options";
 import { QuoteActionsMenu } from "./quote-actions-menu";
 import { QuoteItemCard } from "./quote-item-card";
+import { SentNotice } from "./sent-notice";
 import { ShareMenu } from "./share-menu";
 import { StatusBadge } from "./status-badge";
 
@@ -83,6 +85,7 @@ import { StatusBadge } from "./status-badge";
 // - Menu "⋯" com Duplicar e Excluir; no expirado, o aviso com "Prorrogar validade" (NBB-49).
 // - "Compartilhar" no rodapé: Copiar link, WhatsApp e Baixar PDF, que enviam o rascunho; "Gerar novo
 //   link" no menu "⋯" do enviado (NBB-54).
+// - No enviado, o aviso do F-10, com "Avisar cliente no WhatsApp" depois de uma alteração salva.
 
 export const SAVE_DELAY_MS = 800;
 const CAPPED_HINT = "O desconto ficou limitado ao valor.";
@@ -133,6 +136,9 @@ export function QuoteEditor({
   const [client, setClient] = useState(initialClient);
   // Aviso que não é erro, ex.: "Novo link gerado." (C5-A).
   const [notice, setNotice] = useState<string | null>(null);
+  // Alteração salva desde a abertura, o envio ou o último aviso pelo WhatsApp (F-10, A2-A). Só vale
+  // nesta tela: ao recarregar, o aviso volta ao texto inicial.
+  const [updated, setUpdated] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Só a resposta do último salvamento vale: uma resposta antiga não apaga um estado mais novo.
   const lastSave = useRef(0);
@@ -149,6 +155,7 @@ export function QuoteEditor({
   const totals = quoteTotals(valid, quoteDiscount);
   const optionErrors = parsedOptions.ok ? NO_OPTION_ERRORS : parsedOptions.errors;
   const today = todayInAppTimeZone();
+  const expired = quoteState === "sent" && !optionErrors.validUntil && options.validUntil < today;
   const sendCheck = showSendErrors ? checkReadyToSend(items) : null;
   const sendErrors = sendCheck && !sendCheck.ok ? sendCheck.items : NO_SEND_ERRORS;
 
@@ -225,6 +232,12 @@ export function QuoteEditor({
     return true;
   }
 
+  /** O rascunho acabou de ser enviado: o que foi salvo antes não conta como alteração (F-10). */
+  function markSent() {
+    setQuoteState("sent");
+    setUpdated(false);
+  }
+
   /**
    * Depois de copiar o link ou abrir o WhatsApp (RN-22, NBB-54 C3-A): salva o que estiver pendente e
    * envia o rascunho, para o link passar a funcionar.
@@ -233,7 +246,7 @@ export function QuoteEditor({
     await flush();
     const result = await sendQuoteAction(quoteId);
     if (result === "sent") {
-      setQuoteState("sent");
+      markSent();
     } else if (result === "incomplete") {
       setShowSendErrors(true);
       setMessage(NOT_READY_TO_SEND_MESSAGE);
@@ -272,6 +285,20 @@ export function QuoteEditor({
     void sendAfterShare();
   }
 
+  /**
+   * "Avisar cliente no WhatsApp" (F-10, A4-A): a mesma regra de telefone do Compartilhar, com
+   * "Atualizei o orçamento". Não muda o status; o aviso volta ao texto inicial.
+   */
+  function notifyUpdate() {
+    const url = publicQuoteUrl(window.location.origin, token);
+    window.open(
+      buildWhatsAppLink(client?.phone ?? null, updateMessage(quoteNumber, url)),
+      "_blank",
+      "noopener",
+    );
+    setUpdated(false);
+  }
+
   /** "Gerar novo link" (F-13, RN-36, C5-A): o anterior para de funcionar na hora. */
   async function regenerateLink() {
     const fresh = await regenerateLinkAction(quoteId);
@@ -298,7 +325,7 @@ export function QuoteEditor({
         setMessage(error);
         return;
       }
-      if (quoteState === "draft") setQuoteState("sent");
+      if (quoteState === "draft") markSent();
     } finally {
       setDownloading(false);
     }
@@ -338,6 +365,7 @@ export function QuoteEditor({
     if (result.status === "saved") {
       setStatus("saved");
       setMessage(null);
+      setUpdated(true);
     } else if (result.status === "limit" || result.status === "locked") {
       setStatus("blocked");
       setMessage(result.message);
@@ -437,8 +465,13 @@ export function QuoteEditor({
         </p>
       ) : null}
 
+      {/* Enviado dentro da validade: o cliente vê as alterações pelo link (F-10, A1-A). */}
+      {quoteState === "sent" && !expired ? (
+        <SentNotice updated={updated} onNotify={notifyUpdate} />
+      ) : null}
+
       {/* Expirado: enviado com a validade antes de hoje (RN-26). Prorrogar devolve a enviado (RN-27). */}
-      {quoteState === "sent" && !optionErrors.validUntil && options.validUntil < today ? (
+      {expired ? (
         <ExtendValidity
           validUntil={options.validUntil}
           defaultValidityDays={defaultValidityDays}
@@ -450,7 +483,11 @@ export function QuoteEditor({
         quoteId={quoteId}
         clients={clients}
         initialClient={initialClient}
-        onChange={setClient}
+        onChange={(next) => {
+          setClient(next);
+          // Trocar ou tirar o cliente também sobe a versão (RN-24, A3).
+          setUpdated(true);
+        }}
       />
 
       <section aria-labelledby="items-heading" className="flex flex-col gap-3">

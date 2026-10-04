@@ -26,6 +26,8 @@ async function copyLink(page: Page): Promise<string> {
   await page.getByRole("button", { name: "Compartilhar" }).click();
   await page.getByRole("menuitem", { name: "Copiar link" }).click();
   await expect(page.getByText("Link copiado ✓")).toBeVisible();
+  // O menu fica aberto um instante com o "Link copiado ✓" e bloqueia a página até fechar.
+  await expect(page.getByRole("menu")).toBeHidden();
   const link = await page.evaluate(() => navigator.clipboard.readText());
   expect(link).toMatch(LINK);
   // O envio acontece logo depois da cópia (C3-A): o link só funciona quando o selo vira "Enviado".
@@ -152,4 +154,36 @@ test("o cliente recusa com o motivo, e o dono vê o motivo (F-08)", async ({ pag
   await page.goto(quoteUrl);
   await expect(page.getByText(/^Recusado em .* · Motivo: Preço$/)).toBeVisible();
   await expect(page.getByText("“Acima do previsto.”")).toBeVisible();
+});
+
+test("editar um enviado oferece avisar o cliente no WhatsApp (F-10, RN-24)", async ({
+  page,
+  context,
+}) => {
+  const SENT = "Este orçamento já foi enviado. O cliente verá as alterações ao abrir o link.";
+  await useOwnIp(page);
+  await newQuote(page, "senha-share-321");
+  // Rascunho: sem aviso.
+  await expect(page.getByText(SENT)).toBeHidden();
+  const link = await copyLink(page);
+  await expect(page.getByText(SENT)).toBeVisible();
+
+  // Uma alteração salva: o aviso muda e oferece o WhatsApp.
+  await page.getByLabel("Valor do item 1 (R$)").fill("900");
+  await expect(page.getByText("Orçamento atualizado.")).toBeVisible();
+
+  await context.route("https://wa.me/**", (route) => route.fulfill({ body: "WhatsApp" }));
+  const popup = context.waitForEvent("page");
+  await page.getByRole("button", { name: "Avisar cliente no WhatsApp" }).click();
+  const whatsApp = await popup;
+  await whatsApp.waitForURL(/^https:\/\/wa\.me\//);
+  expect(new URL(whatsApp.url()).searchParams.get("text")).toBe(
+    `Olá! Atualizei o orçamento Nº 0001: ${link}`,
+  );
+  await whatsApp.close();
+
+  // Avisado: volta ao texto inicial, e continua enviado.
+  await expect(page.getByText(SENT)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Avisar cliente no WhatsApp" })).toBeHidden();
+  await expect(page.locator("h1").locator("..").getByText("Enviado")).toBeVisible();
 });
