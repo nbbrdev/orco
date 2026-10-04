@@ -16,7 +16,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { Eye, Plus } from "lucide-react";
+import { Download, Eye, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ import {
 } from "@/features/quotes/actions";
 import {
   type CatalogSuggestion,
+  checkReadyToSend,
   type DiscountDraft,
   describeDiscount,
   fillFromCatalog,
@@ -47,7 +48,7 @@ import {
   quoteTotals,
 } from "@/features/quotes/items";
 import type { QuoteClient } from "@/features/quotes/quotes";
-import type { QuoteStatus } from "@/features/quotes/status";
+import { displayStatus, type QuoteStatus } from "@/features/quotes/status";
 import { todayInAppTimeZone } from "@/lib/dates";
 import { MAX_ITEMS_PER_QUOTE } from "@/lib/db/schema/quote-limits";
 import { formatBRL } from "@/lib/money";
@@ -57,6 +58,7 @@ import { ExtendValidity } from "./extend-validity";
 import { MoreOptions } from "./more-options";
 import { QuoteActionsMenu } from "./quote-actions-menu";
 import { QuoteItemCard } from "./quote-item-card";
+import { StatusBadge } from "./status-badge";
 
 // Editor de orçamento (F-05): cliente (NBB-87), itens, total na hora e salvamento automático (NBB-86),
 // descontos e "Mais opções" (NBB-88).
@@ -98,6 +100,11 @@ export function QuoteEditor({
   const [catalog, setCatalog] = useState(initialCatalog);
   const [status, setStatus] = useState<SaveStatus>("saved");
   const [message, setMessage] = useState<string | null>(null);
+  // Status do orçamento: muda para "enviado" quando o PDF é baixado (RN-22, NBB-51).
+  const [quoteState, setQuoteState] = useState<QuoteStatus>(quoteStatus);
+  // Depois de um "Baixar PDF" barrado pela RN-13, destaca o que falta enquanto a pessoa corrige.
+  const [showSendErrors, setShowSendErrors] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Só a resposta do último salvamento vale: uma resposta antiga não apaga um estado mais novo.
   const lastSave = useRef(0);
@@ -114,6 +121,8 @@ export function QuoteEditor({
   const totals = quoteTotals(valid, quoteDiscount);
   const optionErrors = parsedOptions.ok ? NO_OPTION_ERRORS : parsedOptions.errors;
   const today = todayInAppTimeZone();
+  const sendCheck = showSendErrors ? checkReadyToSend(items) : null;
+  const sendErrors = sendCheck && !sendCheck.ok ? sendCheck.items : NO_SEND_ERRORS;
 
   // Pede confirmação ao sair da página com algo ainda não salvo.
   useEffect(() => {
@@ -165,6 +174,48 @@ export function QuoteEditor({
       tab.location.replace(url);
     } else {
       window.open(url, "_blank", "noopener");
+    }
+  }
+
+  /**
+   * "Baixar PDF" (RN-22, NBB-51 P2-A): confere a RN-13, salva o que estiver pendente e pede o PDF
+   * por POST. O servidor envia o rascunho e devolve o arquivo, que o navegador salva com o nome do
+   * F-06. Se faltar algo, os campos ficam destacados e nada é baixado.
+   */
+  async function download() {
+    if (status === "invalid") {
+      setMessage("Corrija os campos destacados para baixar o PDF.");
+      return;
+    }
+    const check = checkReadyToSend(latest.current);
+    if (!check.ok) {
+      setShowSendErrors(true);
+      setMessage(check.message);
+      return;
+    }
+    setShowSendErrors(false);
+    setMessage(null);
+    setDownloading(true);
+    try {
+      await flush();
+      const response = await fetch(`/api/orcamentos/${quoteId}/pdf`, { method: "POST" });
+      if (!response.ok) {
+        setMessage(await response.text());
+        return;
+      }
+      const disposition = response.headers.get("content-disposition") ?? "";
+      const fileName = /filename="([^"]+)"/.exec(disposition)?.[1] ?? "Orcamento.pdf";
+      const url = URL.createObjectURL(await response.blob());
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      if (quoteState === "draft") setQuoteState("sent");
+    } catch {
+      setMessage("Não foi possível baixar o PDF. Tente de novo.");
+    } finally {
+      setDownloading(false);
     }
   }
 
@@ -274,7 +325,15 @@ export function QuoteEditor({
   return (
     <div className="flex flex-col gap-6 pb-24 md:pb-28">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold">Orçamento Nº {formatQuoteNumber(quoteNumber)}</h1>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h1 className="text-2xl font-semibold">Orçamento Nº {formatQuoteNumber(quoteNumber)}</h1>
+          {/* O status ao lado do número; muda para "Enviado" depois de baixar o PDF (NBB-51). */}
+          <StatusBadge
+            status={
+              optionErrors.validUntil ? quoteState : displayStatus(quoteState, options.validUntil)
+            }
+          />
+        </div>
         <div className="flex items-center gap-2">
           <SaveIndicator status={status} onRetry={() => void save(items, options)} />
           <QuoteActionsMenu
@@ -286,7 +345,7 @@ export function QuoteEditor({
       </div>
 
       {/* Expirado: enviado com a validade antes de hoje (RN-26). Prorrogar devolve a enviado (RN-27). */}
-      {quoteStatus === "sent" && !optionErrors.validUntil && options.validUntil < today ? (
+      {quoteState === "sent" && !optionErrors.validUntil && options.validUntil < today ? (
         <ExtendValidity
           validUntil={options.validUntil}
           defaultValidityDays={defaultValidityDays}
@@ -322,7 +381,9 @@ export function QuoteEditor({
                     key={item.id}
                     item={item}
                     index={index}
-                    errors={result && !result.ok ? result.errors : NO_ERRORS}
+                    errors={
+                      result && !result.ok ? result.errors : (sendErrors[item.id] ?? NO_ERRORS)
+                    }
                     lineTotal={result?.ok ? formatLine(result.item) : ""}
                     discountHint={
                       result?.ok && line && isDiscountCapped(result.item.discount, line.grossCents)
@@ -376,10 +437,17 @@ export function QuoteEditor({
           PDF (NBB-51 P3-A). */}
       <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-border bg-background md:bottom-0">
         <div className="mx-auto flex min-h-14 w-full max-w-5xl items-center justify-between gap-4 px-4 py-2">
-          <Button type="button" variant="outline" onClick={() => void preview()}>
-            <Eye aria-hidden="true" />
-            Visualizar
-          </Button>
+          {/* No celular, só os ícones (o nome continua para o leitor de tela), para caber o total. */}
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" onClick={() => void preview()}>
+              <Eye aria-hidden="true" />
+              <span className="max-sm:sr-only">Visualizar</span>
+            </Button>
+            <Button type="button" disabled={downloading} onClick={() => void download()}>
+              <Download aria-hidden="true" />
+              <span className="max-sm:sr-only">{downloading ? "Baixando…" : "Baixar PDF"}</span>
+            </Button>
+          </div>
           <div className="flex flex-col items-end">
             {totals.discountCents > 0 ? (
               <span className="text-xs text-muted-foreground tabular-nums">
@@ -404,6 +472,7 @@ export function QuoteEditor({
 }
 
 const NO_ERRORS: ItemErrors = {};
+const NO_SEND_ERRORS: Record<string, ItemErrors> = {};
 const NO_OPTION_ERRORS: OptionsErrors = {};
 const NO_STORED_DISCOUNT = { type: null, value: 0 } as const;
 

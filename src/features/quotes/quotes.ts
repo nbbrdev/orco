@@ -387,6 +387,40 @@ export type SetClientResult =
  * Escolhe o cliente do orçamento (C2-A) ou tira (`clientId` nulo). Guarda uma cópia dos dados dele
  * (RN-20): mudar o cliente depois não muda este orçamento.
  */
+export type SendQuoteResult = "sent" | "unchanged" | "incomplete" | "not_found";
+
+/**
+ * Envia o orçamento (RN-22): na primeira vez que o dono compartilha um rascunho, ele passa a
+ * "enviado". O banco confere a RN-13 (OR007) e preenche o `sent_at`. Já enviado, aprovado ou
+ * recusado: nada muda ("unchanged").
+ */
+export async function sendQuote(userId: string, id: string): Promise<SendQuoteResult> {
+  if (!quoteId.safeParse(id).success) {
+    return "not_found";
+  }
+  try {
+    return await withUserDb(userId, async (tx) => {
+      const [quote] = await tx
+        .select({ status: quotes.status })
+        .from(quotes)
+        .where(eq(quotes.id, id));
+      if (!quote) {
+        return "not_found";
+      }
+      if (quote.status !== "draft") {
+        return "unchanged";
+      }
+      await tx.update(quotes).set({ status: "sent" }).where(eq(quotes.id, id));
+      return "sent";
+    });
+  } catch (error) {
+    if (hasPostgresCode(error, DB_ERROR_CODES.quoteNotReadyToSend)) {
+      return "incomplete";
+    }
+    throw error;
+  }
+}
+
 export async function setQuoteClient(
   userId: string,
   id: string,

@@ -224,6 +224,44 @@ export function toItemDraft(item: ParsedItem): ItemDraft {
   };
 }
 
+/** Mensagem quando falta algo da RN-13 para baixar o PDF (editor e servidor usam a mesma). */
+export const NOT_READY_TO_SEND_MESSAGE =
+  "Para baixar o PDF, preencha a descrição e o valor de todos os itens.";
+
+/** O que falta para enviar (RN-13): ao menos 1 item, todos com descrição e valor. */
+export type SendCheck =
+  { ok: true } | { ok: false; message: string; items: Record<string, ItemErrors> };
+
+/**
+ * Confere a RN-13 antes de baixar o PDF, que envia o orçamento (RN-22, NBB-51 P2-A). Os campos que
+ * faltam ganham uma mensagem direta, como no F-05: "Informe o valor do item 2 para enviar.".
+ */
+export function checkReadyToSend(items: readonly ItemDraft[]): SendCheck {
+  if (items.length === 0) {
+    return { ok: false, message: "Adicione ao menos um item para enviar.", items: {} };
+  }
+  const errors: Record<string, ItemErrors> = {};
+  items.forEach((item, index) => {
+    const missing: ItemErrors = {};
+    if (!item.description.trim()) {
+      missing.description = `Informe a descrição do item ${index + 1} para enviar.`;
+    }
+    if (!item.unitPrice.trim()) {
+      missing.unitPrice = `Informe o valor do item ${index + 1} para enviar.`;
+    }
+    if (Object.keys(missing).length > 0) {
+      errors[item.id] = missing;
+    }
+  });
+  return Object.keys(errors).length === 0
+    ? { ok: true }
+    : {
+        ok: false,
+        message: NOT_READY_TO_SEND_MESSAGE,
+        items: errors,
+      };
+}
+
 // ---------------------------------------------------------------------------
 // "Mais opções" (G2-A): desconto geral, validade, condições, prazo, observações e anotações.
 // ---------------------------------------------------------------------------

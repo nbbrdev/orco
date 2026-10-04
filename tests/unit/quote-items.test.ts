@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   type CatalogSuggestion,
+  checkReadyToSend,
   describeDiscount,
   fillFromCatalog,
   formatQuoteNumber,
@@ -382,5 +383,35 @@ describe("saveItemsSchema", () => {
     const parsed = saveItemsSchema.safeParse({ items: [withoutDiscount] });
     expect(parsed.success && parsed.data.items[0]?.discount).toEqual(NO_DISCOUNT);
     expect(parsed.success && parsed.data.options).toBeUndefined();
+  });
+});
+
+describe("checkReadyToSend (RN-13, NBB-51)", () => {
+  it("completo: pode enviar", () => {
+    expect(checkReadyToSend([draft(), draft({ id: "outro", unitPrice: "0,00" })])).toEqual({
+      ok: true,
+    });
+  });
+
+  it("sem itens: pede ao menos um", () => {
+    expect(checkReadyToSend([])).toEqual({
+      ok: false,
+      message: "Adicione ao menos um item para enviar.",
+      items: {},
+    });
+  });
+
+  it("aponta, por item, a descrição e o valor que faltam", () => {
+    const missing = draft({ id: "b", description: " ", unitPrice: "" });
+    expect(checkReadyToSend([draft(), missing])).toEqual({
+      ok: false,
+      message: "Para baixar o PDF, preencha a descrição e o valor de todos os itens.",
+      items: {
+        b: {
+          description: "Informe a descrição do item 2 para enviar.",
+          unitPrice: "Informe o valor do item 2 para enviar.",
+        },
+      },
+    });
   });
 });

@@ -1,7 +1,7 @@
 import "server-only";
 
 import { getProfile } from "@/features/profile/profile";
-import { getQuoteForEditor } from "@/features/quotes/quotes";
+import { getQuoteForEditor, sendQuote } from "@/features/quotes/quotes";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getObject } from "@/lib/storage";
 import { quotePdfFileName } from "@/pdf/file-name";
@@ -58,19 +58,29 @@ export async function loadQuotePdf(
 export type OwnerPdfResult =
   | { status: "ok"; bytes: Uint8Array; fileName: string }
   | { status: "limit" }
-  | { status: "not_found" };
+  | { status: "not_found" }
+  | { status: "incomplete" };
 
 /**
- * O PDF do orçamento para o dono (prévia, RN-22a): confere o limite (RN-39) e gera. Não muda o
- * status; o download que envia (RN-22) é o PR 2 da NBB-51.
+ * O PDF do orçamento para o dono: confere o limite (RN-39) e gera.
+ * - Prévia (`send: false`, RN-22a): não muda o status.
+ * - Download (`send: true`, RN-22): antes, envia o rascunho; se faltar algo da RN-13, não gera.
  */
 export async function renderOwnerPdf(
   user: { id: string; email: string },
   quoteId: string,
+  { send }: { send: boolean } = { send: false },
 ): Promise<OwnerPdfResult> {
   if (!(await checkRateLimit(`pdf:user:${user.id}`, PDF_LIMIT_PER_MINUTE, 60))) {
     return { status: "limit" };
   }
+  if (send) {
+    const sent = await sendQuote(user.id, quoteId);
+    if (sent === "not_found" || sent === "incomplete") {
+      return { status: sent };
+    }
+  }
+  // Depois do envio, o PDF já sai com a data de emissão (N4-A).
   const pdf = await loadQuotePdf(user, quoteId);
   if (!pdf) {
     return { status: "not_found" };
