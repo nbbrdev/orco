@@ -13,13 +13,20 @@ Produção: https://orco.nbbrdev.com · Repo: `nbbrdev/orco` (público) · Linea
 - Mudou `docs/`? Atualize o Linear Doc correspondente na mesma sessão, e vice-versa.
 
 ## Fase atual
-**M5: PDF** (meta: `v0.5.0`). A **M4** foi concluída em 2026-10-03, com a `v0.4.0` no ar (orçamentos com numeração, status e trava no banco; editor com itens, descontos e salvamento automático; lista com abas e busca; duplicar, excluir e prorrogar).
+**M6: Link público + aprovação** (meta: `v0.6.0`). A **M5** foi concluída em 2026-10-04, com a `v0.5.0` no ar (PDF com a marca do freelancer, prévia sem mudar o status e download que envia o rascunho).
 
-Ordem da M5 (decidida com o usuário em 2026-10-03; só a `v0.5.0` no fim, o staging recebe cada merge):
-1. NBB-50: template do PDF com react-pdf e a marca do freelancer;
-2. NBB-51: rotas de PDF (prévia, download do dono e download público).
+Ordem da M6 (decidida com o usuário em 2026-10-04; só a `v0.6.0` no fim, o staging recebe cada merge):
+1. NBB-52: funções públicas por token (`SECURITY DEFINER`), `quote_events` e o PDF público;
+2. NBB-53: página `/p/[token]` com aprovar/recusar e o modo leitura de aprovado/recusado;
+3. NBB-54: compartilhar (copiar link, WhatsApp, gerar novo link);
+4. NBB-55: e-mail ao freelancer quando o cliente responde;
+5. NBB-61: notificações push;
+6. NBB-62: lembrete diário de vencimento.
 
-Lembretes para a M6, na NBB-53: no modo leitura de aprovado/recusado, só as anotações internas são salvas (RN-20a); registrar visualizações não pode mudar o `updated_at` (o trigger `app.set_quote_updated_at` já cuida disso).
+Lembretes:
+- no modo leitura de aprovado/recusado, só as anotações internas são salvas (RN-20a);
+- registrar visualizações não pode mudar o `updated_at` (o trigger `app.set_quote_updated_at` já cuida disso);
+- várias descrições das issues da M6 ainda citam Supabase, Resend ou Vercel Cron: revisar no planejamento de cada uma (ADR-0012 a 0016).
 
 A base da VPS (compartilhada entre projetos) fica no repositório privado `nbbrdev/vps` (projeto "VPS" no Linear).
 
