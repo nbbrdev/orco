@@ -133,7 +133,7 @@ export function ClientPicker({
       {client ? (
         <div className="flex items-start justify-between gap-2 rounded-lg border border-border p-3">
           <div className="min-w-0">
-            <p className="font-medium">{client.name}</p>
+            <p className="truncate font-medium">{client.name}</p>
             <ClientDetails client={client} />
           </div>
           <div className="flex shrink-0 items-center gap-1">
@@ -168,7 +168,8 @@ function ClientDetails({ client }: { client: QuoteClient }) {
     client.phone,
     client.document ? formatDocument(client.document) : null,
   ].filter(Boolean);
+  // Uma linha só, cortada com reticências, como nos cartões de Clientes (NBB-90 B3-A).
   return details.length > 0 ? (
-    <p className="text-sm text-muted-foreground">{details.join(" · ")}</p>
+    <p className="truncate text-sm text-muted-foreground">{details.join(" · ")}</p>
   ) : null;
 }
