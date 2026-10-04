@@ -265,3 +265,31 @@ test("descontos e mais opções (NBB-88)", async ({ page }) => {
   await expect(total).toHaveText(/R\$\s2\.580,00/u);
   await waitSaved(page);
 });
+
+test("visualizar o PDF sem mudar o status (NBB-51, RN-22a)", async ({ page, context, request }) => {
+  await useOwnIp(page);
+  await signUpAndConfirm(page, "senha-editor-987");
+  await page.getByRole("button", { name: "Criar primeiro orçamento" }).click();
+  await expect(page).toHaveURL(/\/app\/orcamentos\/([0-9a-f-]{36})$/);
+  const quoteId = page.url().split("/").at(-1) ?? "";
+
+  // "Visualizar" logo depois de digitar: abre uma aba nova (a prévia).
+  await page.getByLabel("Descrição do item 1").fill("Logo");
+  await page.getByLabel("Valor do item 1 (R$)").fill("800");
+  const popup = context.waitForEvent("page");
+  await page.getByRole("button", { name: "Visualizar" }).click();
+  await popup;
+
+  // O PDF da prévia, com a sessão desta conta.
+  const response = await page.request.get(`/api/orcamentos/${quoteId}/pdf`);
+  expect(response.status()).toBe(200);
+  expect(response.headers()["content-type"]).toBe("application/pdf");
+  expect(response.headers()["content-disposition"]).toBe('inline; filename="Orcamento-0001.pdf"');
+  expect((await response.body()).subarray(0, 5).toString()).toBe("%PDF-");
+  // Sem a sessão (outro "navegador", sem cookies): 401.
+  expect((await request.get(`/api/orcamentos/${quoteId}/pdf`)).status()).toBe(401);
+
+  // Continua rascunho (RN-22a).
+  await page.goto("/app/orcamentos");
+  await expect(page.getByRole("list", { name: "Orçamentos" })).toContainText("Rascunho");
+});

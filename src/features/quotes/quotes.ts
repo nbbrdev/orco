@@ -123,6 +123,8 @@ export type EditorQuote = {
   id: string;
   number: number;
   status: "draft" | "sent" | "approved" | "rejected";
+  /** Quando foi enviado (RN-22); nulo no rascunho. É a data de emissão do PDF (NBB-50 N4-A). */
+  sentAt: Date | null;
   client: QuoteClient | null;
   items: ParsedItem[];
   /** Respondido e ainda não visto: ao abrir, o selo "novo" da lista some (RN-42, NBB-48 L4-A). */
@@ -144,6 +146,7 @@ export async function getQuoteForEditor(userId: string, id: string): Promise<Edi
         id: quotes.id,
         number: quotes.number,
         status: quotes.status,
+        sentAt: quotes.sentAt,
         clientId: quotes.clientId,
         clientName: quotes.clientName,
         clientEmail: quotes.clientEmail,
@@ -190,6 +193,7 @@ export async function getQuoteForEditor(userId: string, id: string): Promise<Edi
       id: quote.id,
       number: quote.number,
       status: quote.status,
+      sentAt: quote.sentAt,
       defaultValidityDays: profile.validityDays,
       client:
         quote.clientName === null
