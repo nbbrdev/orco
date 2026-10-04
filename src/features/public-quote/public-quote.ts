@@ -131,6 +131,75 @@ export async function registerQuoteView(
   return rows[0]?.first === true;
 }
 
+/** Respostas por minuto por IP e token (RN-39). */
+export const RESPOND_LIMIT_PER_MINUTE = 5;
+
+/** O que o cliente manda ao aprovar ou recusar (RN-33). Os textos são opcionais. */
+export const respondSchema = z.discriminatedUnion("decision", [
+  z.object({
+    decision: z.literal("approved"),
+    /** A versão que a página mostrou (R2-A). */
+    version: z.number().int().positive(),
+    respondentName: z.string().trim().max(QUOTE_EVENT_LIMITS.respondentName).optional(),
+  }),
+  z.object({
+    decision: z.literal("rejected"),
+    version: z.number().int().positive(),
+    reasonCode: z.enum(["price", "deadline", "gave_up", "other"]).optional(),
+    reason: z.string().trim().max(QUOTE_EVENT_LIMITS.reason).optional(),
+  }),
+]);
+
+export type RespondInput = z.input<typeof respondSchema>;
+
+export type RespondResult =
+  "ok" | "not_found" | "already_responded" | "expired" | "outdated" | "invalid" | "limit";
+
+/**
+ * Aprovar ou recusar pelo link (RN-32 a RN-34). A resposta é única; vale só para um orçamento
+ * enviado, dentro da validade e na mesma versão que a página mostrou (R2-A). Registra IP, navegador
+ * e a versão (RN-34).
+ */
+export async function respondToQuote(
+  token: string,
+  input: unknown,
+  ip: string,
+  userAgent: string | null,
+): Promise<RespondResult> {
+  if (!tokenSchema.safeParse(token).success) {
+    return "not_found";
+  }
+  const parsed = respondSchema.safeParse(input);
+  if (!parsed.success) {
+    return "invalid";
+  }
+  if (!(await checkRateLimit(`respond:${ip}:${token}`, RESPOND_LIMIT_PER_MINUTE, 60))) {
+    return "limit";
+  }
+  const answer = parsed.data;
+  const validIp = ipSchema.safeParse(ip).success ? ip : null;
+  const agent = userAgent ? userAgent.slice(0, QUOTE_EVENT_LIMITS.userAgent) : null;
+  const name = answer.decision === "approved" ? answer.respondentName || null : null;
+  const reasonCode = answer.decision === "rejected" ? (answer.reasonCode ?? null) : null;
+  const reason = answer.decision === "rejected" ? answer.reason || null : null;
+
+  const rows = await getAppDb().execute<{ result: string }>(
+    sql`select app.respond_to_quote(
+      ${token}, ${answer.decision}::public.quote_event_type, ${answer.version}, ${name},
+      ${reasonCode}::public.reject_reason, ${reason}, ${validIp}::inet, ${agent}
+    ) as result`,
+  );
+  return rows[0]?.result as RespondResult;
+}
+
+/** Apaga o IP dos eventos com mais de 12 meses (RN-37). Chamada pelo agendamento diário (NBB-62). */
+export async function anonymizeOldEventIps(): Promise<number> {
+  const rows = await getAppDb().execute<{ changed: number }>(
+    sql`select app.anonymize_old_event_ips() as changed`,
+  );
+  return rows[0]?.changed ?? 0;
+}
+
 /** PDFs públicos por minuto por IP (RN-39, D7). */
 export const PUBLIC_PDF_LIMIT_PER_MINUTE = 10;
 

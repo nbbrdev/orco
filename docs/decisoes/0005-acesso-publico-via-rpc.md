@@ -28,4 +28,4 @@ RLS liberando leitura para `anon`: uma policy não "sabe" o token digitado na UR
 - O servidor chama pela `app_user`, sem `withUserDb` (o cliente final não tem conta), em `src/features/public-quote/public-quote.ts` (`server-only`), e confere o JSON com Zod.
 - O token é conferido no formato (43 caracteres base64url) antes de ir ao banco.
 - O IP vem do `X-Forwarded-For` que o Nginx substitui (`src/lib/request.ts`); um valor que não é IP vira nulo.
-- Aprovar/recusar, gerar novo link e a anonimização dos IPs: PR 2 da NBB-52.
+- Migration `0010_public_response` (PR 2): `app.respond_to_quote` (resposta única, na versão que a página mostrou), `app.regenerate_public_token` (só o dono, em qualquer status) e `app.anonymize_old_event_ips` (para o agendamento diário da NBB-62). A resposta tem limite de 5 por minuto por IP e token (RN-39).
