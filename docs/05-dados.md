@@ -144,17 +144,17 @@ Migration `0005_catalog_items` (NBB-45, 2026-10-03).
 | Coluna | Tipo | Notas |
 |---|---|---|
 | id, created_at | | |
-| quote_id | uuid not null → quotes `on delete cascade` | |
+| quote_id | uuid not null → quotes `on delete cascade` | FK composta `(quote_id, user_id)`, como nos itens |
 | user_id | uuid not null | dono do orçamento |
-| type | enum (`viewed`,`approved`,`rejected`) | |
-| quote_version | int not null | RN-24 |
-| ip | inet null | anonimizado após 12 meses (RN-37) |
+| type | enum `quote_event_type` (`viewed`,`approved`,`rejected`) | |
+| quote_version | int not null | a versão vista ou respondida (RN-24, RN-34) |
+| ip | inet null | apagado (vira nulo) após 12 meses (RN-37, NBB-52 D6-A); **a `app_user` não lê esta coluna** (D8-A) |
 | user_agent | text null | ≤ 500 |
 | respondent_name | text null | ≤ 120 (RN-33) |
-| reason_code | enum (`price`,`deadline`,`gave_up`,`other`) null | motivo rápido da recusa (RN-33) |
+| reason_code | enum `reject_reason` (`price`,`deadline`,`gave_up`,`other`) null | motivo rápido da recusa (RN-33) |
 | reason | text null | ≤ 1000, texto livre da recusa (RN-33) |
 
-**RLS:** apenas select para o dono. Insert **somente** via funções `SECURITY DEFINER` (ver abaixo).
+Índices: `(quote_id, created_at)` e `(created_at)` (anonimização). **RLS** `ENABLE` + `FORCE`: a `app_user` só faz select dos eventos dos próprios orçamentos e **sem a coluna `ip`** (`GRANT SELECT` por coluna): o IP é dado pessoal do cliente final e fica só para o administrador, pelo DBeaver (D8-A). Escrita **somente** pelas funções `SECURITY DEFINER` (ver abaixo), com uma policy para a `orco_owner`. Migration `0009_public_quote` (NBB-52).
 
 ### `push_subscriptions`
 | Coluna | Tipo | Notas |
@@ -200,11 +200,12 @@ PK `(key, window_start)`. Criada na NBB-39 (migration `0002_rate_limits`, escrit
 | `app.check_quote_item_change()` | trigger `BEFORE INSERT/UPDATE/DELETE` em `quote_items` | trava do respondido e limite de 100 itens (RN-14, RN-25) |
 | `app.bump_quote_version_from_item()` | trigger `AFTER` em `quote_items` (`SECURITY DEFINER`) | sobe a versão do orçamento enviado quando um item muda, uma vez por transação (RN-24) |
 | `app.generate_public_token()` | `app_user` (default de `quotes.public_token`; `SECURITY DEFINER`) | 32 bytes de `gen_random_bytes` (extensão `pgcrypto`, no schema `extensions`, sem acesso do app) em base64url (RN-30, NBB-46) |
-| `get_public_quote(token)` | `app_user` (só o servidor chama) | retorna campos mínimos do orçamento + perfil público; registra `viewed` (RN-35); aplica RN-31 |
+| `app.get_public_quote(token)` | `app_user` (só o servidor chama; `SECURITY DEFINER`) | um único JSON com o orçamento, os itens e o perfil público, só se enviado, aprovado ou recusado (RN-31); rascunho, excluído e token inválido dão nulo. Nada de ids, dono, e-mail da conta, anotações internas, token ou contagem. **Só lê** (NBB-52 D2-A, D4-A) |
+| `app.register_quote_view(token, ip, user_agent)` | `app_user` (só o servidor chama; `SECURITY DEFINER`) | conta a visualização e, na primeira, grava o evento `viewed` (RN-35); devolve `true` só na primeira. Quem decide se conta (não é robô nem o dono logado) é a página. Não muda o `updated_at` nem a versão (NBB-52 D2-A) |
 | `respond_to_quote(token, decision, name, reason, ip, ua)` | `app_user` (só o servidor chama) | valida RN-32, grava status + evento (RN-34) em transação |
 | `app.check_rate_limit(key, limit, window_seconds)` | `app_user` | janela fixa alinhada ao relógio de São Paulo (86400 = vira à meia-noite de Brasília); conta mais um uso e retorna permitido/negado (NBB-39) |
 | `regenerate_public_token(quote_id)` | `app_user` (dono, via RLS) | RN-36 |
-| `anonymize_old_event_ips()` | tarefa agendada na VPS | RN-37 |
+| `anonymize_old_event_ips()` | tarefa agendada na VPS (o mesmo agendamento diário do lembrete, NBB-62) | apaga o IP dos eventos com mais de 12 meses (RN-37, NBB-52 D5-A/D6-A) |
 | `quotes_due_for_reminder()` | `app_user` (rota do cron) | orçamentos `sent`, sem resposta, com `valid_until = amanhã (SP)` e `reminder_sent_at` nulo; usada pelo lembrete diário (RN-43) |
 
 Todas as funções `SECURITY DEFINER` pertencem à `orco_owner` e usam `set search_path = ''` e nomes totalmente qualificados. `PUBLIC` não tem `execute` em nada; cada função concede `execute` só à role indicada. O banco não tem porta pública, então as funções públicas só são chamadas pelo servidor do Next.js (ver [07-seguranca.md](07-seguranca.md), ADR-0005 e ADR-0014), com IP e user agent vindos do Nginx.
