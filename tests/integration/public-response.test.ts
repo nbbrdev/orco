@@ -7,12 +7,15 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   anonymizeOldEventIps,
   getPublicQuote,
+  registerQuoteView,
   RESPOND_LIMIT_PER_MINUTE,
   respondToQuote,
 } from "@/features/public-quote/public-quote";
 import {
   createQuote,
+  getQuoteResponse,
   regeneratePublicToken,
+  saveInternalNotes,
   saveQuoteItems,
   sendQuote,
 } from "@/features/quotes/quotes";
@@ -252,6 +255,83 @@ describe("regeneratePublicToken (RN-36, R1-A)", () => {
     expect(await regeneratePublicToken(other, id)).toBeNull();
     expect(await regeneratePublicToken(account, "x")).toBeNull();
     expect(await getPublicQuote(token)).not.toBeNull();
+  });
+});
+
+describe("modo leitura do editor (NBB-53, RN-25, RN-20a)", () => {
+  async function versionAndNotes(id: string) {
+    const [row] = await owner<{ version: number; internal_notes: string | null }[]>`
+      select version, internal_notes from public.quotes where id = ${id}`;
+    return row;
+  }
+
+  it("getQuoteResponse traz quem aprovou e quando; o rascunho e outra conta não têm resposta", async () => {
+    const { id, token } = await sentQuote(account);
+    expect(await getQuoteResponse(account, id)).toBeNull();
+    await respondToQuote(
+      token,
+      { decision: "approved", version: 1, respondentName: "Maria" },
+      someIp(),
+      null,
+    );
+    // Uma visualização depois da resposta não muda o resultado.
+    await registerQuoteView(token, someIp(), "Mozilla/5.0");
+
+    expect(await getQuoteResponse(account, id)).toEqual({
+      decision: "approved",
+      respondedAt: expect.any(Date),
+      respondentName: "Maria",
+      reasonCode: null,
+      reason: null,
+    });
+    expect(await getQuoteResponse(await createAccount(), id)).toBeNull();
+    expect(await getQuoteResponse(account, "x")).toBeNull();
+  });
+
+  it("getQuoteResponse traz o motivo e o texto da recusa", async () => {
+    const { id, token } = await sentQuote(account);
+    await respondToQuote(
+      token,
+      { decision: "rejected", version: 1, reasonCode: "deadline", reason: "Preciso para amanhã." },
+      someIp(),
+      null,
+    );
+    expect(await getQuoteResponse(account, id)).toMatchObject({
+      decision: "rejected",
+      respondentName: null,
+      reasonCode: "deadline",
+      reason: "Preciso para amanhã.",
+    });
+  });
+
+  it("saveInternalNotes salva no aprovado e no recusado, sem subir a versão", async () => {
+    for (const decision of ["approved", "rejected"] as const) {
+      const { id, token } = await sentQuote(account);
+      await respondToQuote(token, { decision, version: 1 }, someIp(), null);
+
+      expect(await saveInternalNotes(account, id, "  Pagou o sinal.  ")).toEqual({
+        status: "saved",
+      });
+      expect(await versionAndNotes(id)).toEqual({ version: 1, internal_notes: "Pagou o sinal." });
+
+      expect(await saveInternalNotes(account, id, "   ")).toEqual({ status: "saved" });
+      expect((await versionAndNotes(id))?.internal_notes).toBeNull();
+    }
+  });
+
+  it("saveInternalNotes recusa texto longo, entrada estranha e orçamento de outra conta", async () => {
+    const { id } = await sentQuote(account);
+    await saveInternalNotes(account, id, "Antes");
+
+    expect(await saveInternalNotes(account, id, "a".repeat(2001))).toMatchObject({
+      status: "invalid",
+    });
+    expect(await saveInternalNotes(account, id, 42)).toMatchObject({ status: "invalid" });
+    expect(await saveInternalNotes(await createAccount(), id, "Invasor")).toEqual({
+      status: "not_found",
+    });
+    expect(await saveInternalNotes(account, "x", "Nada")).toEqual({ status: "not_found" });
+    expect((await versionAndNotes(id))?.internal_notes).toBe("Antes");
   });
 });
 

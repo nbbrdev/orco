@@ -11,6 +11,8 @@ import {
   createQuote,
   listClientQuotes,
   MONTHLY_LIMIT_MESSAGE,
+  saveInternalNotes,
+  type SaveInternalNotesResult,
   saveItemToCatalog,
   saveQuoteItems,
   type SaveItemsResult,
@@ -165,6 +167,22 @@ export async function saveQuoteItemsAction(id: string, input: unknown): Promise<
     return await saveQuoteItems(user.id, id, input);
   } catch (error) {
     console.error("Falha ao salvar o orçamento.", error);
+    return { status: "error" };
+  }
+}
+
+export type SaveInternalNotesState = SaveInternalNotesResult | { status: "error" };
+
+/** Salvamento automático das anotações internas no modo leitura (RN-20a, NBB-53 M4-A). */
+export async function saveInternalNotesAction(
+  id: string,
+  notes: unknown,
+): Promise<SaveInternalNotesState> {
+  const user = await requireSessionUser();
+  try {
+    return await saveInternalNotes(user.id, id, notes);
+  } catch (error) {
+    console.error("Falha ao salvar as anotações internas.", error);
     return { status: "error" };
   }
 }

@@ -1,8 +1,8 @@
 import type { QuoteDocumentModel } from "@/pdf/model";
 
 // O orçamento como o cliente vê (F-07, NBB-53 P4): os mesmos textos do PDF, montados pelo
-// buildQuoteDocument (src/pdf/model.ts). Só mostra: não tem estado, então serve à página pública e,
-// no PR 2, ao editor em modo leitura (P8-A).
+// buildQuoteDocument (src/pdf/model.ts). Só mostra: não tem estado, então serve à página pública e
+// ao modo leitura do editor (P8-A).
 // - Cabeçalho: logo, nome e contatos do freelancer; número, emissão e validade; filete na cor
 //   principal (doc 12).
 // - Itens: no celular, um bloco por item; no computador, uma tabela. Desconto só se existir (RN-15b).

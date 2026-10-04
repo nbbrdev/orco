@@ -18,6 +18,7 @@ import {
   quoteTotals,
   type StoredDiscount,
 } from "@/features/quotes/items";
+import type { RejectReasonCode } from "@/features/public-quote/reasons";
 import { saveItemsSchema } from "@/features/quotes/schemas";
 import { type DisplayStatus, displayStatus } from "@/features/quotes/status";
 import { withUserDb } from "@/lib/db";
@@ -28,9 +29,11 @@ import {
   MAX_ITEMS_PER_QUOTE,
   MAX_QUOTES_PER_MONTH,
   profiles,
+  quoteEvents,
   quoteItems,
   quotes,
 } from "@/lib/db/schema";
+import { QUOTE_LIMITS } from "@/lib/db/schema/quote-limits";
 import { defaultValidUntil } from "@/lib/dates";
 import { numericToQuantity, quantityToNumeric } from "@/lib/money";
 
@@ -222,6 +225,79 @@ export async function getQuoteForEditor(userId: string, id: string): Promise<Edi
       },
     };
   });
+}
+
+/** A resposta do cliente, para a faixa do resultado no modo leitura (NBB-53 M2). */
+export type QuoteResponse = {
+  decision: "approved" | "rejected";
+  respondedAt: Date;
+  respondentName: string | null;
+  reasonCode: RejectReasonCode | null;
+  reason: string | null;
+};
+
+/**
+ * A última aprovação ou recusa do orçamento (RN-34), ou `null` se não há (ou o orçamento é de outra
+ * conta). Lê só as colunas liberadas para a app_user, nunca o IP (D8-A).
+ */
+export async function getQuoteResponse(userId: string, id: string): Promise<QuoteResponse | null> {
+  if (!quoteId.safeParse(id).success) {
+    return null;
+  }
+  const [event] = await withUserDb(userId, (tx) =>
+    tx
+      .select({
+        type: quoteEvents.type,
+        createdAt: quoteEvents.createdAt,
+        respondentName: quoteEvents.respondentName,
+        reasonCode: quoteEvents.reasonCode,
+        reason: quoteEvents.reason,
+      })
+      .from(quoteEvents)
+      .where(and(eq(quoteEvents.quoteId, id), inArray(quoteEvents.type, ["approved", "rejected"])))
+      .orderBy(desc(quoteEvents.createdAt))
+      .limit(1),
+  );
+  if (!event || event.type === "viewed") {
+    return null;
+  }
+  return {
+    decision: event.type,
+    respondedAt: event.createdAt,
+    respondentName: event.respondentName,
+    reasonCode: event.reasonCode,
+    reason: event.reason,
+  };
+}
+
+export type SaveInternalNotesResult =
+  { status: "saved" } | { status: "invalid"; message: string } | { status: "not_found" };
+
+/**
+ * Salva só as anotações internas (RN-20a), em qualquer status: é o que continua editável no modo
+ * leitura de aprovado/recusado (RN-25, NBB-53 M4-A). O banco não sobe a versão por elas (RN-24).
+ */
+export async function saveInternalNotes(
+  userId: string,
+  id: string,
+  input: unknown,
+): Promise<SaveInternalNotesResult> {
+  const shape = z.string().max(5000).safeParse(input);
+  if (!quoteId.safeParse(id).success) {
+    return { status: "not_found" };
+  }
+  const notes = shape.success ? shape.data.trim() : null;
+  if (notes === null || notes.length > QUOTE_LIMITS.internalNotes) {
+    return { status: "invalid", message: `Use até ${QUOTE_LIMITS.internalNotes} caracteres.` };
+  }
+  const updated = await withUserDb(userId, (tx) =>
+    tx
+      .update(quotes)
+      .set({ internalNotes: notes || null })
+      .where(eq(quotes.id, id))
+      .returning({ id: quotes.id }),
+  );
+  return updated.length > 0 ? { status: "saved" } : { status: "not_found" };
 }
 
 export type SaveItemsResult =

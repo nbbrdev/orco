@@ -1,7 +1,7 @@
 import "server-only";
 
 import { getProfile } from "@/features/profile/profile";
-import { getQuoteForEditor, sendQuote } from "@/features/quotes/quotes";
+import { type EditorQuote, getQuoteForEditor, sendQuote } from "@/features/quotes/quotes";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getObject } from "@/lib/storage";
 import { quotePdfFileName } from "@/pdf/file-name";
@@ -38,23 +38,35 @@ export async function loadQuotePdf(
 
   return {
     fileName: quotePdfFileName(quote.number, quote.client?.name ?? null),
-    input: {
-      profile,
-      logoPng: await loadLogoPng(profile.logoPath),
-      quote: {
-        number: quote.number,
-        status: quote.status,
-        sentAt: quote.sentAt,
-        validUntil: quote.options.validUntil,
-        client: quote.client,
-        items: quote.items,
-        discount: quote.options.discount,
-        paymentTerms: quote.options.paymentTerms,
-        deliveryTime: quote.options.deliveryTime,
-        notes: quote.options.notes,
-      },
-      now: new Date(),
+    input: ownerDocumentInput(quote, profile, await loadLogoPng(profile.logoPath)),
+  };
+}
+
+/**
+ * O que o modelo do PDF precisa, a partir do orçamento do editor. Serve também ao modo leitura do
+ * editor (NBB-53 M1-A), que mostra o orçamento como o cliente vê, com o logo pela rota pública.
+ */
+export function ownerDocumentInput(
+  quote: EditorQuote,
+  profile: QuoteDocumentInput["profile"],
+  logoPng: Uint8Array | null,
+): QuoteDocumentInput {
+  return {
+    profile,
+    logoPng,
+    quote: {
+      number: quote.number,
+      status: quote.status,
+      sentAt: quote.sentAt,
+      validUntil: quote.options.validUntil,
+      client: quote.client,
+      items: quote.items,
+      discount: quote.options.discount,
+      paymentTerms: quote.options.paymentTerms,
+      deliveryTime: quote.options.deliveryTime,
+      notes: quote.options.notes,
     },
+    now: new Date(),
   };
 }
 

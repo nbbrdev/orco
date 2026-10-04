@@ -4,6 +4,7 @@ import {
   addDays,
   defaultValidUntil,
   formatDateBR,
+  formatDateTimeBR,
   isExpired,
   todayInAppTimeZone,
 } from "@/lib/dates";
@@ -84,5 +85,15 @@ describe("isExpired (RN-26)", () => {
 describe("formatDateBR", () => {
   it("formats as dd/mm/aaaa", () => {
     expect(formatDateBR("2026-10-02")).toBe("02/10/2026");
+  });
+});
+
+describe("formatDateTimeBR", () => {
+  it("formats in São Paulo time, 24h", () => {
+    expect(formatDateTimeBR(at("2026-10-04T17:32:00Z"))).toBe("04/10/2026 às 14:32");
+  });
+
+  it("uses the São Paulo day near midnight UTC", () => {
+    expect(formatDateTimeBR(at("2026-10-05T02:05:00Z"))).toBe("04/10/2026 às 23:05");
   });
 });
