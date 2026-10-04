@@ -261,6 +261,11 @@ Igual ao F-07, mas com **Recusar** → "Quer dizer o motivo?" (opcional), com ch
 - Cada alteração salva incrementa a versão (RN-24).
 - Depois da primeira alteração salva, o aviso muda para **"Orçamento atualizado · [Avisar cliente no WhatsApp]"**. O botão abre o WhatsApp (mesma regra de telefone do F-06) com "Olá! Atualizei o orçamento Nº 0001: <link>". Não muda o status, que já é enviado.
 - Aprovados e recusados abrem em modo leitura com o botão **Duplicar para editar** (RN-25). Só as **anotações internas** continuam editáveis (RN-20a).
+- **Como ficou o aviso** (NBB-54, 2026-10-04):
+  - aparece abaixo do título, numa faixa cinza, no enviado dentro da validade (também logo depois de compartilhar); no expirado, fica só o aviso de **Prorrogar validade**;
+  - conta como alteração tudo o que sobe a versão: itens, **Mais opções** e trocar ou tirar o cliente;
+  - a troca para "Orçamento atualizado." vale só nesta tela: ao recarregar, o aviso volta ao texto inicial;
+  - depois de tocar em **Avisar cliente no WhatsApp**, o aviso volta ao texto inicial, e uma nova alteração faz o botão aparecer de novo.
 
 ## F-11 — Expiração e prorrogação · ✅
 
