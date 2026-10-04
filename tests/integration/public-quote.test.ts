@@ -8,6 +8,8 @@ import { saveClient } from "@/features/clients/clients";
 import { updateProfileField } from "@/features/profile/profile";
 import {
   getPublicQuote,
+  isQuoteOwner,
+  publicDocumentModel,
   PUBLIC_PDF_LIMIT_PER_MINUTE,
   registerQuoteView,
   renderPublicPdf,
@@ -265,5 +267,28 @@ describe("renderPublicPdf (D7)", () => {
       await checkRateLimit(`pdf:ip:${ip}`, PUBLIC_PDF_LIMIT_PER_MINUTE, 60);
     }
     expect(await renderPublicPdf("x", ip)).toEqual({ status: "limit" });
+  });
+});
+
+describe("página pública (NBB-53)", () => {
+  it("reconhece o dono logado pelo token, e só ele (P3-A)", async () => {
+    const { token } = await sentQuote(account);
+    expect(await isQuoteOwner(account, token)).toBe(true);
+    expect(await isQuoteOwner(await createAccount(), token)).toBe(false);
+    expect(await isQuoteOwner(account, "x")).toBe(false);
+  });
+
+  it("monta a página com os mesmos textos do PDF", async () => {
+    const { token } = await sentQuote(account);
+    const quote = await getPublicQuote(token);
+    if (!quote) throw new Error("Orçamento não encontrado.");
+    expect(publicDocumentModel(quote)).toMatchObject({
+      issuer: { name: "Estúdio Exemplo", logoPng: null },
+      lines: [
+        { description: "Logo", quantity: "1,5", unit: "h" },
+        { description: "Site", quantity: "1,5", unit: "h" },
+      ],
+      totals: { total: expect.stringMatching(/^R\$\s4\.200,00$/u) },
+    });
   });
 });
