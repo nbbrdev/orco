@@ -4,6 +4,7 @@ import { escapeHtml } from "@/lib/email/escape";
 import { accountDeletedEmail } from "@/lib/email/templates/account-deleted";
 import { confirmationEmail } from "@/lib/email/templates/confirmation";
 import { passwordChangedEmail } from "@/lib/email/templates/password-changed";
+import { quoteResponseEmail, responderName } from "@/lib/email/templates/quote-response";
 import { recoveryEmail } from "@/lib/email/templates/recovery";
 
 const siteUrl = "https://staging.orco.nbbrdev.com";
@@ -80,5 +81,64 @@ describe("accountDeletedEmail", () => {
   it("escapa o e-mail antes de inserir no HTML", () => {
     const email = accountDeletedEmail({ siteUrl, email: `<img src=x onerror=alert(1)>@x.com` });
     expect(email.html).not.toContain("<img src=x");
+  });
+});
+
+describe("quoteResponseEmail (RN-40, NBB-55)", () => {
+  const base = {
+    siteUrl,
+    quoteId: "7d3f6a4e-1f2b-4c5d-8e9f-0a1b2c3d4e5f",
+    number: 12,
+    respondentName: null,
+    clientName: null,
+    reasonCode: null,
+    reason: null,
+  } as const;
+  const url = `${siteUrl}/app/orcamentos/${base.quoteId}`;
+
+  it("aprovado: quem aprovou, o número e o botão para o orçamento", () => {
+    const email = quoteResponseEmail({ ...base, decision: "approved", respondentName: "Maria" });
+    expect(email.subject).toBe("Maria aprovou o orçamento Nº 0012");
+    expect(email.html).toContain("Ver orçamento");
+    expect(email.html.split(`href="${url}"`)).toHaveLength(3);
+    expect(email.html).not.toContain("Motivo");
+    // O título da moldura não se repete no corpo.
+    expect(email.html).not.toContain(`${email.subject}.`);
+    expect(email.text).not.toContain(`${email.subject}.`);
+    expect(email.text).toContain(`Ver orçamento: ${url}`);
+    expect(email.text).toContain("Para desligar, vá em Perfil.");
+  });
+
+  it("recusado: o motivo e o texto do cliente, com as quebras de linha", () => {
+    const email = quoteResponseEmail({
+      ...base,
+      decision: "rejected",
+      clientName: "João Souza",
+      reasonCode: "price",
+      reason: "Acima do previsto.\nObrigado!",
+    });
+    expect(email.subject).toBe("João Souza recusou o orçamento Nº 0012");
+    expect(email.html).toContain("Motivo: <strong>Preço</strong>");
+    expect(email.html).toContain("“Acima do previsto.<br>Obrigado!”");
+    expect(email.text).toContain("Motivo: Preço");
+  });
+
+  it("escapa o que o cliente escreveu", () => {
+    const email = quoteResponseEmail({
+      ...base,
+      decision: "rejected",
+      clientName: "<b>x</b>",
+      reason: `<img src=x onerror=alert(1)>`,
+    });
+    expect(email.html).not.toContain("<img src=x");
+    expect(email.html).not.toContain("<b>x</b>");
+  });
+});
+
+describe("responderName (RN-40)", () => {
+  it("usa o nome informado, depois o cliente do orçamento, depois 'Seu cliente'", () => {
+    expect(responderName("Maria", "João")).toBe("Maria");
+    expect(responderName("  ", "João")).toBe("João");
+    expect(responderName(null, null)).toBe("Seu cliente");
   });
 });

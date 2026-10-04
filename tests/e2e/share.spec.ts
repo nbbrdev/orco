@@ -1,6 +1,6 @@
 import { type Browser, expect, type Page, test } from "@playwright/test";
 
-import { signUpAndConfirm, useOwnIp } from "./helpers";
+import { linkFromMail, signUpAndConfirm, useOwnIp } from "./helpers";
 
 // Compartilhar e responder (NBB-54 C7): copiar o link, WhatsApp e gerar novo link (F-06, F-13); o
 // cliente aprova ou recusa pelo link (F-07, F-08), e o dono vê o resultado em modo leitura (NBB-53).
@@ -12,13 +12,17 @@ test.beforeEach(async ({ context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 });
 
-/** Um orçamento novo, com um item pronto para enviar (o IP próprio vem antes, no teste). */
-async function newQuote(page: Page, password: string) {
-  await signUpAndConfirm(page, password);
+/**
+ * Um orçamento novo, com um item pronto para enviar (o IP próprio vem antes, no teste). Devolve o
+ * e-mail da conta.
+ */
+async function newQuote(page: Page, password: string): Promise<string> {
+  const email = await signUpAndConfirm(page, password);
   await page.getByRole("button", { name: "Criar primeiro orçamento" }).click();
   await expect(page).toHaveURL(/\/app\/orcamentos\/[0-9a-f-]{36}$/);
   await page.getByLabel("Descrição do item 1").fill("Logo");
   await page.getByLabel("Valor do item 1 (R$)").fill("800");
+  return email;
 }
 
 /** Compartilhar → Copiar link, e o link copiado. */
@@ -104,7 +108,7 @@ test("o cliente aprova pelo link e o dono vê em modo leitura (F-07, RN-25, RN-2
   browser,
 }) => {
   await useOwnIp(page);
-  await newQuote(page, "senha-share-456");
+  const email = await newQuote(page, "senha-share-456");
   const quoteUrl = page.url();
   const link = await copyLink(page);
 
@@ -116,6 +120,11 @@ test("o cliente aprova pelo link e o dono vê em modo leitura (F-07, RN-25, RN-2
   await client.getByRole("button", { name: "Confirmar aprovação" }).click();
   await expect(client.getByText(/Orçamento aprovado!/)).toBeVisible();
   await client.context().close();
+
+  // O e-mail ao freelancer (RN-40, NBB-55), com o link para este orçamento no app.
+  expect(await linkFromMail(email, /https?:\/\/\S+\/app\/orcamentos\/[0-9a-f-]{36}/)).toBe(
+    quoteUrl,
+  );
 
   // O dono: o resultado no topo, só as anotações editáveis.
   await page.goto(quoteUrl);

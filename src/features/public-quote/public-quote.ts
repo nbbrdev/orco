@@ -9,6 +9,7 @@ import { getAppDb, withUserDb } from "@/lib/db";
 import { quotes } from "@/lib/db/schema";
 import { QUOTE_EVENT_LIMITS } from "@/lib/db/schema/quote-limits";
 import { numericToQuantity } from "@/lib/money";
+import type { FreelancerEvent, FreelancerTarget } from "@/lib/notify";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { quotePdfFileName } from "@/pdf/file-name";
 import { buildQuoteDocument, type QuoteDocumentInput, type QuoteDocumentModel } from "@/pdf/model";
@@ -156,16 +157,35 @@ export type RespondInput = z.input<typeof respondSchema>;
 export type RespondResult =
   "ok" | "not_found" | "already_responded" | "expired" | "outdated" | "invalid" | "limit";
 
+// O JSON de app.respond_to_quote (migration 0011, NBB-55 E1-A). O aviso só vem na resposta registrada.
+const respondRowSchema = z.object({
+  result: z.enum(["ok", "not_found", "already_responded", "expired", "outdated"]),
+  notice: z
+    .object({
+      quoteId: z.uuid(),
+      number: z.number().int().positive(),
+      clientName: z.string().nullable(),
+      accountEmail: z.string(),
+      emailNotifications: z.boolean(),
+    })
+    .optional(),
+});
+
 /**
  * Aprovar ou recusar pelo link (RN-32 a RN-34). A resposta é única; vale só para um orçamento
  * enviado, dentro da validade e na mesma versão que a página mostrou (R2-A). Registra IP, navegador
  * e a versão (RN-34).
+ *
+ * Na resposta registrada, entrega o aviso ao freelancer (RN-40) a `onNotice`, que decide quando
+ * mandá-lo (a Server Action, com `after()`). O aviso tem o e-mail da conta: nunca vai para o
+ * navegador do cliente.
  */
 export async function respondToQuote(
   token: string,
   input: unknown,
   ip: string,
   userAgent: string | null,
+  onNotice?: (target: FreelancerTarget, event: FreelancerEvent) => void,
 ): Promise<RespondResult> {
   if (!tokenSchema.safeParse(token).success) {
     return "not_found";
@@ -184,13 +204,29 @@ export async function respondToQuote(
   const reasonCode = answer.decision === "rejected" ? (answer.reasonCode ?? null) : null;
   const reason = answer.decision === "rejected" ? answer.reason || null : null;
 
-  const rows = await getAppDb().execute<{ result: string }>(
+  const rows = await getAppDb().execute<{ response: unknown }>(
     sql`select app.respond_to_quote(
       ${token}, ${answer.decision}::public.quote_event_type, ${answer.version}, ${name},
       ${reasonCode}::public.reject_reason, ${reason}, ${validIp}::inet, ${agent}
-    ) as result`,
+    ) as response`,
   );
-  return rows[0]?.result as RespondResult;
+  const { result, notice } = respondRowSchema.parse(rows[0]?.response);
+  if (result === "ok" && notice && onNotice) {
+    onNotice(
+      { accountEmail: notice.accountEmail, emailNotifications: notice.emailNotifications },
+      {
+        type: "quote_response",
+        quoteId: notice.quoteId,
+        number: notice.number,
+        decision: answer.decision,
+        respondentName: name,
+        clientName: notice.clientName,
+        reasonCode,
+        reason,
+      },
+    );
+  }
+  return result;
 }
 
 /** Apaga o IP dos eventos com mais de 12 meses (RN-37). Chamada pelo agendamento diário (NBB-62). */

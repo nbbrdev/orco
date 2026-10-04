@@ -130,6 +130,8 @@ flowchart LR
 
 **Notificações (ADR-0009):** um módulo `src/lib/notify.ts` com `notifyFreelancer(userId, event)` centraliza tudo: lê as preferências (`email_notifications`, assinaturas push), envia o e-mail (módulo SMTP, ADR-0016) e o push (`web-push`) em paralelo, apaga assinaturas expiradas (404/410) e nunca lança erro para quem chamou (RN-42). É chamado em `after()` na resposta do cliente, na 1ª visualização e no cron de lembretes.
 
+- **Como ficou na NBB-55** (2026-10-04): `notifyFreelancer(target, event)` recebe o destinatário já pronto (`target`: e-mail da conta e `email_notifications`), porque na resposta do cliente não há sessão do freelancer, e o app só lê os dados de uma conta pela sessão dela. Quem entrega o `target` é a própria `respond_to_quote` (E1-A), só na resposta registrada. O e-mail é o modelo `src/lib/email/templates/quote-response.ts`. Uma falha vai para o log só com o id do orçamento e o código do erro, sem o e-mail (E5). O push entra na NBB-61, e o lembrete, na NBB-62.
+
 **Lembrete diário:** agendamento na VPS (ex.: 9h em São Paulo) → `GET /api/cron/lembretes` com `Authorization: Bearer $CRON_SECRET` → função `quotes_due_for_reminder()` → `notifyFreelancer` → marca `reminder_sent_at`.
 
 **Status `expirado`:** derivado na leitura (`status = 'sent' AND valid_until < hoje_SP`), exposto por uma view/função. Não depende de cron.
