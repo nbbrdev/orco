@@ -1,27 +1,28 @@
 import "server-only";
 
-import { responsePushMessage } from "@/features/push/messages";
+import { responsePushMessage, viewedPushMessage } from "@/features/push/messages";
 import type { RejectReasonCode } from "@/features/public-quote/reasons";
 import { sendEmail } from "@/lib/email";
 import { quoteResponseEmail } from "@/lib/email/templates/quote-response";
 import { type PushSubscriptionKeys, sendPush } from "@/lib/push";
 
-// Avisos ao freelancer (ADR-0009, NBB-55, NBB-61): um lugar só decide o que mandar e por onde. Hoje, a
-// resposta do cliente (RN-40) por e-mail e por push; o lembrete de vencimento entra na NBB-62.
-// E-mail e push são canais separados (P6): cada um segue a sua preferência, em paralelo.
+// Avisos ao freelancer (ADR-0009, NBB-55, NBB-61): um lugar só decide o que mandar e por onde.
+// - Resposta do cliente (RN-40): e-mail e push, cada canal com a sua preferência (P6), em paralelo.
+// - Primeira visualização (RN-35, N4): só push; visualização não gera e-mail (RN-40).
+// - O lembrete de vencimento entra na NBB-62.
 // Nunca lança erro: um aviso que falhou não desfaz nem atrasa a resposta do cliente (RN-42).
 
 /**
  * Para quem vai o aviso: o e-mail da conta e a preferência do perfil (RN-41), e as assinaturas de
- * push dos aparelhos (RN-45).
+ * push dos aparelhos (RN-45). Na visualização, que não manda e-mail, o e-mail vem nulo.
  */
 export type FreelancerTarget = {
-  accountEmail: string;
+  accountEmail: string | null;
   emailNotifications: boolean;
   pushSubscriptions: PushSubscriptionKeys[];
 };
 
-export type FreelancerEvent = {
+export type QuoteResponseEvent = {
   type: "quote_response";
   quoteId: string;
   number: number;
@@ -32,15 +33,27 @@ export type FreelancerEvent = {
   reason: string | null;
 };
 
+export type QuoteViewedEvent = {
+  type: "quote_viewed";
+  quoteId: string;
+  number: number;
+  clientName: string | null;
+};
+
+export type FreelancerEvent = QuoteResponseEvent | QuoteViewedEvent;
+
 export async function notifyFreelancer(
   target: FreelancerTarget,
   event: FreelancerEvent,
 ): Promise<void> {
-  await Promise.all([notifyByEmail(target, event), notifyByPush(target, event)]);
+  await Promise.all([
+    event.type === "quote_response" ? notifyByEmail(target, event) : null,
+    notifyByPush(target, event),
+  ]);
 }
 
-async function notifyByEmail(target: FreelancerTarget, event: FreelancerEvent): Promise<void> {
-  if (!target.emailNotifications) {
+async function notifyByEmail(target: FreelancerTarget, event: QuoteResponseEvent): Promise<void> {
+  if (!target.emailNotifications || !target.accountEmail) {
     return;
   }
   try {
@@ -58,7 +71,10 @@ async function notifyByEmail(target: FreelancerTarget, event: FreelancerEvent): 
 
 async function notifyByPush(target: FreelancerTarget, event: FreelancerEvent): Promise<void> {
   try {
-    await sendPush(target.pushSubscriptions, responsePushMessage(event));
+    await sendPush(
+      target.pushSubscriptions,
+      event.type === "quote_response" ? responsePushMessage(event) : viewedPushMessage(event),
+    );
   } catch (error) {
     console.error("Falha ao enviar o push ao freelancer.", {
       quoteId: event.quoteId,

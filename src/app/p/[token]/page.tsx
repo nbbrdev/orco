@@ -16,6 +16,7 @@ import {
 import { displayStatus } from "@/features/quotes/status";
 import { getSessionUser } from "@/lib/auth/session";
 import { formatDateBR, todayInAppTimeZone } from "@/lib/dates";
+import { notifyFreelancer } from "@/lib/notify";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { clientIpFrom } from "@/lib/request";
 
@@ -58,8 +59,9 @@ export default async function PublicQuotePage({ params }: PageProps<"/p/[token]"
   const owner = session ? await isQuoteOwner(session.id, token) : false;
   const userAgent = headerList.get("user-agent");
   if (!owner && !isPreviewBot(userAgent)) {
-    // Depois de responder a página: a contagem não atrasa quem está abrindo.
-    after(() => registerQuoteView(token, ip, userAgent));
+    // Depois de responder a página: a contagem (e, na primeira, o push ao freelancer, NBB-61 N4) não
+    // atrasa quem está abrindo.
+    after(() => registerQuoteView(token, ip, userAgent, notifyFreelancer));
   }
 
   const model = publicDocumentModel(quote);

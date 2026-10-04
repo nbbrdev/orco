@@ -17,10 +17,11 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { Eye, Plus } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import type { ClientRow } from "@/features/clients/schemas";
+import { PushInvite } from "@/features/push/components/push-invite";
 import { downloadQuotePdf } from "@/features/quotes/download-pdf";
 import {
   deleteQuoteAction,
@@ -100,6 +101,8 @@ export function QuoteEditor({
   quoteNumber,
   quoteStatus,
   publicToken,
+  pushPrompted,
+  vapidPublicKey,
   defaultValidityDays,
   initialItems,
   initialOptions,
@@ -112,6 +115,10 @@ export function QuoteEditor({
   quoteStatus: QuoteStatus;
   /** O token do link público (NBB-54 C3-A). */
   publicToken: string;
+  /** A conta já viu o convite de notificações (F-18, NBB-61 N1-A). */
+  pushPrompted: boolean;
+  /** A chave pública do push deste ambiente; nula se o push não está configurado (NBB-61 P2-A). */
+  vapidPublicKey: string | null;
   /** Validade padrão do perfil, para sugerir a data ao prorrogar (NBB-49 P5-A). */
   defaultValidityDays: number;
   initialItems: ItemDraft[];
@@ -139,6 +146,10 @@ export function QuoteEditor({
   // Alteração salva desde a abertura, o envio ou o último aviso pelo WhatsApp (F-10, A2-A). Só vale
   // nesta tela: ao recarregar, o aviso volta ao texto inicial.
   const [updated, setUpdated] = useState(false);
+  // Convite de notificações (F-18, NBB-61): espera um envio, abre e, depois de usado, não volta.
+  const [invite, setInvite] = useState<"waiting" | "open" | "closed">(
+    pushPrompted ? "closed" : "waiting",
+  );
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Só a resposta do último salvamento vale: uma resposta antiga não apaga um estado mais novo.
   const lastSave = useRef(0);
@@ -236,7 +247,11 @@ export function QuoteEditor({
   function markSent() {
     setQuoteState("sent");
     setUpdated(false);
+    // O convite de notificações aparece depois de um envio, se a conta nunca o viu (F-18, N1-A).
+    setInvite((current) => (current === "waiting" ? "open" : current));
   }
+
+  const closeInvite = useCallback(() => setInvite("closed"), []);
 
   /**
    * Depois de copiar o link ou abrir o WhatsApp (RN-22, NBB-54 C3-A): salva o que estiver pendente e
@@ -463,6 +478,10 @@ export function QuoteEditor({
         <p role="status" className="text-sm text-muted-foreground">
           {notice}
         </p>
+      ) : null}
+
+      {invite === "open" ? (
+        <PushInvite vapidPublicKey={vapidPublicKey} onClose={closeInvite} />
       ) : null}
 
       {/* Enviado dentro da validade: o cliente vê as alterações pelo link (F-10, A1-A). */}

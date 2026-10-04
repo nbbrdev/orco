@@ -381,3 +381,9 @@ Rodapé ........... "Orçô v0.4.0" · link "Novidades" (notas da versão no Git
 - "👀 Maria abriu o orçamento Nº 0012"
 - "⏰ O orçamento Nº 0012 vence amanhã e ainda não foi respondido"
 - Tocar na notificação abre o orçamento no app.
+
+**Como ficou** (NBB-61, 2026-10-04):
+- **Perfil:** "Notificações neste aparelho" liga e desliga o push deste navegador. Sem suporte: "Este navegador não recebe notificações."; permissão negada: "As notificações estão bloqueadas neste navegador. Libere nas configurações do site."; iPhone fora do app: o caminho Compartilhar → Adicionar à Tela de Início.
+- **Convite:** aparece logo abaixo do título do editor depois de qualquer envio (Copiar link, WhatsApp ou Baixar PDF), enquanto a conta nunca o viu, inclusive para quem já tinha enviado orçamentos antes. Não aparece neste aparelho já ligado nem com a permissão bloqueada (e a conta conta como convidada), nem em navegador sem suporte (aí pode aparecer depois, em outro aparelho). **Agora não**, **Entendi** (iPhone) ou negar a permissão: não volta mais.
+- **Avisos:** "✅ Maria aprovou…", "❌ Maria recusou… · Motivo: Preço" e "👀 Maria abriu o orçamento Nº 0012" (primeira visualização, só por push), sempre com só o primeiro nome. O lembrete chega com a NBB-62.
+- **Sair** desliga as notificações deste aparelho antes de encerrar a sessão.

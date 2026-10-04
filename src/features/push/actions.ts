@@ -2,7 +2,11 @@
 
 import { headers } from "next/headers";
 
-import { deletePushSubscription, savePushSubscription } from "@/features/push/push";
+import {
+  deletePushSubscription,
+  markPushPrompted,
+  savePushSubscription,
+} from "@/features/push/push";
 import { requireSessionUser } from "@/lib/auth/session";
 
 // Server Actions do botão "Notificações neste aparelho" (RN-45, NBB-61 P5). Casca fina sobre push.ts:
@@ -16,6 +20,16 @@ export async function subscribePushAction(subscription: unknown): Promise<boolea
   } catch (error) {
     console.error("Falha ao gravar a assinatura de push.", error);
     return false;
+  }
+}
+
+/** A conta já viu o convite de notificações (F-18, N2): ele não aparece mais. */
+export async function markPushPromptedAction(): Promise<void> {
+  const user = await requireSessionUser();
+  try {
+    await markPushPrompted(user.id);
+  } catch (error) {
+    console.error("Falha ao marcar o convite de notificações.", error);
   }
 }
 

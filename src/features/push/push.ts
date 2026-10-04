@@ -1,10 +1,10 @@
 import "server-only";
 
-import { eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { withUserDb } from "@/lib/db";
-import { PUSH_SUBSCRIPTION_LIMITS, pushSubscriptions } from "@/lib/db/schema";
+import { profiles, PUSH_SUBSCRIPTION_LIMITS, pushSubscriptions } from "@/lib/db/schema";
 
 // As assinaturas de push do aparelho (RN-45, NBB-61 P4-A, P5): o botão "Notificações neste aparelho"
 // do perfil grava e apaga a assinatura deste navegador, sempre pela conta da sessão (withUserDb).
@@ -39,6 +39,19 @@ export async function savePushSubscription(
     ),
   );
   return true;
+}
+
+/**
+ * A conta já viu o convite de notificações (F-18, RN-45, N2): ele não aparece mais. Guarda só a
+ * primeira vez.
+ */
+export async function markPushPrompted(userId: string): Promise<void> {
+  await withUserDb(userId, (tx) =>
+    tx
+      .update(profiles)
+      .set({ pushPromptedAt: sql`now()` })
+      .where(and(eq(profiles.id, userId), isNull(profiles.pushPromptedAt))),
+  );
 }
 
 /** Apaga a assinatura deste aparelho. A RLS só deixa apagar as da própria conta. */

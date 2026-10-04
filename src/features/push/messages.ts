@@ -19,6 +19,21 @@ export function firstName(name: string | null): string | null {
   return name?.trim().split(/\s+/)[0] || null;
 }
 
+/** A primeira visualização do link (RN-35, NBB-61 N4): "👀 Maria abriu o orçamento Nº 0012". */
+export function viewedPushMessage(view: {
+  quoteId: string;
+  number: number;
+  clientName: string | null;
+}): PushMessage {
+  // Quem abre o link não informa o nome: vale o cliente do orçamento.
+  const who = firstName(view.clientName) ?? "Seu cliente";
+  return {
+    title: `👀 ${who} abriu o orçamento Nº ${formatQuoteNumber(view.number)}`,
+    url: `/app/orcamentos/${view.quoteId}`,
+    tag: `quote-${view.quoteId}`,
+  };
+}
+
 export function responsePushMessage(response: {
   quoteId: string;
   number: number;

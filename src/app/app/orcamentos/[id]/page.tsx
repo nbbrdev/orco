@@ -15,6 +15,7 @@ import { newItemDraft, toItemDraft, toOptionsDraft } from "@/features/quotes/ite
 import { ownerDocumentInput } from "@/features/quotes/pdf";
 import { type EditorQuote, getQuoteForEditor, getQuoteResponse } from "@/features/quotes/quotes";
 import { requireSessionUser } from "@/lib/auth/session";
+import { vapidPublicKey } from "@/lib/push";
 import { buildQuoteDocument } from "@/pdf/model";
 
 export const metadata: Metadata = { title: "Orçamento" };
@@ -58,6 +59,8 @@ async function Editor({ userId, quote }: { userId: string; quote: EditorQuote })
       quoteNumber={quote.number}
       quoteStatus={quote.status}
       publicToken={quote.publicToken}
+      pushPrompted={quote.pushPrompted}
+      vapidPublicKey={vapidPublicKey()}
       defaultValidityDays={quote.defaultValidityDays}
       initialItems={items}
       initialOptions={toOptionsDraft(quote.options)}

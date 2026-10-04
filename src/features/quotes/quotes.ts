@@ -138,6 +138,8 @@ export type EditorQuote = {
   options: ParsedOptions;
   /** Validade padrão do perfil, em dias: a sugestão ao prorrogar (F-11, NBB-49 P5-A). */
   defaultValidityDays: number;
+  /** A conta já viu o convite de notificações (F-18, NBB-61 N1-A): ele não aparece mais. */
+  pushPrompted: boolean;
 };
 
 /** O orçamento e os itens, na ordem salva, para abrir o editor. `null` se não existe ou é de outra conta. */
@@ -189,7 +191,10 @@ export async function getQuoteForEditor(userId: string, id: string): Promise<Edi
       .where(eq(quoteItems.quoteId, id))
       .orderBy(asc(quoteItems.position), asc(quoteItems.createdAt));
     const [profile] = await tx
-      .select({ validityDays: profiles.defaultValidityDays })
+      .select({
+        validityDays: profiles.defaultValidityDays,
+        pushPromptedAt: profiles.pushPromptedAt,
+      })
       .from(profiles)
       .where(eq(profiles.id, userId));
     if (!profile) {
@@ -202,6 +207,7 @@ export async function getQuoteForEditor(userId: string, id: string): Promise<Edi
       sentAt: quote.sentAt,
       publicToken: quote.publicToken,
       defaultValidityDays: profile.validityDays,
+      pushPrompted: profile.pushPromptedAt !== null,
       client:
         quote.clientName === null
           ? null

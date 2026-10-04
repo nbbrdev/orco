@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { firstName, responsePushMessage } from "@/features/push/messages";
+import { firstName, responsePushMessage, viewedPushMessage } from "@/features/push/messages";
 
 // O texto dos avisos de push (RN-45, NBB-61 P6): só o número, o primeiro nome e o evento.
 
@@ -21,6 +21,17 @@ describe("firstName", () => {
   it("vazio ou só espaços vira nulo", () => {
     expect(firstName(null)).toBeNull();
     expect(firstName("   ")).toBeNull();
+  });
+});
+
+describe("viewedPushMessage (NBB-61 N4)", () => {
+  it("o primeiro nome do cliente do orçamento, ou 'Seu cliente'", () => {
+    expect(viewedPushMessage({ ...base, clientName: "Maria Silva" })).toEqual({
+      title: "👀 Maria abriu o orçamento Nº 0012",
+      url: `/app/orcamentos/${base.quoteId}`,
+      tag: `quote-${base.quoteId}`,
+    });
+    expect(viewedPushMessage(base).title).toBe("👀 Seu cliente abriu o orçamento Nº 0012");
   });
 });
 
