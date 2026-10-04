@@ -26,13 +26,12 @@ test("permissão bloqueada: explica como liberar, sem o botão", async ({ page }
   await expect(page.getByRole("switch", { name: label })).toHaveCount(0);
 });
 
-test("permissão liberada e sem assinatura: o botão aparece desligado", async ({
-  page,
-  context,
-}) => {
-  // O navegador de teste pode começar com as notificações bloqueadas (no CI, começa): a permissão
-  // vem dada, para o estado ser o mesmo em qualquer máquina.
-  await context.grantPermissions(["notifications"]);
+test("permissão ainda não pedida: o botão aparece desligado", async ({ page }) => {
+  // O navegador de teste pode começar com as notificações bloqueadas, e a emulação do celular nem
+  // sempre respeita a permissão dada pelo Playwright: o estado "ainda não pedida" vem simulado.
+  await page.addInitScript(() => {
+    Object.defineProperty(Notification, "permission", { get: () => "default" });
+  });
   await useOwnIp(page);
   await signUpAndConfirm(page, "senha-push-456");
   await page.goto("/app/perfil");
