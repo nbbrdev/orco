@@ -168,6 +168,11 @@ Total R$ 2.800,00  [Visualizar] [Compartilhar]
   - No celular abre o app; no computador, o WhatsApp Web/Desktop.
 - Em qualquer um dos três, se o orçamento for `rascunho` e cumprir a RN-13, passa a `enviado` (RN-22).
 - No **primeiro** envio da conta, logo depois do feedback "Link copiado", aparece o convite de notificações push (F-18).
+- **Como ficou na M5** (NBB-51, 2026-10-04): o link e o WhatsApp chegam na M6. Por enquanto, o rodapé do editor tem:
+  - **Visualizar:** abre a prévia do PDF numa aba nova (no Chrome do Android, baixa o arquivo), sem mudar o status;
+  - **Baixar PDF:** baixa `Orcamento-0001-Maria-Silva.pdf` e, se for um rascunho, o marca como enviado (o selo ao lado do número muda para "Enviado"). Se faltar algo da RN-13, os campos ficam destacados ("Informe o valor do item 2 para enviar.") e nada é baixado;
+  - no celular, os dois botões aparecem só com o ícone, para caber o total;
+  - na M6, o **Baixar PDF** vai para dentro do **Compartilhar**.
 
 ## F-07 — Cliente aprova · ✅
 

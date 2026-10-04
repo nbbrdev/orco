@@ -293,3 +293,33 @@ test("visualizar o PDF sem mudar o status (NBB-51, RN-22a)", async ({ page, cont
   await page.goto("/app/orcamentos");
   await expect(page.getByRole("list", { name: "Orçamentos" })).toContainText("Rascunho");
 });
+
+test("baixar o PDF envia o orçamento (NBB-51, RN-22, RN-13)", async ({ page }) => {
+  await useOwnIp(page);
+  await signUpAndConfirm(page, "senha-editor-246");
+  await page.getByRole("button", { name: "Criar primeiro orçamento" }).click();
+  await expect(page).toHaveURL(/\/app\/orcamentos\/[0-9a-f-]{36}$/);
+  const header = page.locator("h1").locator("..");
+  await expect(header.getByText("Rascunho")).toBeVisible();
+
+  // Faltando descrição e valor (RN-13): destaca os campos e não baixa.
+  await page.getByRole("button", { name: "Baixar PDF" }).click();
+  await expect(
+    page.getByText("Para baixar o PDF, preencha a descrição e o valor de todos os itens."),
+  ).toBeVisible();
+  await expect(page.getByText("Informe a descrição do item 1 para enviar.")).toBeVisible();
+  await expect(page.getByText("Informe o valor do item 1 para enviar.")).toBeVisible();
+
+  // Preenchendo, o destaque some campo a campo; logo depois de digitar, o download já sai com o novo.
+  await page.getByLabel("Descrição do item 1").fill("Logo");
+  await expect(page.getByText("Informe a descrição do item 1 para enviar.")).toBeHidden();
+  await page.getByLabel("Valor do item 1 (R$)").fill("800");
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Baixar PDF" }).click();
+  expect((await download).suggestedFilename()).toBe("Orcamento-0001.pdf");
+
+  // Enviado (RN-22), aqui e na lista.
+  await expect(header.getByText("Enviado")).toBeVisible();
+  await page.goto("/app/orcamentos?status=enviados");
+  await expect(page.getByRole("list", { name: "Orçamentos" })).toContainText("Nº 0001");
+});

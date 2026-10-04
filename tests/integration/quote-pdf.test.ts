@@ -8,7 +8,12 @@ import { saveClient } from "@/features/clients/clients";
 import { uploadLogo } from "@/features/profile/logo";
 import { updateProfileField } from "@/features/profile/profile";
 import { loadQuotePdf, PDF_LIMIT_PER_MINUTE, renderOwnerPdf } from "@/features/quotes/pdf";
-import { createQuote, getQuoteForEditor, saveQuoteItems } from "@/features/quotes/quotes";
+import {
+  createQuote,
+  getQuoteForEditor,
+  saveQuoteItems,
+  sendQuote,
+} from "@/features/quotes/quotes";
 import { closeDb, getAuthDb } from "@/lib/db";
 import { user } from "@/lib/db/schema";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -109,6 +114,44 @@ describe("renderOwnerPdf", () => {
     expect(new TextDecoder().decode(result.bytes.slice(0, 5))).toBe("%PDF-");
     expect(result.fileName).toBe("Orcamento-0001.pdf");
     expect((await getQuoteForEditor(account.id, quoteId))?.status).toBe("draft");
+  });
+
+  it("o download envia o rascunho completo e o PDF sai com a data do envio (RN-22)", async () => {
+    const account = await createAccount();
+    const quoteId = await newQuote(account.id);
+    await saveQuoteItems(account.id, quoteId, { items: [item("Logo", "800")] });
+    const result = await renderOwnerPdf(account, quoteId, { send: true });
+    expect(result.status).toBe("ok");
+    const quote = await getQuoteForEditor(account.id, quoteId);
+    expect(quote?.status).toBe("sent");
+    expect(quote?.sentAt).toBeInstanceOf(Date);
+
+    // Baixar de novo não muda nada.
+    expect(await sendQuote(account.id, quoteId)).toBe("unchanged");
+  });
+
+  it("rascunho incompleto (RN-13) não envia nem gera o PDF", async () => {
+    const account = await createAccount();
+    const quoteId = await newQuote(account.id);
+    await saveQuoteItems(account.id, quoteId, { items: [item("Logo", "")] });
+    expect(await renderOwnerPdf(account, quoteId, { send: true })).toEqual({
+      status: "incomplete",
+    });
+    expect((await getQuoteForEditor(account.id, quoteId))?.status).toBe("draft");
+
+    // Sem nenhum item, também não.
+    const empty = await newQuote(account.id);
+    expect(await sendQuote(account.id, empty)).toBe("incomplete");
+  });
+
+  it("não envia o orçamento de outra conta", async () => {
+    const other = await createAccount();
+    const quoteId = await newQuote(owner.id);
+    await saveQuoteItems(owner.id, quoteId, { items: [item("Logo", "800")] });
+    expect(await renderOwnerPdf(other, quoteId, { send: true })).toEqual({ status: "not_found" });
+    expect(await sendQuote(other.id, quoteId)).toBe("not_found");
+    expect(await sendQuote(owner.id, "x")).toBe("not_found");
+    expect((await getQuoteForEditor(owner.id, quoteId))?.status).toBe("draft");
   });
 
   it(`passa de ${PDF_LIMIT_PER_MINUTE} por minuto: limite (RN-39)`, async () => {
