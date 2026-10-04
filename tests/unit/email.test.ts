@@ -102,6 +102,9 @@ describe("quoteResponseEmail (RN-40, NBB-55)", () => {
     expect(email.html).toContain("Ver orçamento");
     expect(email.html.split(`href="${url}"`)).toHaveLength(3);
     expect(email.html).not.toContain("Motivo");
+    // O título da moldura não se repete no corpo.
+    expect(email.html).not.toContain(`${email.subject}.`);
+    expect(email.text).not.toContain(`${email.subject}.`);
     expect(email.text).toContain(`Ver orçamento: ${url}`);
     expect(email.text).toContain("Para desligar, vá em Perfil.");
   });

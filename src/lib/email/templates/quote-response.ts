@@ -49,9 +49,11 @@ export function quoteResponseEmail(input: QuoteResponseEmailInput): Email {
     html: layout({
       siteUrl: input.siteUrl,
       title,
+      // O título da moldura já diz quem respondeu (sem repetir a frase no corpo, aprovado na revisão).
       body: [
-        paragraph(`${escapeHtml(title)}.`, reasonLabel || reason ? 16 : 24),
-        reasonLabel ? paragraph(`Motivo: <strong>${escapeHtml(reasonLabel)}</strong>`, 16) : "",
+        reasonLabel
+          ? paragraph(`Motivo: <strong>${escapeHtml(reasonLabel)}</strong>`, reason ? 16 : 24)
+          : "",
         // As quebras de linha do texto do cliente viram <br> (o HTML ignora as do texto).
         reason ? paragraph(`“${escapeHtml(reason).replace(/\r?\n/g, "<br>")}”`) : "",
         button(url, "Ver orçamento"),
@@ -62,7 +64,6 @@ export function quoteResponseEmail(input: QuoteResponseEmailInput): Email {
         .join("\n                "),
     }),
     text: textVersion(title, [
-      `${title}.`,
       ...(reasonLabel ? [`Motivo: ${reasonLabel}`] : []),
       ...(reason ? [`“${reason}”`] : []),
       `Ver orçamento: ${url}`,
