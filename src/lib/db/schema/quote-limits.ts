@@ -16,6 +16,13 @@ export const QUOTE_LIMITS = {
   itemUnit: 10,
 } as const;
 
+/** Tamanhos dos textos dos eventos do link público (RN-33, NBB-52). */
+export const QUOTE_EVENT_LIMITS = {
+  userAgent: 500,
+  respondentName: 120,
+  reason: 1000,
+} as const;
+
 /** Maior valor unitário de um item: R$ 9.999.999,99, o mesmo teto do catálogo (NBB-45 I3-A). */
 export const MAX_ITEM_PRICE_CENTS = 999_999_999;
 

@@ -16,18 +16,13 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { user } from "./auth";
+import { QUOTE_EVENT_LIMITS } from "./quote-limits";
 import { quotes } from "./quotes";
 
 export const quoteEventType = pgEnum("quote_event_type", ["viewed", "approved", "rejected"]);
 
 /** Motivo rápido da recusa (RN-33): Preço, Prazo, Desisti, Outro. */
 export const rejectReason = pgEnum("reject_reason", ["price", "deadline", "gave_up", "other"]);
-
-export const QUOTE_EVENT_LIMITS = {
-  userAgent: 500,
-  respondentName: 120,
-  reason: 1000,
-} as const;
 
 const length = (column: unknown, max: number) =>
   sql`char_length(${column}) <= ${sql.raw(String(max))}`;

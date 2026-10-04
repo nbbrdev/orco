@@ -1,16 +1,17 @@
 import "server-only";
 
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import type { ParsedItem } from "@/features/quotes/items";
 import { loadLogoPng } from "@/features/quotes/pdf";
-import { getAppDb } from "@/lib/db";
-import { QUOTE_EVENT_LIMITS } from "@/lib/db/schema/quote-events";
+import { getAppDb, withUserDb } from "@/lib/db";
+import { quotes } from "@/lib/db/schema";
+import { QUOTE_EVENT_LIMITS } from "@/lib/db/schema/quote-limits";
 import { numericToQuantity } from "@/lib/money";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { quotePdfFileName } from "@/pdf/file-name";
-import type { QuoteDocumentInput } from "@/pdf/model";
+import { buildQuoteDocument, type QuoteDocumentInput, type QuoteDocumentModel } from "@/pdf/model";
 import { renderQuotePdf } from "@/pdf/render";
 
 // O orçamento pelo link público (ADR-0005, ADR-0014, NBB-52). O cliente final não tem conta: o
@@ -210,10 +211,14 @@ export type PublicPdfResult =
 
 /** O que o modelo do PDF precisa, a partir do orçamento público. */
 export async function publicPdfInput(quote: PublicQuote): Promise<QuoteDocumentInput> {
+  return documentInput(quote, await loadLogoPng(quote.issuer.logoPath));
+}
+
+function documentInput(quote: PublicQuote, logoPng: Uint8Array | null): QuoteDocumentInput {
   const { issuer } = quote;
   return {
     profile: issuer,
-    logoPng: await loadLogoPng(issuer.logoPath),
+    logoPng,
     quote: {
       number: quote.number,
       status: quote.status,
@@ -228,6 +233,28 @@ export async function publicPdfInput(quote: PublicQuote): Promise<QuoteDocumentI
     },
     now: new Date(),
   };
+}
+
+/**
+ * O que a página mostra (NBB-53): os mesmos textos e regras do PDF (RN-04, RN-15b), montados pelo
+ * mesmo `buildQuoteDocument`. O logo vem pela rota pública, não embutido.
+ */
+export function publicDocumentModel(quote: PublicQuote): QuoteDocumentModel {
+  return buildQuoteDocument(documentInput(quote, null));
+}
+
+/**
+ * Se o orçamento do token é da conta logada (NBB-53 P3-A). Pela RLS: a consulta só enxerga os
+ * orçamentos da própria conta, então achar o token significa ser o dono.
+ */
+export async function isQuoteOwner(userId: string, token: string): Promise<boolean> {
+  if (!tokenSchema.safeParse(token).success) {
+    return false;
+  }
+  const rows = await withUserDb(userId, (tx) =>
+    tx.select({ id: quotes.id }).from(quotes).where(eq(quotes.publicToken, token)),
+  );
+  return rows.length > 0;
 }
 
 /** O PDF do link público (D7): o mesmo modelo do PDF do dono, sem contar visualização. */

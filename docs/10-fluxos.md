@@ -224,6 +224,14 @@ Depois de aprovar, a confirmação mostra o botão **Falar com Fulano no WhatsAp
 
 Igual ao F-07, mas com **Recusar** → "Quer dizer o motivo?" (opcional), com chips rápidos **Preço · Prazo · Desisti · Outro** e/ou texto livre → **Confirmar recusa** → "Orçamento recusado. Fulano foi avisado." O e-mail ao freelancer (RN-40) inclui o motivo.
 
+**Como ficou o F-07 e o F-08** (NBB-53, 2026-10-04):
+- a página `/p/[token]` é sempre clara, como o PDF, e mostra os mesmos textos dele (o mesmo modelo, `src/pdf/model.ts`); no celular, os itens aparecem em blocos, e **Recusar**/**Aprovar** ficam fixos no rodapé; o **Baixar PDF** fica no fim da página;
+- a resposta leva a versão que a página mostrou: se o freelancer editou o orçamento nesse meio-tempo, aparece "O orçamento foi atualizado. Confira de novo antes de responder." e a página recarrega;
+- a visualização só conta para quem não é robô de pré-visualização (WhatsApp, Telegram, buscadores…) nem o dono logado; o dono vê o aviso "Você está vendo como o seu cliente vê." e não tem os botões de resposta;
+- já respondido: "Aprovado em dd/mm" ou "Recusado em dd/mm", sem botões; vencido: "Este orçamento venceu em dd/mm. Fale com Fulano para renovar.";
+- sem nome no perfil, a confirmação diz "O responsável pelo orçamento foi avisado.";
+- link inválido, rascunho ou excluído: "Orçamento não encontrado", com "Confira o link com quem enviou o orçamento. Ele pode ter sido trocado ou excluído.".
+
 ## F-09 — Acompanhar orçamentos · ✅
 
 - `/app/orcamentos` é a tela inicial: cartões com número, cliente, total, status (com cor), "visualizado em…" e o selo **novo** para respostas ainda não vistas.

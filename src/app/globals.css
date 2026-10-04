@@ -6,7 +6,7 @@
  * Tema escuro (RNF-16): o next-themes aplica a classe `.dark` no <html>.
  * Padrão "Automático" (segue o sistema); o usuário pode fixar Claro ou Escuro no perfil.
  */
-@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant dark (&:where(.dark, .dark *):not(.light-scheme, .light-scheme *));
 
 @theme inline {
   --font-sans:
@@ -69,8 +69,14 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Tema claro (docs/12-identidade-visual.md). */
-:root {
+/*
+ * Tema claro (docs/12-identidade-visual.md). A classe `.light-scheme` reaplica o tema claro num
+ * trecho da página, mesmo com o escuro ativo: a página pública do orçamento é sempre clara, como o
+ * PDF, porque funciona como documento (NBB-53). A variante `dark:` também é desligada dentro dela.
+ */
+:root,
+.light-scheme {
+  color-scheme: light;
   --radius: 0.5rem;
 
   --background: #f6f8f8;
