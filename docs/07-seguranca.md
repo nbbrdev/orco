@@ -145,7 +145,7 @@
 | Criação de orçamentos | user_id | ver RN-38 |
 | Cadastro por e-mail | IP | 3/hora (RN-46) |
 | Reenvio do e-mail de confirmação | IP | 3/hora (RN-46) |
-| E-mails de cadastro (confirmação + reenvio) | global | 60/dia (RN-46) |
+| E-mails de cadastro (confirmação + reenvio) | global | 60/dia (RN-46); só o `.env` local e o CI aumentam, para os testes E2E (`SIGN_UP_EMAILS_PER_DAY`, NBB-54); a VPS não recebe a variável |
 | Recuperação de senha | IP | 3/hora (NBB-41; fora do teto diário) |
 | Login (tentativas) | IP | limite embutido do Better Auth |
 

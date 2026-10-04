@@ -16,7 +16,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { Download, Eye, Plus } from "lucide-react";
+import { Eye, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -25,8 +25,10 @@ import { downloadQuotePdf } from "@/features/quotes/download-pdf";
 import {
   deleteQuoteAction,
   duplicateQuoteAction,
+  regenerateLinkAction,
   saveItemToCatalogAction,
   saveQuoteItemsAction,
+  sendQuoteAction,
 } from "@/features/quotes/actions";
 import {
   type CatalogSuggestion,
@@ -41,6 +43,7 @@ import {
   type ItemTextField,
   lineTotals,
   newItemDraft,
+  NOT_READY_TO_SEND_MESSAGE,
   type OptionsDraft,
   type OptionsErrors,
   type ParsedItem,
@@ -49,16 +52,26 @@ import {
   quoteTotals,
 } from "@/features/quotes/items";
 import type { QuoteClient } from "@/features/quotes/quotes";
+import {
+  copyFailedMessage,
+  copyToClipboard,
+  NEW_LINK_FAILED_MESSAGE,
+  NEW_LINK_NOTICE,
+  publicQuoteUrl,
+  shareMessage,
+} from "@/features/quotes/share";
 import { displayStatus, type QuoteStatus } from "@/features/quotes/status";
 import { todayInAppTimeZone } from "@/lib/dates";
 import { MAX_ITEMS_PER_QUOTE } from "@/lib/db/schema/quote-limits";
 import { formatBRL } from "@/lib/money";
+import { buildWhatsAppLink } from "@/lib/whatsapp";
 
 import { ClientPicker } from "./client-picker";
 import { ExtendValidity } from "./extend-validity";
 import { MoreOptions } from "./more-options";
 import { QuoteActionsMenu } from "./quote-actions-menu";
 import { QuoteItemCard } from "./quote-item-card";
+import { ShareMenu } from "./share-menu";
 import { StatusBadge } from "./status-badge";
 
 // Editor de orçamento (F-05): cliente (NBB-87), itens, total na hora e salvamento automático (NBB-86),
@@ -68,9 +81,14 @@ import { StatusBadge } from "./status-badge";
 //   algum campo estiver inválido, nada é salvo até corrigir (P3-A).
 // - Reordenar arrastando pela alça (R2-B), também pelo teclado (espaço, setas, espaço).
 // - Menu "⋯" com Duplicar e Excluir; no expirado, o aviso com "Prorrogar validade" (NBB-49).
+// - "Compartilhar" no rodapé: Copiar link, WhatsApp e Baixar PDF, que enviam o rascunho; "Gerar novo
+//   link" no menu "⋯" do enviado (NBB-54).
 
 export const SAVE_DELAY_MS = 800;
 const CAPPED_HINT = "O desconto ficou limitado ao valor.";
+const SHARE_INVALID_MESSAGE = "Corrija os campos destacados para compartilhar.";
+const SEND_FAILED_MESSAGE =
+  "Não foi possível enviar o orçamento, e o link só funciona depois do envio. Tente de novo.";
 
 export type SaveStatus = "saved" | "pending" | "saving" | "invalid" | "error" | "blocked";
 
@@ -78,6 +96,7 @@ export function QuoteEditor({
   quoteId,
   quoteNumber,
   quoteStatus,
+  publicToken,
   defaultValidityDays,
   initialItems,
   initialOptions,
@@ -88,6 +107,8 @@ export function QuoteEditor({
   quoteId: string;
   quoteNumber: number;
   quoteStatus: QuoteStatus;
+  /** O token do link público (NBB-54 C3-A). */
+  publicToken: string;
   /** Validade padrão do perfil, para sugerir a data ao prorrogar (NBB-49 P5-A). */
   defaultValidityDays: number;
   initialItems: ItemDraft[];
@@ -106,6 +127,12 @@ export function QuoteEditor({
   // Depois de um "Baixar PDF" barrado pela RN-13, destaca o que falta enquanto a pessoa corrige.
   const [showSendErrors, setShowSendErrors] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  // O token do link público: muda no "Gerar novo link" (NBB-54 C5-A).
+  const [token, setToken] = useState(publicToken);
+  // O cliente escolhido, para o WhatsApp abrir a conversa com ele (C4).
+  const [client, setClient] = useState(initialClient);
+  // Aviso que não é erro, ex.: "Novo link gerado." (C5-A).
+  const [notice, setNotice] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Só a resposta do último salvamento vale: uma resposta antiga não apaga um estado mais novo.
   const lastSave = useRef(0);
@@ -179,23 +206,90 @@ export function QuoteEditor({
   }
 
   /**
-   * "Baixar PDF" (RN-22, NBB-51 P2-A): confere a RN-13, salva o que estiver pendente e pede o PDF
-   * por POST. O servidor envia o rascunho e devolve o arquivo, que o navegador salva com o nome do
-   * F-06. Se faltar algo, os campos ficam destacados e nada é baixado.
+   * Antes de compartilhar (RN-13, RN-22): sem campo inválido e com tudo o que o envio exige. Se faltar
+   * algo, os campos ficam destacados com a mensagem, e nada é compartilhado.
    */
-  async function download() {
+  function readyToShare(invalidMessage: string): boolean {
     if (status === "invalid") {
-      setMessage("Corrija os campos destacados para baixar o PDF.");
-      return;
+      setMessage(invalidMessage);
+      return false;
     }
     const check = checkReadyToSend(latest.current);
     if (!check.ok) {
       setShowSendErrors(true);
       setMessage(check.message);
-      return;
+      return false;
     }
     setShowSendErrors(false);
     setMessage(null);
+    return true;
+  }
+
+  /**
+   * Depois de copiar o link ou abrir o WhatsApp (RN-22, NBB-54 C3-A): salva o que estiver pendente e
+   * envia o rascunho, para o link passar a funcionar.
+   */
+  async function sendAfterShare() {
+    await flush();
+    const result = await sendQuoteAction(quoteId);
+    if (result === "sent") {
+      setQuoteState("sent");
+    } else if (result === "incomplete") {
+      setShowSendErrors(true);
+      setMessage(NOT_READY_TO_SEND_MESSAGE);
+    } else if (result !== "unchanged") {
+      setMessage(SEND_FAILED_MESSAGE);
+    }
+  }
+
+  /**
+   * "Copiar link" (F-06, RF-28): copia logo no toque, senão o Safari recusa, e só depois envia
+   * (C3-A). Se o navegador não deixar copiar, mostra o link para copiar à mão.
+   */
+  async function copyLink(): Promise<boolean> {
+    if (!readyToShare(SHARE_INVALID_MESSAGE)) return false;
+    const url = publicQuoteUrl(window.location.origin, token);
+    const copied = await copyToClipboard(url);
+    if (!copied) {
+      setMessage(copyFailedMessage(url));
+    }
+    void sendAfterShare();
+    return copied;
+  }
+
+  /**
+   * "WhatsApp" (F-06, RF-33): abre a conversa com o cliente, se ele tiver telefone, com a mensagem já
+   * escrita (C4). Abre logo no toque, senão o navegador bloqueia como pop-up, e só depois envia.
+   */
+  function openWhatsApp() {
+    if (!readyToShare(SHARE_INVALID_MESSAGE)) return;
+    const url = publicQuoteUrl(window.location.origin, token);
+    window.open(
+      buildWhatsAppLink(client?.phone ?? null, shareMessage(quoteNumber, url)),
+      "_blank",
+      "noopener",
+    );
+    void sendAfterShare();
+  }
+
+  /** "Gerar novo link" (F-13, RN-36, C5-A): o anterior para de funcionar na hora. */
+  async function regenerateLink() {
+    const fresh = await regenerateLinkAction(quoteId);
+    if (fresh) {
+      setToken(fresh);
+      setNotice(NEW_LINK_NOTICE);
+    } else {
+      setMessage(NEW_LINK_FAILED_MESSAGE);
+    }
+  }
+
+  /**
+   * "Baixar PDF" (RN-22, NBB-51 P2-A): confere a RN-13, salva o que estiver pendente e pede o PDF
+   * por POST. O servidor envia o rascunho e devolve o arquivo, que o navegador salva com o nome do
+   * F-06. Se faltar algo, os campos ficam destacados e nada é baixado.
+   */
+  async function download() {
+    if (!readyToShare("Corrija os campos destacados para baixar o PDF.")) return;
     setDownloading(true);
     try {
       await flush();
@@ -330,10 +424,18 @@ export function QuoteEditor({
           <QuoteActionsMenu
             quoteLabel={`Nº ${formatQuoteNumber(quoteNumber)}`}
             onDuplicate={duplicate}
+            // No rascunho, o link ainda não funciona para ninguém (C5-A).
+            onRegenerateLink={quoteState === "sent" ? regenerateLink : undefined}
             onDelete={remove}
           />
         </div>
       </div>
+
+      {notice ? (
+        <p role="status" className="text-sm text-muted-foreground">
+          {notice}
+        </p>
+      ) : null}
 
       {/* Expirado: enviado com a validade antes de hoje (RN-26). Prorrogar devolve a enviado (RN-27). */}
       {quoteState === "sent" && !optionErrors.validUntil && options.validUntil < today ? (
@@ -344,7 +446,12 @@ export function QuoteEditor({
         />
       ) : null}
 
-      <ClientPicker quoteId={quoteId} clients={clients} initialClient={initialClient} />
+      <ClientPicker
+        quoteId={quoteId}
+        clients={clients}
+        initialClient={initialClient}
+        onChange={setClient}
+      />
 
       <section aria-labelledby="items-heading" className="flex flex-col gap-3">
         <h2 id="items-heading" className="text-base font-medium">
@@ -408,7 +515,7 @@ export function QuoteEditor({
         )}
 
         {message ? (
-          <p role="alert" className="text-sm text-destructive">
+          <p role="alert" className="text-sm break-words text-destructive">
             {message}
           </p>
         ) : null}
@@ -428,16 +535,19 @@ export function QuoteEditor({
           PDF (NBB-51 P3-A). */}
       <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-border bg-background md:bottom-0">
         <div className="mx-auto flex min-h-14 w-full max-w-5xl items-center justify-between gap-4 px-4 py-2">
-          {/* No celular, só os ícones (o nome continua para o leitor de tela), para caber o total. */}
+          {/* No celular, o Visualizar fica só com o ícone (o nome continua para o leitor de tela),
+              para caber o total. O Compartilhar abre Copiar link, WhatsApp e Baixar PDF (NBB-54). */}
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={() => void preview()}>
               <Eye aria-hidden="true" />
               <span className="max-sm:sr-only">Visualizar</span>
             </Button>
-            <Button type="button" disabled={downloading} onClick={() => void download()}>
-              <Download aria-hidden="true" />
-              <span className="max-sm:sr-only">{downloading ? "Baixando…" : "Baixar PDF"}</span>
-            </Button>
+            <ShareMenu
+              downloading={downloading}
+              onCopyLink={copyLink}
+              onWhatsApp={openWhatsApp}
+              onDownload={() => void download()}
+            />
           </div>
           <div className="flex flex-col items-end">
             {totals.discountCents > 0 ? (

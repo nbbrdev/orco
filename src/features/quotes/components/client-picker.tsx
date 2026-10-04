@@ -29,10 +29,13 @@ export function ClientPicker({
   quoteId,
   clients,
   initialClient,
+  onChange,
 }: {
   quoteId: string;
   clients: ClientRow[];
   initialClient: QuoteClient | null;
+  /** Avisa o editor do cliente salvo, para o WhatsApp usar o telefone dele (NBB-54 C4). */
+  onChange?: (client: QuoteClient | null) => void;
 }) {
   const [options, setOptions] = useState(clients);
   const [client, setClient] = useState(initialClient);
@@ -47,6 +50,7 @@ export function ClientPicker({
   function apply(result: Awaited<ReturnType<typeof createClientForQuoteAction>>) {
     if (result.status === "saved") {
       setClient(result.client);
+      onChange?.(result.client);
       setMessage(null);
       setOpen(false);
       setTerm("");

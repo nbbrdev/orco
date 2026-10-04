@@ -2,10 +2,15 @@ import { randomUUID } from "node:crypto";
 
 import { eq, inArray } from "drizzle-orm";
 import postgres from "postgres";
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { POST } from "@/app/api/auth/[...all]/route";
-import { registerUser, resendConfirmation, SIGN_UP_LIMIT } from "@/features/auth/sign-up";
+import {
+  registerUser,
+  resendConfirmation,
+  SIGN_UP_LIMIT,
+  signUpEmailsPerDay,
+} from "@/features/auth/sign-up";
 import { closeDb, getAuthDb } from "@/lib/db";
 import { user } from "@/lib/db/schema";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -41,6 +46,9 @@ async function resetDailyCap(): Promise<void> {
 }
 
 beforeEach(resetDailyCap);
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 afterAll(async () => {
   await resetDailyCap();
@@ -100,12 +108,24 @@ describe("registerUser", () => {
   });
 
   it("respeita o teto diário de e-mails", async () => {
+    // O teto da RN-46, mesmo onde a suíte E2E o aumenta (.env local e CI, NBB-54).
+    vi.stubEnv("SIGN_UP_EMAILS_PER_DAY", "");
     for (let i = 0; i < SIGN_UP_LIMIT.emailsPerDay; i++) {
       await checkRateLimit("signup-email:day", SIGN_UP_LIMIT.emailsPerDay, 86400);
     }
     const email = newEmail();
     expect(await registerUser({ email, password }, newIp())).toEqual({ status: "daily-cap" });
     expect(await getAuthDb().select().from(user).where(eq(user.email, email))).toHaveLength(0);
+  });
+
+  it("o teto vem de SIGN_UP_EMAILS_PER_DAY, com a RN-46 como padrão", () => {
+    vi.stubEnv("SIGN_UP_EMAILS_PER_DAY", "");
+    expect(signUpEmailsPerDay()).toBe(SIGN_UP_LIMIT.emailsPerDay);
+    vi.stubEnv("SIGN_UP_EMAILS_PER_DAY", "1000");
+    expect(signUpEmailsPerDay()).toBe(1000);
+    expect(signUpEmailsPerDay("1000")).toBe(1000);
+    expect(() => signUpEmailsPerDay("0")).toThrow("SIGN_UP_EMAILS_PER_DAY inválido");
+    expect(() => signUpEmailsPerDay("muitos")).toThrow("SIGN_UP_EMAILS_PER_DAY inválido");
   });
 });
 
