@@ -50,7 +50,6 @@ export function completeQuote(logoPng: Uint8Array | null): QuoteDocumentInput {
       document: "11222333000181",
       paymentInfo: "Pix: contato@example.com · Banco Exemplo, agência 0001, conta 12345-6",
     },
-    accountEmail: "joana@example.com",
     logoPng,
     quote: {
       number: 12,
@@ -84,7 +83,6 @@ export function completeQuote(logoPng: Uint8Array | null): QuoteDocumentInput {
 export function minimalQuote(): QuoteDocumentInput {
   return {
     profile: EMPTY_PROFILE,
-    accountEmail: "pessoa@example.com",
     logoPng: null,
     quote: {
       number: 1,

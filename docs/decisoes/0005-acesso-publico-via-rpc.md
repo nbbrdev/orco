@@ -22,3 +22,10 @@ RLS liberando leitura para `anon`: uma policy não "sabe" o token digitado na UR
 - Nenhuma superfície pública direta no banco.
 - A `service_role` existe no servidor, mas o uso fica limitado a um módulo e a RPCs estreitas (defesa em profundidade).
 - Mesmo com a chave, as RPCs não expõem nada além do orçamento do token informado.
+
+## Implementação (2026-10-04, NBB-52)
+- Migration `0009_public_quote`: tabela `quote_events` e as funções `app.get_public_quote(token)` (só lê, devolve um JSON) e `app.register_quote_view(token, ip, user_agent)` (conta a visualização). Donas `orco_owner`, `SECURITY DEFINER`, `search_path = ''`, `EXECUTE` só para a `app_user`.
+- O servidor chama pela `app_user`, sem `withUserDb` (o cliente final não tem conta), em `src/features/public-quote/public-quote.ts` (`server-only`), e confere o JSON com Zod.
+- O token é conferido no formato (43 caracteres base64url) antes de ir ao banco.
+- O IP vem do `X-Forwarded-For` que o Nginx substitui (`src/lib/request.ts`); um valor que não é IP vira nulo.
+- Aprovar/recusar, gerar novo link e a anonimização dos IPs: PR 2 da NBB-52.

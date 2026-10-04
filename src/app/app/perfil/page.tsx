@@ -29,11 +29,7 @@ export default async function ProfilePage() {
     <div className="mx-auto flex w-full max-w-xl flex-col gap-10">
       <h1 className="text-2xl font-semibold">Perfil</h1>
 
-      <ProfileForm
-        initial={profile}
-        initialLogoUrl={logoPath ? logoUrl(logoPath) : null}
-        accountEmail={user.email}
-      />
+      <ProfileForm initial={profile} initialLogoUrl={logoPath ? logoUrl(logoPath) : null} />
 
       <section aria-labelledby="account-heading" className="flex flex-col gap-3">
         <h2 id="account-heading" className="text-base font-medium">

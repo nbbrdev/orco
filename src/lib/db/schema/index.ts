@@ -5,4 +5,5 @@ export * from "./auth";
 export * from "./catalog-items";
 export * from "./clients";
 export * from "./profiles";
+export * from "./quote-events";
 export * from "./quotes";

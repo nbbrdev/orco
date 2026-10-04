@@ -67,19 +67,29 @@ describe("buildQuoteDocument", () => {
     });
   });
 
-  it("no mínimo: nome pelo e-mail da conta, sem cliente, valor em branco, só o total (RN-04, RN-15b)", () => {
+  it("no mínimo: sem nome, sem cliente, valor em branco, só o total (RN-04, RN-15b, D3-B)", () => {
     const model = buildQuoteDocument(minimalQuote());
-    expect(model.issuer).toEqual({ name: "pessoa@example.com", contacts: [], logoPng: null });
+    expect(model.issuer).toEqual({ name: null, contacts: [], logoPng: null });
     expect(model.client).toBeNull();
     expect(model.showItemDiscount).toBe(false);
     expect(model.lines[0]).toMatchObject({ unit: "", unitPrice: "—" });
     expect(model.totals).toEqual({ total: expect.stringMatching(/^R\$\s0,00$/u) });
   });
 
-  it("o nome segue a ordem da RN-04: comercial → de exibição → e-mail", () => {
+  it("o nome segue a ordem da RN-04: comercial → de exibição → e-mail de contato (D3-B)", () => {
     const input = minimalQuote();
-    input.profile = { ...EMPTY_PROFILE, displayName: "Joana" };
-    expect(buildQuoteDocument(input).issuer.name).toBe("Joana");
+    input.profile = { ...EMPTY_PROFILE, displayName: "Joana", contactEmail: "oi@example.com" };
+    expect(buildQuoteDocument(input).issuer).toMatchObject({
+      name: "Joana",
+      contacts: ["oi@example.com"],
+    });
+
+    // Só o e-mail de contato: ele vira o nome e não se repete nos contatos.
+    input.profile = { ...EMPTY_PROFILE, contactEmail: "oi@example.com", phone: "(11) 91234-5678" };
+    expect(buildQuoteDocument(input).issuer).toMatchObject({
+      name: "oi@example.com",
+      contacts: ["(11) 91234-5678"],
+    });
   });
 
   it("emitido em: data do envio; no rascunho, hoje (N4-A)", () => {

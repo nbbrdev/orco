@@ -1,4 +1,4 @@
-import { type IssuerProfile, issuerContacts, issuerName } from "@/features/profile/issuer";
+import { issuerHeader, type IssuerProfile } from "@/features/profile/issuer";
 import {
   describeDiscount,
   formatQuoteNumber,
@@ -19,7 +19,6 @@ import { formatBRL, formatQuantity } from "@/lib/money";
 
 export type QuoteDocumentInput = {
   profile: IssuerProfile & { paymentInfo: string | null };
-  accountEmail: string;
   /** O logo já em PNG (o react-pdf não lê WebP, N1-A), ou nulo. */
   logoPng: Uint8Array | null;
   quote: {
@@ -49,7 +48,8 @@ export type QuoteDocumentLine = {
 };
 
 export type QuoteDocumentModel = {
-  issuer: { name: string; contacts: string[]; logoPng: Uint8Array | null };
+  /** Sem nome nem e-mail de contato, `name` é nulo e o cabeçalho sai sem ele (NBB-52 D3-B). */
+  issuer: { name: string | null; contacts: string[]; logoPng: Uint8Array | null };
   number: string;
   issuedAt: string;
   validUntil: string;
@@ -88,11 +88,7 @@ export function buildQuoteDocument(input: QuoteDocumentInput): QuoteDocumentMode
   );
 
   return {
-    issuer: {
-      name: issuerName(profile, input.accountEmail),
-      contacts: issuerContacts(profile),
-      logoPng: input.logoPng,
-    },
+    issuer: { ...issuerHeader(profile), logoPng: input.logoPng },
     number: formatQuoteNumber(quote.number),
     issuedAt: formatDateBR(issuedOn),
     validUntil: formatDateBR(quote.validUntil),

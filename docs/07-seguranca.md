@@ -64,7 +64,10 @@
   - O trigger de criação sempre gera um token novo, mesmo que o app mande outro, e a `app_user` não pode alterá-lo depois. Regenerar o link (RN-36) será uma função própria, na M6.
 - **Nada aponta para dados de outra conta:** as FKs de `quotes` e `quote_items` para clientes, orçamentos e catálogo são compostas com o `user_id`. Uma FK sozinha não respeita a RLS, porque o Postgres confere a referência sem filtrar por conta (NBB-46).
 - A página `/p/[token]` e o PDF público chamam as funções `get_public_quote` / `respond_to_quote` (`SECURITY DEFINER`, donas `orco_owner`, `execute` para `app_user`) **somente do servidor**. O banco não tem porta pública, então o navegador nunca fala com ele.
-- As funções retornam **apenas** os campos necessários à exibição, nunca IDs internos, `user_id` ou e-mail da conta.
+- As funções retornam **apenas** os campos necessários à exibição, nunca IDs internos, `user_id` ou e-mail da conta. Sem nome no perfil, o cabeçalho usa o **e-mail de contato**, e sem ele, nenhum nome (RN-04, NBB-52 D3-B).
+- A leitura (`get_public_quote`) **só lê**; a visualização é uma função separada (`register_quote_view`), chamada pela página só quando não é robô nem o dono logado. O PDF público nunca conta visualização (NBB-52 D2-A).
+- O **IP** dos eventos não aparece em nenhuma tela, e a `app_user` não lê essa coluna; só o administrador, pelo DBeaver (NBB-52 D8-A). Depois de 12 meses, ele é apagado (RN-37).
+- O PDF público (`/api/p/[token]/pdf`) responde com `Referrer-Policy: no-referrer` e `X-Robots-Tag: noindex`, e tem limite de 10 por minuto por IP (RN-39).
 - IP e user agent vêm dos headers repassados pelo **Nginx** (`X-Forwarded-For`, `X-Real-IP`), lidos no servidor. O app só confia nesses headers porque só o Nginx o alcança (porta ligada a `127.0.0.1`).
 - Respostas idênticas para token inválido, rascunho e excluído (RN-31), para não revelar se um token existe.
 - `Referrer-Policy: no-referrer` e `X-Robots-Tag: noindex` na página pública, para o token não vazar nem ser indexado.
