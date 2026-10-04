@@ -16,7 +16,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { Plus } from "lucide-react";
+import { Eye, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -148,6 +148,23 @@ export function QuoteEditor({
       await save(latest.current, latestOptions.current);
     } else if (inFlight.current) {
       await inFlight.current;
+    }
+  }
+
+  /**
+   * "Visualizar" (RN-22a, NBB-51 P4-A): a prévia do PDF numa aba nova, com o que acabou de ser
+   * digitado. A aba abre já no clique (senão o navegador a bloqueia como pop-up) e recebe o endereço
+   * depois do salvamento.
+   */
+  async function preview() {
+    const tab = window.open("", "_blank");
+    await flush();
+    const url = `/api/orcamentos/${quoteId}/pdf`;
+    if (tab) {
+      tab.opener = null;
+      tab.location.replace(url);
+    } else {
+      window.open(url, "_blank", "noopener");
     }
   }
 
@@ -355,10 +372,14 @@ export function QuoteEditor({
       />
 
       {/* Rodapé fixo com o total (F-05). No celular, fica acima da barra de navegação. Com desconto
-          geral, uma linha menor mostra o subtotal e o desconto (G4-A). */}
+          geral, uma linha menor mostra o subtotal e o desconto (G4-A). "Visualizar" abre a prévia do
+          PDF (NBB-51 P3-A). */}
       <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-border bg-background md:bottom-0">
         <div className="mx-auto flex min-h-14 w-full max-w-5xl items-center justify-between gap-4 px-4 py-2">
-          <span className="text-sm text-muted-foreground">Total</span>
+          <Button type="button" variant="outline" onClick={() => void preview()}>
+            <Eye aria-hidden="true" />
+            Visualizar
+          </Button>
           <div className="flex flex-col items-end">
             {totals.discountCents > 0 ? (
               <span className="text-xs text-muted-foreground tabular-nums">
@@ -366,9 +387,15 @@ export function QuoteEditor({
                 {formatBRL(totals.discountCents)}
               </span>
             ) : null}
-            <output aria-label="Total do orçamento" className="text-lg font-semibold tabular-nums">
-              {formatBRL(totals.totalCents)}
-            </output>
+            <span className="flex items-baseline gap-2">
+              <span className="text-sm text-muted-foreground">Total</span>
+              <output
+                aria-label="Total do orçamento"
+                className="text-lg font-semibold tabular-nums"
+              >
+                {formatBRL(totals.totalCents)}
+              </output>
+            </span>
           </div>
         </div>
       </div>

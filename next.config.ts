@@ -7,6 +7,18 @@ const nextConfig: NextConfig = {
   // Build enxuto para a imagem Docker (Dockerfile, ADR-0012): `.next/standalone` leva só os arquivos
   // e pacotes que o app realmente usa, mais um `server.js` que substitui o `next start`.
   output: "standalone",
+  // A Inter do PDF é lida do disco (src/pdf/fonts.ts). Ao montar o `.next/standalone`, o Next leva a
+  // pasta inteira de fontes (4,6 MB, com cirílico, grego, itálicos…); a imagem Docker só precisa dos
+  // três pesos usados (NBB-51).
+  // A chave é um padrão (picomatch): os colchetes de `[id]` precisam de escape.
+  outputFileTracingExcludes: {
+    "/api/orcamentos/\\[id\\]/pdf": ["./node_modules/@fontsource/inter/files/**"],
+  },
+  outputFileTracingIncludes: {
+    "/api/orcamentos/\\[id\\]/pdf": [
+      "./node_modules/@fontsource/inter/files/inter-latin-{400,600,700}-normal.woff",
+    ],
+  },
   reactCompiler: true,
   // Não anuncia "X-Powered-By: Next.js" (só ajudaria um atacante a mirar).
   poweredByHeader: false,
