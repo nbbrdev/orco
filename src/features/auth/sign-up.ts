@@ -26,9 +26,25 @@ export type SignUpResult =
   | { status: "invalid"; message: string }
   | { status: "send-failed" };
 
+/**
+ * O teto diário de e-mails de cadastro. Sem `SIGN_UP_EMAILS_PER_DAY`, é o da RN-46. Só o
+ * desenvolvimento local e o CI mudam o valor, porque a suíte E2E cria uma conta por teste (NBB-54). Na
+ * VPS a variável não chega ao container (deploy/compose.yaml), então vale sempre o da RN-46.
+ */
+export function signUpEmailsPerDay(value = process.env.SIGN_UP_EMAILS_PER_DAY): number {
+  if (value === undefined || value === "") {
+    return SIGN_UP_LIMIT.emailsPerDay;
+  }
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < 1) {
+    throw new Error(`SIGN_UP_EMAILS_PER_DAY inválido: "${value}". Use um número inteiro positivo.`);
+  }
+  return parsed;
+}
+
 /** Teto diário de e-mails de cadastro (confirmação + reenvio), somando todas as contas. */
 async function withinDailyCap(): Promise<boolean> {
-  return checkRateLimit("signup-email:day", SIGN_UP_LIMIT.emailsPerDay, DAY);
+  return checkRateLimit("signup-email:day", signUpEmailsPerDay(), DAY);
 }
 
 export async function registerUser(input: unknown, ip: string): Promise<SignUpResult> {

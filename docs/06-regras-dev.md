@@ -176,6 +176,7 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
 | `CRON_SECRET` | **Não** |
 | `STAGING_BASIC_AUTH_USER`, `STAGING_BASIC_AUTH_PASSWORD` (só no staging) | **Não** |
 | `NEXT_PUBLIC_APP_VERSION` (injetada no build: `vX.Y.Z`, `staging-<commit>`; ausente = `dev`) | Sim |
+| `SIGN_UP_EMAILS_PER_DAY` (teto diário de e-mails de cadastro; ausente = 60, da RN-46). **Só no `.env` local e no CI**, com 1000, porque a suíte E2E cria uma conta por teste (NBB-54). Não entra no `deploy/compose.yaml`: na VPS vale sempre o padrão | não é segredo |
 
 **Do GitHub** (Environments `staging` = só `main`, `production` = só tags `v*`):
 

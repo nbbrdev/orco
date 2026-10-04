@@ -57,6 +57,7 @@ async function Editor({ userId, quote }: { userId: string; quote: EditorQuote })
       quoteId={quote.id}
       quoteNumber={quote.number}
       quoteStatus={quote.status}
+      publicToken={quote.publicToken}
       defaultValidityDays={quote.defaultValidityDays}
       initialItems={items}
       initialOptions={toOptionsDraft(quote.options)}
@@ -88,7 +89,12 @@ async function RespondedQuote({
 
   return (
     <div className="flex flex-col gap-6">
-      <RespondedQuoteActions quoteId={quote.id} quoteNumber={quote.number} status={status} />
+      <RespondedQuoteActions
+        quoteId={quote.id}
+        quoteNumber={quote.number}
+        status={status}
+        publicToken={quote.publicToken}
+      />
       <ResponseBanner status={status} response={response} />
       <InternalNotes quoteId={quote.id} initialNotes={quote.options.internalNotes ?? ""} />
       <section aria-labelledby="client-view-heading" className="flex flex-col gap-3">

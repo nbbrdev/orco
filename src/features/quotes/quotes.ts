@@ -128,6 +128,8 @@ export type EditorQuote = {
   status: "draft" | "sent" | "approved" | "rejected";
   /** Quando foi enviado (RN-22); nulo no rascunho. É a data de emissão do PDF (NBB-50 N4-A). */
   sentAt: Date | null;
+  /** O token do link público, para o Copiar link e o WhatsApp (NBB-54 C3-A). Só o dono vê. */
+  publicToken: string;
   client: QuoteClient | null;
   items: ParsedItem[];
   /** Respondido e ainda não visto: ao abrir, o selo "novo" da lista some (RN-42, NBB-48 L4-A). */
@@ -150,6 +152,7 @@ export async function getQuoteForEditor(userId: string, id: string): Promise<Edi
         number: quotes.number,
         status: quotes.status,
         sentAt: quotes.sentAt,
+        publicToken: quotes.publicToken,
         clientId: quotes.clientId,
         clientName: quotes.clientName,
         clientEmail: quotes.clientEmail,
@@ -197,6 +200,7 @@ export async function getQuoteForEditor(userId: string, id: string): Promise<Edi
       number: quote.number,
       status: quote.status,
       sentAt: quote.sentAt,
+      publicToken: quote.publicToken,
       defaultValidityDays: profile.validityDays,
       client:
         quote.clientName === null
@@ -459,10 +463,6 @@ export type SetClientResult =
   | { status: "locked"; message: string }
   | { status: "not_found" };
 
-/**
- * Escolhe o cliente do orçamento (C2-A) ou tira (`clientId` nulo). Guarda uma cópia dos dados dele
- * (RN-20): mudar o cliente depois não muda este orçamento.
- */
 export type SendQuoteResult = "sent" | "unchanged" | "incomplete" | "not_found";
 
 /**
@@ -511,6 +511,10 @@ export async function regeneratePublicToken(userId: string, id: string): Promise
   return rows[0]?.token ?? null;
 }
 
+/**
+ * Escolhe o cliente do orçamento (C2-A) ou tira (`clientId` nulo). Guarda uma cópia dos dados dele
+ * (RN-20): mudar o cliente depois não muda este orçamento.
+ */
 export async function setQuoteClient(
   userId: string,
   id: string,

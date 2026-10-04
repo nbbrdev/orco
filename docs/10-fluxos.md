@@ -173,6 +173,13 @@ Total R$ 2.800,00  [Visualizar] [Compartilhar]
   - **Baixar PDF:** baixa `Orcamento-0001-Maria-Silva.pdf` e, se for um rascunho, o marca como enviado (o selo ao lado do número muda para "Enviado"). Se faltar algo da RN-13, os campos ficam destacados ("Informe o valor do item 2 para enviar.") e nada é baixado;
   - no celular, os dois botões aparecem só com o ícone, para caber o total;
   - na M6, o **Baixar PDF** vai para dentro do **Compartilhar**.
+- **Como ficou na M6** (NBB-54, 2026-10-04):
+  - o rodapé do editor tem **Visualizar** e **Compartilhar**; o Compartilhar abre um menu com **Copiar link**, **WhatsApp** e **Baixar PDF**;
+  - **Copiar link** copia na hora e mostra "Link copiado ✓" no próprio menu; logo depois, salva o que estiver pendente e envia o rascunho. Se o navegador não deixar copiar, aparece "Não foi possível copiar o link. Copie à mão: <link>";
+  - **WhatsApp** abre o `wa.me` na hora, com o telefone do cliente escolhido no orçamento (se houver), e envia o rascunho em seguida;
+  - nos três, se faltar algo da RN-13, os campos ficam destacados e nada é compartilhado;
+  - o endereço do link usa o próprio endereço da página, então é o mesmo no staging e na produção;
+  - o convite de notificações push (F-18) fica para a NBB-61.
 
 ## F-07 — Cliente aprova · ✅
 
@@ -278,6 +285,7 @@ Igual ao F-07, mas com **Recusar** → "Quer dizer o motivo?" (opcional), com ch
 - **Excluir**: menu → confirmação "Excluir o orçamento Nº 0001? O link deixará de funcionar." (RN-29).
 - **Como ficou** (NBB-49, 2026-10-03): **Excluir** fica no mesmo menu **⋯** do editor; depois de confirmar, a pessoa volta para a lista, sem mensagem. O número excluído não é reaproveitado.
 - **Gerar novo link**: menu → confirmação "O link atual deixará de funcionar." → novo token (RN-36).
+- **Como ficou o novo link** (NBB-54, 2026-10-04): **Gerar novo link** fica no menu **⋯** do enviado (no rascunho, o link ainda não funciona para ninguém) e no do aprovado/recusado, que também ganha **Copiar link**. Depois de confirmar ("Gerar novo link?"), aparece "Novo link gerado. O anterior não funciona mais."; o link novo sai pelo Copiar link.
 
 ## F-14 — Completar perfil · ✅
 

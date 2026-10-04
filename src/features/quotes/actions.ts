@@ -11,12 +11,15 @@ import {
   createQuote,
   listClientQuotes,
   MONTHLY_LIMIT_MESSAGE,
+  regeneratePublicToken,
   saveInternalNotes,
   type SaveInternalNotesResult,
   saveItemToCatalog,
   saveQuoteItems,
   type SaveItemsResult,
   type SaveToCatalogResult,
+  sendQuote,
+  type SendQuoteResult,
   setQuoteClient,
   type SetClientResult,
   updateCatalogItemDrafts,
@@ -168,6 +171,31 @@ export async function saveQuoteItemsAction(id: string, input: unknown): Promise<
   } catch (error) {
     console.error("Falha ao salvar o orçamento.", error);
     return { status: "error" };
+  }
+}
+
+/**
+ * Envia o rascunho ao compartilhar pelo Copiar link ou pelo WhatsApp (RN-22, NBB-54 C3-A). O banco
+ * confere a RN-13; enviado, aprovado ou recusado não mudam.
+ */
+export async function sendQuoteAction(id: string): Promise<SendQuoteResult | "error"> {
+  const user = await requireSessionUser();
+  try {
+    return await sendQuote(user.id, id);
+  } catch (error) {
+    console.error("Falha ao enviar o orçamento.", error);
+    return "error";
+  }
+}
+
+/** "Gerar novo link" (F-13, RN-36, NBB-54 C5-A): devolve o token novo, ou nulo se não deu. */
+export async function regenerateLinkAction(id: string): Promise<string | null> {
+  const user = await requireSessionUser();
+  try {
+    return await regeneratePublicToken(user.id, id);
+  } catch (error) {
+    console.error("Falha ao gerar um novo link.", error);
+    return null;
   }
 }
 

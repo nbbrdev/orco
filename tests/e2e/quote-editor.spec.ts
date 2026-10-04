@@ -302,8 +302,10 @@ test("baixar o PDF envia o orçamento (NBB-51, RN-22, RN-13)", async ({ page }) 
   const header = page.locator("h1").locator("..");
   await expect(header.getByText("Rascunho")).toBeVisible();
 
-  // Faltando descrição e valor (RN-13): destaca os campos e não baixa.
-  await page.getByRole("button", { name: "Baixar PDF" }).click();
+  // Faltando descrição e valor (RN-13): destaca os campos e não baixa. O Baixar PDF fica dentro do
+  // Compartilhar (NBB-54).
+  await page.getByRole("button", { name: "Compartilhar" }).click();
+  await page.getByRole("menuitem", { name: "Baixar PDF" }).click();
   await expect(
     page.getByText("Para baixar o PDF, preencha a descrição e o valor de todos os itens."),
   ).toBeVisible();
@@ -315,7 +317,8 @@ test("baixar o PDF envia o orçamento (NBB-51, RN-22, RN-13)", async ({ page }) 
   await expect(page.getByText("Informe a descrição do item 1 para enviar.")).toBeHidden();
   await page.getByLabel("Valor do item 1 (R$)").fill("800");
   const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Baixar PDF" }).click();
+  await page.getByRole("button", { name: "Compartilhar" }).click();
+  await page.getByRole("menuitem", { name: "Baixar PDF" }).click();
   expect((await download).suggestedFilename()).toBe("Orcamento-0001.pdf");
 
   // Enviado (RN-22), aqui e na lista.
