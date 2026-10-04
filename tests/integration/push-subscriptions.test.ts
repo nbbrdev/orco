@@ -4,12 +4,16 @@ import { eq, inArray } from "drizzle-orm";
 import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { deletePushSubscription, savePushSubscription } from "@/features/push/push";
-import { respondToQuote } from "@/features/public-quote/public-quote";
+import {
+  deletePushSubscription,
+  markPushPrompted,
+  savePushSubscription,
+} from "@/features/push/push";
+import { registerQuoteView, respondToQuote } from "@/features/public-quote/public-quote";
 import { createQuote, saveQuoteItems, sendQuote } from "@/features/quotes/quotes";
 import { closeDb, getAuthDb, withUserDb } from "@/lib/db";
 import { pushSubscriptions, user } from "@/lib/db/schema";
-import type { FreelancerTarget } from "@/lib/notify";
+import type { FreelancerEvent, FreelancerTarget } from "@/lib/notify";
 
 // Assinaturas de push (RN-45, NBB-61) contra o Postgres real: RLS (ENABLE + FORCE), gravar pela
 // função (inclusive quando o navegador troca de conta), apagar e o aviso da resposta trazendo as
@@ -40,6 +44,28 @@ function subscription() {
     endpoint: `https://push.example.com/send/${randomUUID()}`,
     keys: { p256dh: `p256dh-${randomUUID()}`, auth: `auth-${randomUUID()}` },
   };
+}
+
+/** Um orçamento enviado da conta, e o token do link dele. */
+async function sentQuoteToken(userId: string): Promise<string> {
+  const created = await createQuote(userId);
+  if (created.status !== "created") throw new Error("Orçamento não criado.");
+  await saveQuoteItems(userId, created.id, {
+    items: [
+      {
+        id: randomUUID(),
+        description: "Logo",
+        quantity: "1",
+        unit: "",
+        unitPrice: "800",
+        catalogItemId: null,
+      },
+    ],
+  });
+  await sendQuote(userId, created.id);
+  const [row] = await owner<{ public_token: string }[]>`
+    select public_token from public.quotes where id = ${created.id}`;
+  return row?.public_token ?? "";
 }
 
 async function endpointsOf(userId: string): Promise<string[]> {
@@ -128,27 +154,11 @@ describe("aviso da resposta com as assinaturas (P3-A)", () => {
     // Uma assinatura de outra conta não pode aparecer.
     await savePushSubscription(other, subscription(), null);
 
-    const created = await createQuote(owned);
-    if (created.status !== "created") throw new Error("Orçamento não criado.");
-    await saveQuoteItems(owned, created.id, {
-      items: [
-        {
-          id: randomUUID(),
-          description: "Logo",
-          quantity: "1",
-          unit: "",
-          unitPrice: "800",
-          catalogItemId: null,
-        },
-      ],
-    });
-    await sendQuote(owned, created.id);
-    const [row] = await owner<{ public_token: string }[]>`
-      select public_token from public.quotes where id = ${created.id}`;
+    const token = await sentQuoteToken(owned);
 
     let target: FreelancerTarget | null = null;
     const result = await respondToQuote(
-      row?.public_token ?? "",
+      token,
       { decision: "approved", version: 1 },
       "200.152.1.1",
       null,
@@ -171,5 +181,60 @@ describe("aviso da resposta com as assinaturas (P3-A)", () => {
     const rows =
       await owner`select 1 from public.push_subscriptions where endpoint = ${device.endpoint}`;
     expect(rows).toHaveLength(0);
+  });
+});
+
+describe("primeira visualização (PR 2, N4)", () => {
+  it("só a primeira entrega o aviso, com as assinaturas e sem o e-mail da conta", async () => {
+    const owned = await createAccount();
+    const device = subscription();
+    await savePushSubscription(owned, device, null);
+    const token = await sentQuoteToken(owned);
+
+    const notices: { target: FreelancerTarget; event: FreelancerEvent }[] = [];
+    const collect = (target: FreelancerTarget, event: FreelancerEvent) => {
+      notices.push({ target, event });
+    };
+    expect(await registerQuoteView(token, "200.152.1.2", "Mozilla/5.0", collect)).toBe(true);
+    expect(await registerQuoteView(token, "200.152.1.3", "Mozilla/5.0", collect)).toBe(false);
+
+    expect(notices).toEqual([
+      {
+        target: {
+          accountEmail: null,
+          emailNotifications: false,
+          pushSubscriptions: [
+            { endpoint: device.endpoint, p256dh: device.keys.p256dh, auth: device.keys.auth },
+          ],
+        },
+        event: {
+          type: "quote_viewed",
+          quoteId: expect.any(String),
+          number: expect.any(Number),
+          clientName: null,
+        },
+      },
+    ]);
+  });
+});
+
+describe("markPushPrompted (F-18, N2)", () => {
+  async function promptedAt(userId: string): Promise<Date | null> {
+    const [row] = await owner<{ push_prompted_at: Date | null }[]>`
+      select push_prompted_at from public.profiles where id = ${userId}`;
+    return row?.push_prompted_at ?? null;
+  }
+
+  it("marca só a conta da sessão e guarda a primeira vez", async () => {
+    const invited = await createAccount();
+    const untouched = await createAccount();
+
+    await markPushPrompted(invited);
+    const first = await promptedAt(invited);
+    expect(first).toBeInstanceOf(Date);
+    expect(await promptedAt(untouched)).toBeNull();
+
+    await markPushPrompted(invited);
+    expect(await promptedAt(invited)).toEqual(first);
   });
 });

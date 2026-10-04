@@ -112,25 +112,62 @@ export async function getPublicQuote(token: string): Promise<PublicQuote | null>
 
 const ipSchema = z.union([z.ipv4(), z.ipv6()]);
 
+const pushSubscriptionsSchema = z.array(
+  z.object({ endpoint: z.string(), p256dh: z.string(), auth: z.string() }),
+);
+
+// O JSON de app.register_quote_view (migration 0013, NBB-61 N4). O aviso só vem na primeira.
+const viewRowSchema = z.object({
+  first: z.boolean(),
+  notice: z
+    .object({
+      quoteId: z.uuid(),
+      number: z.number().int().positive(),
+      clientName: z.string().nullable(),
+      pushSubscriptions: pushSubscriptionsSchema,
+    })
+    .optional(),
+});
+
 /**
  * Conta uma visualização do link (RN-35, D2-A). A página chama só quando quem abre não é robô de
  * pré-visualização nem o dono logado. Devolve `true` na primeira visualização. O IP só é gravado se
  * for um IP de verdade (sem o Nginx, ex.: `npm run dev`, chega "unknown").
+ *
+ * Na primeira, entrega o aviso de push ao freelancer (RN-45, NBB-61 N4) a `onNotice`. Visualização
+ * não gera e-mail (RN-40), por isso o aviso não traz o e-mail da conta.
  */
 export async function registerQuoteView(
   token: string,
   ip: string,
   userAgent: string | null,
+  onNotice?: (target: FreelancerTarget, event: FreelancerEvent) => void | Promise<void>,
 ): Promise<boolean> {
   if (!tokenSchema.safeParse(token).success) {
     return false;
   }
   const validIp = ipSchema.safeParse(ip).success ? ip : null;
   const agent = userAgent ? userAgent.slice(0, QUOTE_EVENT_LIMITS.userAgent) : null;
-  const rows = await getAppDb().execute<{ first: boolean }>(
-    sql`select app.register_quote_view(${token}, ${validIp}::inet, ${agent}) as first`,
+  const rows = await getAppDb().execute<{ view: unknown }>(
+    sql`select app.register_quote_view(${token}, ${validIp}::inet, ${agent}) as view`,
   );
-  return rows[0]?.first === true;
+  const { first, notice } = viewRowSchema.parse(rows[0]?.view);
+  if (first && notice && onNotice) {
+    await onNotice(
+      {
+        accountEmail: null,
+        emailNotifications: false,
+        pushSubscriptions: notice.pushSubscriptions,
+      },
+      {
+        type: "quote_viewed",
+        quoteId: notice.quoteId,
+        number: notice.number,
+        clientName: notice.clientName,
+      },
+    );
+  }
+  return first;
 }
 
 /** Respostas por minuto por IP e token (RN-39). */
@@ -168,9 +205,7 @@ const respondRowSchema = z.object({
       accountEmail: z.string(),
       emailNotifications: z.boolean(),
       // As assinaturas de push da conta (migration 0012, NBB-61 P3-A).
-      pushSubscriptions: z.array(
-        z.object({ endpoint: z.string(), p256dh: z.string(), auth: z.string() }),
-      ),
+      pushSubscriptions: pushSubscriptionsSchema,
     })
     .optional(),
 });

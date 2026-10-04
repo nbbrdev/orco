@@ -5,7 +5,13 @@ import { useEffect, useState } from "react";
 import { Field, FieldContent, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Switch } from "@/components/ui/switch";
 import { detectAppEnvironment } from "@/features/app-shell/environment";
-import { subscribePushAction, unsubscribePushAction } from "@/features/push/actions";
+import {
+  currentSubscription,
+  pushSupported,
+  SUBSCRIBE_FAILED_MESSAGE,
+  subscribeThisDevice,
+  unsubscribeThisDevice,
+} from "@/features/push/device";
 
 // "Notificações neste aparelho" (RN-45, F-18, NBB-61 P5). Cada navegador é uma assinatura: ligar pede
 // a permissão do sistema e grava a assinatura na conta; desligar cancela aqui e apaga no servidor.
@@ -28,26 +34,6 @@ const MESSAGES: Partial<Record<State, string>> = {
   denied: "As notificações estão bloqueadas neste navegador. Libere nas configurações do site.",
 };
 
-function pushSupported(): boolean {
-  return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
-}
-
-/** A chave pública VAPID vem em base64url; o navegador quer os bytes. */
-function keyBytes(base64url: string): Uint8Array<ArrayBuffer> {
-  const base64 = (base64url + "=".repeat((4 - (base64url.length % 4)) % 4))
-    .replaceAll("-", "+")
-    .replaceAll("_", "/");
-  const binary = atob(base64);
-  const bytes = new Uint8Array(new ArrayBuffer(binary.length));
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
-}
-
-async function currentSubscription(): Promise<PushSubscription | null> {
-  const registration = await navigator.serviceWorker.ready;
-  return registration.pushManager.getSubscription();
-}
-
 export function PushSwitch({ vapidPublicKey }: { vapidPublicKey: string | null }) {
   const [state, setState] = useState<State>("loading");
   const [pending, setPending] = useState(false);
@@ -66,31 +52,16 @@ export function PushSwitch({ vapidPublicKey }: { vapidPublicKey: string | null }
   async function turnOn() {
     if (!vapidPublicKey) return;
     // Pedido logo no toque: o navegador só mostra a pergunta a partir de um gesto da pessoa.
-    const permission = await Notification.requestPermission();
-    if (permission !== "granted") {
-      setState(permission === "denied" ? "denied" : "off");
+    const result = await subscribeThisDevice(vapidPublicKey);
+    if (result === "failed") {
+      setError(SUBSCRIBE_FAILED_MESSAGE);
       return;
     }
-    const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: keyBytes(vapidPublicKey),
-    });
-    if (await subscribePushAction(subscription.toJSON())) {
-      setState("on");
-    } else {
-      await subscription.unsubscribe();
-      setError("Não foi possível ativar as notificações. Tente de novo.");
-    }
+    setState(result === "dismissed" ? "off" : result);
   }
 
   async function turnOff() {
-    const subscription = await currentSubscription();
-    if (subscription) {
-      const { endpoint } = subscription;
-      await subscription.unsubscribe();
-      await unsubscribePushAction(endpoint);
-    }
+    await unsubscribeThisDevice();
     setState("off");
   }
 
