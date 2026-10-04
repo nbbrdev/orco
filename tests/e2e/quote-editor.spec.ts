@@ -266,7 +266,7 @@ test("descontos e mais opções (NBB-88)", async ({ page }) => {
   await waitSaved(page);
 });
 
-test("visualizar o PDF sem mudar o status (NBB-51, RN-22a)", async ({ page, context }) => {
+test("visualizar o PDF sem mudar o status (NBB-51, RN-22a)", async ({ page, context, request }) => {
   await useOwnIp(page);
   await signUpAndConfirm(page, "senha-editor-987");
   await page.getByRole("button", { name: "Criar primeiro orçamento" }).click();
@@ -286,6 +286,8 @@ test("visualizar o PDF sem mudar o status (NBB-51, RN-22a)", async ({ page, cont
   expect(response.headers()["content-type"]).toBe("application/pdf");
   expect(response.headers()["content-disposition"]).toBe('inline; filename="Orcamento-0001.pdf"');
   expect((await response.body()).subarray(0, 5).toString()).toBe("%PDF-");
+  // Sem a sessão (outro "navegador", sem cookies): 401.
+  expect((await request.get(`/api/orcamentos/${quoteId}/pdf`)).status()).toBe(401);
 
   // Continua rascunho (RN-22a).
   await page.goto("/app/orcamentos");

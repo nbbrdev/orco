@@ -4,7 +4,6 @@ import { inArray } from "drizzle-orm";
 import sharp from "sharp";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { GET } from "@/app/api/orcamentos/[id]/pdf/route";
 import { saveClient } from "@/features/clients/clients";
 import { uploadLogo } from "@/features/profile/logo";
 import { updateProfileField } from "@/features/profile/profile";
@@ -100,7 +99,8 @@ describe("loadQuotePdf", () => {
   });
 });
 
-describe("GET /api/orcamentos/[id]/pdf", () => {
+// A rota em si (sessão, 401) precisa de uma requisição de verdade do Next: fica com o E2E.
+describe("renderOwnerPdf", () => {
   it("devolve a prévia sem mudar o status (RN-22a)", async () => {
     const account = await createAccount();
     const quoteId = await newQuote(account.id);
@@ -109,13 +109,6 @@ describe("GET /api/orcamentos/[id]/pdf", () => {
     expect(new TextDecoder().decode(result.bytes.slice(0, 5))).toBe("%PDF-");
     expect(result.fileName).toBe("Orcamento-0001.pdf");
     expect((await getQuoteForEditor(account.id, quoteId))?.status).toBe("draft");
-  });
-
-  it("sem sessão, a rota responde 401", async () => {
-    const response = await GET(new Request("http://localhost:3000/api/orcamentos/x/pdf"), {
-      params: Promise.resolve({ id: "x" }),
-    });
-    expect(response.status).toBe(401);
   });
 
   it(`passa de ${PDF_LIMIT_PER_MINUTE} por minuto: limite (RN-39)`, async () => {
