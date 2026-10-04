@@ -18,6 +18,8 @@ next-env.d.ts
 
 # Testes
 coverage/
+# PDFs de exemplo do `npm run pdf:sample` (NBB-50)
+pdf-samples/
 playwright-report/
 test-results/
 blob-report/

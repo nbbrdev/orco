@@ -35,7 +35,7 @@ export default defineConfig({
       // Todos os arquivos entram no relatório, mesmo sem teste nenhum (aparecem com 0%). Além de
       // src/lib, a lógica de servidor de src/features (NBB-73, C1); os componentes .tsx ficam de fora,
       // porque quem os testa é o E2E, que não entra nesta conta.
-      include: ["src/lib/**/*.ts", "src/features/**/*.ts"],
+      include: ["src/lib/**/*.ts", "src/features/**/*.ts", "src/pdf/**/*.ts"],
       // Fora da conta (NBB-73, D1-A): arquivos que só rodam dentro de uma requisição do Next ou no
       // navegador. Quem os testa é o E2E. Por isso as Server Actions são uma casca fina, e a regra de
       // negócio fica num arquivo que o Vitest consegue testar (ex.: sign-up.ts, profile.ts).

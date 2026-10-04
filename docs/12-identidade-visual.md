@@ -20,7 +20,7 @@
   - favicon em SVG (`src/app/icon.svg`); sem ICO, porque os navegadores atuais usam o SVG e o Safari usa o `apple-touch-icon` (decisão W2);
   - ícones do PWA 192 e 512 (com os cantos arredondados) e *maskable* 512 (quadrado, com o desenho na zona segura), mais o `apple-touch-icon` 180 px (quadrado, porque o iPhone arredonda sozinho);
   - todos em `public/icons/`, gerados por `npm run icons` (`scripts/generate-icons.mts`, com o Playwright). Se o ícone mudar, basta rodar de novo;
-  - a versão para o PDF fica para a issue do PDF.
+  - o PDF não leva o ícone, só o texto "Gerado com Orçô" no rodapé (NBB-50 N5-A).
 - Não distorcer, não trocar as cores do ícone, não aplicar sombra nem contorno.
 
 ## Cores
@@ -79,3 +79,9 @@ Os neutros puxam levemente para o teal, em vez de cinza puro.
 - Total em destaque na cor `primary`.
 - Caixa neutra com **condições de pagamento** e **prazo de execução** (RN-44).
 - Rodapé discreto: dados de pagamento + "Gerado com Orçô".
+- **Como ficou** (NBB-50, 2026-10-03):
+  - A4, sempre claro, em Inter, com os tokens do tema claro;
+  - "Emitido em" é a data do envio; num rascunho, a de hoje;
+  - a coluna de desconto só aparece se algum item tiver desconto, e o subtotal e o desconto, só com desconto geral (RN-15b);
+  - os dados de pagamento ficam no fim do documento, e o rodapé fixo, em todas as páginas, tem só o texto "Gerado com Orçô", sem o ícone;
+  - com muitos itens, o cabeçalho da tabela se repete em cada página, e um item nunca é cortado ao meio.
