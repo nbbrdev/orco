@@ -24,7 +24,7 @@ describe("notifyFreelancer com o e-mail fora do ar", () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
     await expect(
       notifyFreelancer(
-        { accountEmail: "maria@example.com", emailNotifications: true },
+        { accountEmail: "maria@example.com", emailNotifications: true, pushSubscriptions: [] },
         {
           type: "quote_response",
           quoteId: "7d3f6a4e-1f2b-4c5d-8e9f-0a1b2c3d4e5f",

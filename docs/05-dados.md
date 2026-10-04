@@ -160,13 +160,17 @@ Migration `0005_catalog_items` (NBB-45, 2026-10-03).
 | Coluna | Tipo | Notas |
 |---|---|---|
 | id, user_id, created_at | | um usuário pode ter vários aparelhos |
-| endpoint | text not null unique | URL do serviço de push do navegador |
-| p256dh | text not null | chave pública da assinatura |
-| auth | text not null | segredo de autenticação da assinatura |
+| endpoint | text not null unique | URL do serviço de push do navegador; começa com `https://`, ≤ 1000 |
+| p256dh | text not null | chave pública da assinatura, ≤ 200 |
+| auth | text not null | segredo de autenticação da assinatura, ≤ 200 |
 | user_agent | text null | ≤ 500, para o usuário identificar o aparelho |
-| last_used_at | timestamptz null | |
 
 **RLS:** select/insert/delete onde `user_id = app.current_user_id()`. Assinaturas que retornam `404`/`410` no envio são apagadas pelo servidor (expiradas). O envio é feito pelo servidor, com `withUserDb` do dono do orçamento (RN-45).
+
+**Como ficou** (migration `0012_push_subscriptions`, NBB-61, 2026-10-04):
+- sem `last_used_at` (P4-A: nada usava) e sem limite de aparelhos;
+- a app_user lê e apaga as da própria conta; gravar é pela função `app.save_push_subscription(endpoint, p256dh, auth, user_agent)`, que grava na conta da transação e, se o navegador já estava em outra conta, passa a assinatura para a atual;
+- o envio **não** usa `withUserDb` do dono (o app só usa a conta da sessão): as assinaturas chegam no aviso da `respond_to_quote` (P3-A), e as vencidas são apagadas por `app.delete_push_subscription(endpoint)`, só pelo endereço exato.
 
 ### `rate_limits`
 | Coluna | Tipo | Notas |
@@ -202,9 +206,11 @@ PK `(key, window_start)`. Criada na NBB-39 (migration `0002_rate_limits`, escrit
 | `app.generate_public_token()` | `app_user` (default de `quotes.public_token`; `SECURITY DEFINER`) | 32 bytes de `gen_random_bytes` (extensão `pgcrypto`, no schema `extensions`, sem acesso do app) em base64url (RN-30, NBB-46) |
 | `app.get_public_quote(token)` | `app_user` (só o servidor chama; `SECURITY DEFINER`) | um único JSON com o orçamento, os itens e o perfil público, só se enviado, aprovado ou recusado (RN-31); rascunho, excluído e token inválido dão nulo. Nada de ids, dono, e-mail da conta, anotações internas, token ou contagem. **Só lê** (NBB-52 D2-A, D4-A) |
 | `app.register_quote_view(token, ip, user_agent)` | `app_user` (só o servidor chama; `SECURITY DEFINER`) | conta a visualização e, na primeira, grava o evento `viewed` (RN-35); devolve `true` só na primeira. Quem decide se conta (não é robô nem o dono logado) é a página. Não muda o `updated_at` nem a versão (NBB-52 D2-A) |
-| `app.respond_to_quote(token, decision, expected_version, respondent_name, reason_code, reason, ip, user_agent)` | `app_user` (só o servidor chama; `SECURITY DEFINER`) | resposta única (RN-32): só um enviado, dentro da validade (dia de São Paulo) e na versão que a página mostrou (NBB-52 R2-A); grava o status e o evento com IP, navegador, versão e o nome (aprovar) ou o motivo (recusar) (RN-33, RN-34), numa transação. Devolve um JSON (migration `0011_response_notice`, NBB-55 E1-A): `{ result }`, com `ok`, `not_found`, `already_responded`, `expired` ou `outdated`, e, só no `ok`, o `notice` do aviso ao freelancer (id, número e cliente do orçamento, e-mail da conta e `email_notifications`; RN-40, RN-41). O aviso nunca vai para o navegador |
+| `app.respond_to_quote(token, decision, expected_version, respondent_name, reason_code, reason, ip, user_agent)` | `app_user` (só o servidor chama; `SECURITY DEFINER`) | resposta única (RN-32): só um enviado, dentro da validade (dia de São Paulo) e na versão que a página mostrou (NBB-52 R2-A); grava o status e o evento com IP, navegador, versão e o nome (aprovar) ou o motivo (recusar) (RN-33, RN-34), numa transação. Devolve um JSON (migration `0011_response_notice`, NBB-55 E1-A): `{ result }`, com `ok`, `not_found`, `already_responded`, `expired` ou `outdated`, e, só no `ok`, o `notice` do aviso ao freelancer (id, número e cliente do orçamento, e-mail da conta e `email_notifications`; RN-40, RN-41) e, desde a `0012`, as assinaturas de push da conta (`pushSubscriptions`, RN-45, NBB-61 P3-A). O aviso nunca vai para o navegador |
 | `app.check_rate_limit(key, limit, window_seconds)` | `app_user` | janela fixa alinhada ao relógio de São Paulo (86400 = vira à meia-noite de Brasília); conta mais um uso e retorna permitido/negado (NBB-39) |
 | `app.regenerate_public_token(quote_id)` | `app_user` (só o dono, pela conta da transação; `SECURITY DEFINER`, porque a `app_user` não altera o token) | troca o token na hora, em qualquer status (RN-36, NBB-52 R1-A); devolve o token novo, ou nulo se o orçamento não é da conta |
+| `app.save_push_subscription(endpoint, p256dh, auth, user_agent)` | `app_user` (pela conta da transação; `SECURITY DEFINER`, porque a assinatura pode estar em outra conta) | grava a assinatura deste aparelho na conta logada; se o navegador trocou de conta, passa a assinatura para a atual (RN-45, NBB-61) |
+| `app.delete_push_subscription(endpoint)` | `app_user` (só o servidor, no envio; `SECURITY DEFINER`) | apaga a assinatura com aquele endereço exato quando o serviço de push responde 404/410 (NBB-61 P3-A) |
 | `app.anonymize_old_event_ips()` | `app_user`, pela tarefa agendada na VPS (o mesmo agendamento diário do lembrete, NBB-62) | apaga o IP dos eventos com mais de 12 meses (RN-37, NBB-52 D5-A/D6-A) |
 | `quotes_due_for_reminder()` | `app_user` (rota do cron) | orçamentos `sent`, sem resposta, com `valid_until = amanhã (SP)` e `reminder_sent_at` nulo; usada pelo lembrete diário (RN-43) |
 

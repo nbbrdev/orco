@@ -167,6 +167,10 @@ const respondRowSchema = z.object({
       clientName: z.string().nullable(),
       accountEmail: z.string(),
       emailNotifications: z.boolean(),
+      // As assinaturas de push da conta (migration 0012, NBB-61 P3-A).
+      pushSubscriptions: z.array(
+        z.object({ endpoint: z.string(), p256dh: z.string(), auth: z.string() }),
+      ),
     })
     .optional(),
 });
@@ -213,7 +217,11 @@ export async function respondToQuote(
   const { result, notice } = respondRowSchema.parse(rows[0]?.response);
   if (result === "ok" && notice && onNotice) {
     onNotice(
-      { accountEmail: notice.accountEmail, emailNotifications: notice.emailNotifications },
+      {
+        accountEmail: notice.accountEmail,
+        emailNotifications: notice.emailNotifications,
+        pushSubscriptions: notice.pushSubscriptions,
+      },
       {
         type: "quote_response",
         quoteId: notice.quoteId,

@@ -63,6 +63,11 @@ jobs:
       # A suíte E2E cria uma conta por teste e passaria do teto diário de 60 e-mails de cadastro
       # (RN-46). Só aqui e no .env local; a VPS usa sempre o padrão (NBB-54).
       SIGN_UP_EMAILS_PER_DAY: "1000"
+      # Chaves VAPID de mentira: ligam o botão de push do perfil para o E2E (NBB-61). Nenhum push sai
+      # daqui: as assinaturas de verdade só existem nos aparelhos, testadas à mão no staging.
+      VAPID_PUBLIC_KEY: ci-only-vapid-public-key
+      VAPID_PRIVATE_KEY: ci-only-vapid-private-key
+      VAPID_SUBJECT: http://localhost:3000
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

@@ -4,6 +4,7 @@ import { Download } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { Button } from "@/components/ui/button";
+import { type AppEnvironment, detectAppEnvironment } from "@/features/app-shell/environment";
 
 // "Instalar o Orçô" (F-14, F-18, NBB-60 W6):
 // - Android e computador: o botão só aparece quando o navegador oferece a instalação;
@@ -16,24 +17,15 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
-type Environment = "server" | "installed" | "ios" | "other";
+/** Onde o app está aberto. No servidor, "server" (não mostra nada). */
+type Environment = "server" | AppEnvironment;
 
 const noSubscription = () => () => {};
-
-/** Onde o app está aberto. Só existe no navegador; no servidor, "server" (não mostra nada). */
-function detectEnvironment(): Environment {
-  const standalone =
-    window.matchMedia("(display-mode: standalone)").matches ||
-    (navigator as Navigator & { standalone?: boolean }).standalone === true;
-  if (standalone) return "installed";
-  if (/iphone|ipad|ipod/i.test(navigator.userAgent)) return "ios";
-  return "other";
-}
 
 export function InstallApp() {
   const environment = useSyncExternalStore(
     noSubscription,
-    detectEnvironment,
+    detectAppEnvironment,
     (): Environment => "server",
   );
   const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);

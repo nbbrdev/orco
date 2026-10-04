@@ -85,6 +85,13 @@
       "when": 1791146080322,
       "tag": "0011_response_notice",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791150265654,
+      "tag": "0012_push_subscriptions",
+      "breakpoints": true
     }
   ]
 }

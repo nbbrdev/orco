@@ -155,6 +155,8 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 
 - **Cron:** `/api/cron/lembretes` só executa com `Authorization: Bearer $CRON_SECRET`, enviado pelo agendamento na VPS. Sem o header correto, a resposta é 401. A comparação é em tempo constante.
 - **Push:** a `VAPID_PRIVATE_KEY` fica só no servidor. As assinaturas (`push_subscriptions`) ficam protegidas por RLS e são tratadas como dado pessoal: apagadas com a conta e quando expiram.
+  - **Como ficou** (NBB-61, 2026-10-04): a app_user lê e apaga só as assinaturas da própria conta; gravar é pela função `app.save_push_subscription`, que passa a assinatura para a conta logada se o navegador trocou de conta. Na resposta do cliente, sem a sessão do freelancer, as assinaturas chegam pelo aviso da `respond_to_quote` (P3-A), e as vencidas (404/410) são apagadas pelo endereço exato (`app.delete_push_subscription`). O log de falha não leva o endereço da assinatura.
+  - O service worker só abre endereços do próprio app (`/caminho`), nunca de outro domínio.
 - **Conteúdo do push:** apenas número do orçamento, primeiro nome do cliente e o evento. Nada de valores, CPF/CNPJ ou dados de contato na notificação, porque ela aparece na tela bloqueada.
 - **Service worker:** servido do próprio domínio (`/sw.js`, escopo `/`), sem cache de páginas autenticadas (sem modo offline) e sem importar scripts de terceiros. A CSP inclui `worker-src 'self'` e `manifest-src 'self'`.
 
@@ -172,7 +174,7 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 - **O repositório é público.** A segurança nunca depende de o código ser secreto.
 - Segredos do app só nos arquivos `.env` **da VPS** (`/opt/orco/<ambiente>/.env`, legíveis só pelo usuário `deploy`) e no `.env.local` do desenvolvedor. O GitHub guarda só o acesso SSH de deploy. Nunca no código, em docs, seeds, fixtures ou **na imagem Docker**.
 - `.env*` no `.gitignore`; `.env.example` e `deploy/env.example` com nomes e sem valores.
-- Prefixo `NEXT_PUBLIC_` (embutido no build e visível no navegador) só para valores públicos por natureza: versão do app e chave pública VAPID. Senhas de banco, segredo do Better Auth, chaves SMTP/RustFS/VAPID privadas e `CRON_SECRET` **nunca**.
+- Prefixo `NEXT_PUBLIC_` (embutido no build e visível no navegador) só para valores públicos por natureza: a versão do app. A chave pública VAPID também é pública, mas é lida na hora pelo servidor e passada à página do perfil (NBB-61 P2-A). Senhas de banco, segredo do Better Auth, chaves SMTP/RustFS/VAPID privadas e `CRON_SECRET` **nunca**.
 - **VPS:** SSH só por chave (sem senha, sem root), firewall com só 22/80/443, atualizações de segurança automáticas; banco e RustFS sem porta publicada.
 - Seeds e testes usam dados fictícios (`@example.com`, CPFs de teste gerados).
 - GitHub: **secret scanning + push protection** ativos (ADR-0007).
