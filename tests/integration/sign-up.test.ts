@@ -119,8 +119,10 @@ describe("registerUser", () => {
   });
 
   it("o teto vem de SIGN_UP_EMAILS_PER_DAY, com a RN-46 como padrão", () => {
-    expect(signUpEmailsPerDay(undefined)).toBe(SIGN_UP_LIMIT.emailsPerDay);
-    expect(signUpEmailsPerDay("")).toBe(SIGN_UP_LIMIT.emailsPerDay);
+    vi.stubEnv("SIGN_UP_EMAILS_PER_DAY", "");
+    expect(signUpEmailsPerDay()).toBe(SIGN_UP_LIMIT.emailsPerDay);
+    vi.stubEnv("SIGN_UP_EMAILS_PER_DAY", "1000");
+    expect(signUpEmailsPerDay()).toBe(1000);
     expect(signUpEmailsPerDay("1000")).toBe(1000);
     expect(() => signUpEmailsPerDay("0")).toThrow("SIGN_UP_EMAILS_PER_DAY inválido");
     expect(() => signUpEmailsPerDay("muitos")).toThrow("SIGN_UP_EMAILS_PER_DAY inválido");
