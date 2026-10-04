@@ -34,6 +34,24 @@ export function viewedPushMessage(view: {
   };
 }
 
+/**
+ * O lembrete de vencimento (RN-43, NBB-62 L5): "⏰ O orçamento Nº 0012 (Maria) vence amanhã e ainda
+ * não foi respondido", com só o primeiro nome.
+ */
+export function reminderPushMessage(reminder: {
+  quoteId: string;
+  number: number;
+  clientName: string | null;
+}): PushMessage {
+  const name = firstName(reminder.clientName);
+  const client = name ? ` (${name})` : "";
+  return {
+    title: `⏰ O orçamento Nº ${formatQuoteNumber(reminder.number)}${client} vence amanhã e ainda não foi respondido`,
+    url: `/app/orcamentos/${reminder.quoteId}`,
+    tag: `quote-${reminder.quoteId}`,
+  };
+}
+
 export function responsePushMessage(response: {
   quoteId: string;
   number: number;

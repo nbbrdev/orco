@@ -4,6 +4,7 @@ import { escapeHtml } from "@/lib/email/escape";
 import { accountDeletedEmail } from "@/lib/email/templates/account-deleted";
 import { confirmationEmail } from "@/lib/email/templates/confirmation";
 import { passwordChangedEmail } from "@/lib/email/templates/password-changed";
+import { quoteReminderEmail, reminderTitle } from "@/lib/email/templates/quote-reminder";
 import { quoteResponseEmail, responderName } from "@/lib/email/templates/quote-response";
 import { recoveryEmail } from "@/lib/email/templates/recovery";
 
@@ -131,6 +132,40 @@ describe("quoteResponseEmail (RN-40, NBB-55)", () => {
       reason: `<img src=x onerror=alert(1)>`,
     });
     expect(email.html).not.toContain("<img src=x");
+    expect(email.html).not.toContain("<b>x</b>");
+  });
+});
+
+describe("quoteReminderEmail (RN-43, NBB-62)", () => {
+  const quoteId = "7d3f6a4e-1f2b-4c5d-8e9f-0a1b2c3d4e5f";
+
+  it("o título com o cliente, a validade e o botão para o orçamento", () => {
+    const email = quoteReminderEmail({
+      siteUrl,
+      quoteId,
+      number: 12,
+      clientName: "Maria Silva",
+      validUntil: "2026-10-05",
+    });
+    expect(email.subject).toBe(
+      "O orçamento Nº 0012 (Maria Silva) vence amanhã e ainda não foi respondido",
+    );
+    expect(email.html).toContain("Válido até 05/10/2026.");
+    expect(email.html).toContain(`href="${siteUrl}/app/orcamentos/${quoteId}"`);
+    expect(email.text).toContain("Para desligar, vá em Perfil.");
+  });
+
+  it("sem cliente, sem os parênteses; o nome é escapado no HTML", () => {
+    expect(reminderTitle(1, null)).toBe(
+      "O orçamento Nº 0001 vence amanhã e ainda não foi respondido",
+    );
+    const email = quoteReminderEmail({
+      siteUrl,
+      quoteId,
+      number: 1,
+      clientName: "<b>x</b>",
+      validUntil: "2026-10-05",
+    });
     expect(email.html).not.toContain("<b>x</b>");
   });
 });

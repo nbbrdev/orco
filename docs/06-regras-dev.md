@@ -173,7 +173,7 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
 | `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` (RustFS) | **Não** |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_FROM` | **Não** |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (push; um par por ambiente, lido na hora e não no build, NBB-61 P2-A; sem as três, o push fica desligado) | a pública vai ao navegador / **Não** |
-| `CRON_SECRET` | **Não** |
+| `CRON_SECRET` (senha da rota do agendamento diário, `POST /api/cron/diario`; uma por ambiente, NBB-62; sem ela, a rota responde 503) | **Não** |
 | `STAGING_BASIC_AUTH_USER`, `STAGING_BASIC_AUTH_PASSWORD` (só no staging) | **Não** |
 | `NEXT_PUBLIC_APP_VERSION` (injetada no build: `vX.Y.Z`, `staging-<commit>`; ausente = `dev`) | Sim |
 | `SIGN_UP_EMAILS_PER_DAY` (teto diário de e-mails de cadastro; ausente = 60, da RN-46). **Só no `.env` local e no CI**, com 1000, porque a suíte E2E cria uma conta por teste (NBB-54). Não entra no `deploy/compose.yaml`: na VPS vale sempre o padrão | não é segredo |

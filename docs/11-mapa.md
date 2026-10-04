@@ -81,7 +81,7 @@ App (logado) — barra fixa com botão "Novo orçamento"
 Técnico
 ├── /api/auth/*               Rotas do Better Auth: links dos e-mails de conta (confirmação, recuperação) e retorno do Google
 ├── /api/orcamentos/[id]/pdf  PDF (dono) · /api/p/[token]/pdf (cliente final)
-├── /api/cron/lembretes       Lembrete diário de vencimento (agendamento na VPS, protegido por segredo)
+├── /api/cron/diario          Tarefas diárias: lembrete de vencimento e anonimização dos IPs (POST; cron da VPS, protegido por segredo)
 ├── /manifest.webmanifest     Manifesto do PWA
 └── /sw.js                    Service worker (recebe push; sem cache offline)
 ```

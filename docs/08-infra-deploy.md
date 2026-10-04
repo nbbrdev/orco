@@ -112,6 +112,7 @@ command="/opt/orco/bin/deploy.sh staging",restrict ssh-ed25519 AAAA... orco-stag
 ## Agendamentos
 
 - Sem Vercel Cron e sem `pg_cron`. Tarefas diárias (lembrete de vencimento, RN-43; anonimização de IPs, RN-37) rodam por **agendamento na VPS**: cron do sistema chamando a rota protegida por `CRON_SECRET`, ou um container agendado. A forma é decidida na issue de cada tarefa (NBB-62).
+- **Como ficou** (NBB-62, 2026-10-04, L1-A): cron do sistema. O `deploy/orco.cron` vai para `/etc/cron.d/orco` e roda o `deploy/daily.sh` (em `/opt/orco/bin/`) às 12h UTC (9h de São Paulo) para a produção e às 12h05 para o staging, como o usuário `deploy`. O script lê a `CRON_SECRET` e a `APP_PORT` do `.env` do ambiente e faz `POST /api/cron/diario` em `127.0.0.1`. A saída vai para o log do sistema (`journalctl -t orco-daily`). Instalação e teste em `deploy/README.md`, "Agendamento diário". Dia perdido (VPS fora do ar) não é recuperado (L6, RN-42).
 
 ## Web Push (VAPID)
 

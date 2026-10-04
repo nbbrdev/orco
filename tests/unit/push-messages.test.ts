@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { firstName, responsePushMessage, viewedPushMessage } from "@/features/push/messages";
+import {
+  firstName,
+  reminderPushMessage,
+  responsePushMessage,
+  viewedPushMessage,
+} from "@/features/push/messages";
 
 // O texto dos avisos de push (RN-45, NBB-61 P6): só o número, o primeiro nome e o evento.
 
@@ -32,6 +37,20 @@ describe("viewedPushMessage (NBB-61 N4)", () => {
       tag: `quote-${base.quoteId}`,
     });
     expect(viewedPushMessage(base).title).toBe("👀 Seu cliente abriu o orçamento Nº 0012");
+  });
+});
+
+describe("reminderPushMessage (RN-43, NBB-62)", () => {
+  it("o número e o primeiro nome do cliente entre parênteses", () => {
+    expect(reminderPushMessage({ ...base, clientName: "Maria Silva" }).title).toBe(
+      "⏰ O orçamento Nº 0012 (Maria) vence amanhã e ainda não foi respondido",
+    );
+  });
+
+  it("sem cliente, sem os parênteses", () => {
+    expect(reminderPushMessage(base).title).toBe(
+      "⏰ O orçamento Nº 0012 vence amanhã e ainda não foi respondido",
+    );
   });
 });
 
