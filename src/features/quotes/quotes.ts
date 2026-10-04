@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, count, countDistinct, desc, eq, inArray, notInArray } from "drizzle-orm";
+import { and, asc, count, countDistinct, desc, eq, inArray, notInArray, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { saveCatalogItem } from "@/features/catalog/catalog";
@@ -419,6 +419,20 @@ export async function sendQuote(userId: string, id: string): Promise<SendQuoteRe
     }
     throw error;
   }
+}
+
+/**
+ * Gera um novo link para o orçamento (RN-36): o token anterior para de funcionar na hora. Vale em
+ * qualquer status (NBB-52 R1-A). Devolve o token novo, ou `null` se o orçamento não é da conta.
+ */
+export async function regeneratePublicToken(userId: string, id: string): Promise<string | null> {
+  if (!quoteId.safeParse(id).success) {
+    return null;
+  }
+  const rows = await withUserDb(userId, (tx) =>
+    tx.execute<{ token: string | null }>(sql`select app.regenerate_public_token(${id}) as token`),
+  );
+  return rows[0]?.token ?? null;
 }
 
 export async function setQuoteClient(
