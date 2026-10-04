@@ -26,7 +26,13 @@ test("permissão bloqueada: explica como liberar, sem o botão", async ({ page }
   await expect(page.getByRole("switch", { name: label })).toHaveCount(0);
 });
 
-test("ligado e desligado: o botão aparece com a permissão ainda não pedida", async ({ page }) => {
+test("permissão liberada e sem assinatura: o botão aparece desligado", async ({
+  page,
+  context,
+}) => {
+  // O navegador de teste pode começar com as notificações bloqueadas (no CI, começa): a permissão
+  // vem dada, para o estado ser o mesmo em qualquer máquina.
+  await context.grantPermissions(["notifications"]);
   await useOwnIp(page);
   await signUpAndConfirm(page, "senha-push-456");
   await page.goto("/app/perfil");
