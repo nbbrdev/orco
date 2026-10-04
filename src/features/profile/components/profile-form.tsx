@@ -263,10 +263,11 @@ function HeaderPreview({
             onMissing={onLogoMissing}
           />
         ) : null}
+        {/* Nome e contatos numa linha cada, cortados com reticências (NBB-90 B3-A). */}
         <div className="min-w-0">
-          <p className="text-lg font-semibold">{name}</p>
+          <p className="truncate text-lg font-semibold">{name}</p>
           {contacts.length > 0 ? (
-            <p className="text-sm text-muted-foreground">{contacts.join(" · ")}</p>
+            <p className="truncate text-sm text-muted-foreground">{contacts.join(" · ")}</p>
           ) : (
             <p className="text-sm text-muted-foreground">
               Preencha os campos abaixo para o orçamento ficar com a sua cara.

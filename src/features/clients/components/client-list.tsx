@@ -97,7 +97,7 @@ export function ClientList({ initial }: { initial: ClientRow[] }) {
                     onClick={() => setPanel(client)}
                     className="flex w-full flex-col items-start gap-0.5 px-4 py-3 text-left outline-none hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50"
                   >
-                    <span className="font-medium">{client.name}</span>
+                    <span className="w-full truncate font-medium">{client.name}</span>
                     <Details client={client} />
                   </button>
                 </li>
@@ -147,7 +147,9 @@ function Details({ client }: { client: ClientRow }) {
     client.phone,
     client.document ? formatDocument(client.document) : null,
   ].filter(Boolean);
+  // Uma linha só, cortada com reticências (NBB-90 B1-B): um e-mail longo não vaza do cartão, e todos
+  // os cartões ficam do mesmo tamanho.
   return details.length > 0 ? (
-    <span className="text-sm text-muted-foreground">{details.join(" · ")}</span>
+    <span className="w-full truncate text-sm text-muted-foreground">{details.join(" · ")}</span>
   ) : null;
 }
