@@ -154,6 +154,7 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 ## 10.1 Notificações, cron e service worker (ADR-0009)
 
 - **Cron:** `/api/cron/lembretes` só executa com `Authorization: Bearer $CRON_SECRET`, enviado pelo agendamento na VPS. Sem o header correto, a resposta é 401. A comparação é em tempo constante.
+  - **Como ficou** (NBB-62, 2026-10-04): a rota é `POST /api/cron/diario`. Sem a `CRON_SECRET` configurada, responde 503 (fechada, nunca aberta por esquecimento). Fica fora do Basic Auth do staging, porque tem a própria senha. O `daily.sh` manda a senha pela entrada padrão do `curl`, para ela não aparecer na lista de processos da VPS, e chama o app só pela porta local.
 - **Push:** a `VAPID_PRIVATE_KEY` fica só no servidor. As assinaturas (`push_subscriptions`) ficam protegidas por RLS e são tratadas como dado pessoal: apagadas com a conta e quando expiram.
   - **Como ficou** (NBB-61, 2026-10-04): a app_user lê e apaga só as assinaturas da própria conta; gravar é pela função `app.save_push_subscription`, que passa a assinatura para a conta logada se o navegador trocou de conta. Na resposta do cliente, sem a sessão do freelancer, as assinaturas chegam pelo aviso da `respond_to_quote` (P3-A), e as vencidas (404/410) são apagadas pelo endereço exato (`app.delete_push_subscription`). O log de falha não leva o endereço da assinatura.
   - O service worker só abre endereços do próprio app (`/caminho`), nunca de outro domínio.

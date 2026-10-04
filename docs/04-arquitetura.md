@@ -135,6 +135,8 @@ flowchart LR
 
 **Lembrete diário:** agendamento na VPS (ex.: 9h em São Paulo) → `GET /api/cron/lembretes` com `Authorization: Bearer $CRON_SECRET` → função `quotes_due_for_reminder()` → `notifyFreelancer` → marca `reminder_sent_at`.
 
+- **Como ficou** (NBB-62, 2026-10-04): o cron do sistema da VPS (`/etc/cron.d/orco`, modelo em `deploy/orco.cron`) roda o `deploy/daily.sh` todo dia às 12h UTC (9h de São Paulo), um ambiente de cada vez. O script faz `POST /api/cron/diario` pela porta local do app, com a `CRON_SECRET` do `.env`. A rota faz as duas tarefas do dia (L2-A): o lembrete (a função `app.claim_due_reminders()` pega os orçamentos e marca o `reminder_sent_at` numa só operação, então rodar duas vezes não duplica; depois, `notifyFreelancer` por e-mail e push) e a anonimização dos IPs antigos (RN-37). Responde 503 sem a `CRON_SECRET` configurada e 401 sem a senha certa. Fica fora do Basic Auth do staging, porque tem a própria senha.
+
 **Status `expirado`:** derivado na leitura (`status = 'sent' AND valid_until < hoje_SP`), exposto por uma view/função. Não depende de cron.
 
 ## Convenções de nomes

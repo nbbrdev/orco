@@ -12,6 +12,8 @@ Como o Orçô é configurado na VPS e como os deploys funcionam. Decisões em [A
 | `env.example`                 | Modelo do `.env` de cada ambiente na VPS (segredos)                                                             |
 | `deploy.sh`                   | Único comando que as chaves de deploy do Orçô conseguem rodar. Instalado **à mão** em `/opt/orco/bin/`          |
 | `nginx/orco.nbbrdev.com.conf` | Site do Orçô no Nginx: `orco` → `127.0.0.1:3000`, `staging.orco` → `127.0.0.1:3001`                             |
+| `daily.sh`                    | Agendamento diário (NBB-62): chama `/api/cron/diario` do ambiente. Instalado **à mão** em `/opt/orco/bin/`      |
+| `orco.cron`                   | Os horários do `daily.sh` (9h de São Paulo). Instalado **à mão** em `/etc/cron.d/orco`                          |
 
 ## Como um deploy acontece
 
@@ -296,6 +298,58 @@ O DBeaver usa o `pg_dump` **do seu PC**. Na primeira vez, ele pede o "local clie
 Num banco **novo** (ex.: depois de recriar o ambiente): as roles nascem pelo bootstrap (`init.sh`/`roles.sql`) na primeira subida do container, e só então **Tools → Restore** no banco `orco`, com o arquivo do backup. O `pg_dump` não leva as roles, por isso elas vêm do bootstrap, com as senhas do `.env`.
 
 **Teste de restauração** (uma vez antes do go-live, M7, NBB-58): restaurar um backup da produção no banco **local** do PC (`npm run db:reset` cria um banco vazio com as roles → DBeaver **Tools → Restore** nele) e conferir as tabelas, os dados e o app local. Prova que o backup funciona antes do dia em que ele for necessário.
+
+---
+
+## Agendamento diário (lembretes e IPs)
+
+Todo dia às 9h de São Paulo, o cron da VPS chama o `POST /api/cron/diario` de cada ambiente: o lembrete de vencimento (RN-43) e a anonimização dos IPs com mais de 12 meses (RN-37). A rota só responde com a `CRON_SECRET` certa (NBB-62).
+
+### 1. `CRON_SECRET` de cada ambiente
+
+Gere uma senha **por ambiente** e coloque no `.env` dele (`/opt/orco/staging/.env` e `/opt/orco/production/.env`):
+
+```bash
+openssl rand -hex 32
+```
+
+```
+CRON_SECRET=<o valor gerado>
+```
+
+O app só recebe a variável depois de um deploy com o `compose.yaml` que a repassa (o do PR da NBB-62 em diante).
+
+### 2. `daily.sh` e o cron
+
+Do **PC**, na pasta deste repositório:
+
+```bash
+scp -i ~/.ssh/CHAVE_DA_VPS -o IdentitiesOnly=yes deploy/daily.sh deploy/orco.cron default@IP_DA_VPS:/tmp/
+```
+
+Na VPS:
+
+```bash
+sudo install -o root -g root -m 755 /tmp/daily.sh /opt/orco/bin/daily.sh
+sudo install -o root -g root -m 644 /tmp/orco.cron /etc/cron.d/orco
+rm /tmp/daily.sh /tmp/orco.cron
+bash -n /opt/orco/bin/daily.sh && echo "sintaxe ok"
+timedatectl | grep "Time zone"
+```
+
+O relógio da VPS precisa estar em **UTC** (o `orco.cron` usa 12:00 UTC = 9h em São Paulo).
+
+### 3. Testar
+
+Rodando à mão, como o cron faz:
+
+```bash
+sudo -u deploy /opt/orco/bin/daily.sh staging
+```
+
+Esperado: `{"reminders":0,"anonymizedIps":0}` (ou os números do dia). Sem a `CRON_SECRET` no app: erro 503; com a senha errada: 401. As execuções do cron ficam no log: `journalctl -t orco-daily`.
+
+> Como o `deploy.sh`, o `daily.sh` e o `orco.cron` **não se atualizam sozinhos**. Quando um PR mudar um deles, repita o passo 2.
 
 ---
 

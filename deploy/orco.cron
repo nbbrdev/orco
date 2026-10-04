@@ -1,0 +1,10 @@
+# Agendamento diário do Orçô (NBB-62, L1-A, L3). Instalado em /etc/cron.d/orco (deploy/README.md).
+#
+# 12:00 UTC = 9h de São Paulo (o relógio da VPS fica em UTC). A produção primeiro; o staging 5 minutos
+# depois, para as duas não disputarem o SMTP. A saída (o resultado em JSON ou o erro) vai para o log
+# do sistema: `journalctl -t orco-daily`.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+0 12 * * * deploy /opt/orco/bin/daily.sh production 2>&1 | logger -t orco-daily
+5 12 * * * deploy /opt/orco/bin/daily.sh staging 2>&1 | logger -t orco-daily

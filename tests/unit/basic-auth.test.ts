@@ -32,14 +32,18 @@ describe("isAuthorized", () => {
 });
 
 describe("isPublicPath", () => {
-  it.each(["/p/abc123", "/api/p/abc123/pdf", "/sw.js", "/manifest.webmanifest"])(
-    "%s is public",
-    (path) => {
-      expect(isPublicPath(path)).toBe(true);
-    },
-  );
+  it.each([
+    "/p/abc123",
+    "/api/p/abc123/pdf",
+    "/sw.js",
+    "/manifest.webmanifest",
+    // Protegida pela própria senha, a CRON_SECRET (NBB-62).
+    "/api/cron/diario",
+  ])("%s is public", (path) => {
+    expect(isPublicPath(path)).toBe(true);
+  });
 
-  it.each(["/", "/p", "/painel", "/api/quotes", "/sw.js.map", "/pdf"])(
+  it.each(["/", "/p", "/painel", "/api/quotes", "/sw.js.map", "/pdf", "/api/cron"])(
     "%s is protected",
     (path) => {
       expect(isPublicPath(path)).toBe(false);
