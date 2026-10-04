@@ -104,7 +104,8 @@ async function RespondedQuote({
         <h2 id="client-view-heading" className="text-base font-medium">
           Como o cliente vê
         </h2>
-        <div className="rounded-lg border border-border p-4 sm:p-6">
+        {/* Sempre claro, como a página pública e o PDF, mesmo com o app no modo escuro (NBB-92). */}
+        <div className="light-scheme rounded-lg border border-border bg-background p-4 text-foreground sm:p-6">
           <PublicQuoteView
             model={model}
             logoUrl={profile.logoPath ? logoUrl(profile.logoPath) : null}
