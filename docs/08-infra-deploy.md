@@ -84,7 +84,7 @@ command="/opt/orco/bin/deploy.sh staging",restrict ssh-ed25519 AAAA... orco-stag
   - Node 24 Alpine, usuário não-root; os arquivos do app ficam com dono root (só leitura para o app);
   - `LABEL org.opencontainers.image.source=https://github.com/nbbrdev/orco`.
 - **Uma imagem leva tudo de uma versão:** o app, as migrations com o script que as aplica (`/app/migrator`) e os arquivos de deploy (`/app/deploy`). Rollback volta tudo junto.
-- **Nenhum segredo entra na imagem.** Os segredos chegam na hora de rodar, pelo `.env` da VPS. As variáveis `NEXT_PUBLIC_*` (versão do app, chave pública VAPID) são públicas por natureza e são embutidas no build. Por isso staging e produção têm **imagens separadas**.
+- **Nenhum segredo entra na imagem.** Os segredos chegam na hora de rodar, pelo `.env` da VPS. As variáveis `NEXT_PUBLIC_*` (a versão do app) são públicas por natureza e são embutidas no build. Por isso staging e produção têm **imagens separadas**.
 - Publicada em `ghcr.io/nbbrdev/orco`, **pública** (a VPS baixa sem login). O envio usa o `GITHUB_TOKEN` com `packages: write`.
 - Etiquetas: `staging-<commit>` e `vX.Y.Z`. As antigas ficam guardadas para rollback.
 
@@ -115,8 +115,8 @@ command="/opt/orco/bin/deploy.sh staging",restrict ssh-ed25519 AAAA... orco-stag
 
 ## Web Push (VAPID)
 
-- Par de chaves VAPID gerado uma vez (`npx web-push generate-vapid-keys`): a pública vai em `NEXT_PUBLIC_VAPID_PUBLIC_KEY` e a privada só no servidor. Um par por ambiente.
-- `VAPID_SUBJECT = mailto:<e-mail de contato do projeto>`.
+- Par de chaves VAPID gerado uma vez (`npx web-push generate-vapid-keys`). Um par por ambiente, as três variáveis no `.env` da VPS: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` e `VAPID_SUBJECT`. A pública é lida na hora pelo servidor e passada à página do perfil (não entra no build; NBB-61 P2-A). Sem as três, o push fica desligado.
+- `VAPID_SUBJECT` = o endereço do ambiente (ex.: `https://orco.nbbrdev.com`), para não expor e-mail.
 - Trocar as chaves invalida todas as assinaturas.
 - PWA e push são testados **no staging** (URL fixa com HTTPS). Localmente pelo celular não dá: falta HTTPS.
 - **Risco a verificar na fase do PWA:** no iPhone, o app instalado na tela inicial pode não repassar a senha do Basic Auth do staging. Se acontecer, trocar por um login próprio do staging.

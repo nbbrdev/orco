@@ -19,6 +19,7 @@ import { LogoImage } from "@/features/profile/components/logo-image";
 import { ThemeSelector } from "@/features/profile/components/theme-selector";
 import { ProfileTextField } from "@/features/profile/components/profile-field";
 import { issuerHeader } from "@/features/profile/issuer";
+import { PushSwitch } from "@/features/push/components/push-switch";
 import type { ProfileField, ProfileValues } from "@/features/profile/schemas";
 import { formatDocument } from "@/lib/document";
 import { maskDocument, maskPhone } from "@/lib/masks";
@@ -31,9 +32,12 @@ const text = (value: string | number | null) => (value === null ? "" : String(va
 export function ProfileForm({
   initial,
   initialLogoUrl,
+  vapidPublicKey,
 }: {
   initial: ProfileValues;
   initialLogoUrl: string | null;
+  /** A chave pública do push deste ambiente (NBB-61 P2-A); nula se o push não está configurado. */
+  vapidPublicKey: string | null;
 }) {
   const [values, setValues] = useState(initial);
   const [logoUrl, setLogoUrl] = useState(initialLogoUrl);
@@ -179,6 +183,7 @@ export function ProfileForm({
           checked={values.emailNotifications}
           onSaved={onSaved("emailNotifications")}
         />
+        <PushSwitch vapidPublicKey={vapidPublicKey} />
         <InstallApp />
       </FieldSet>
     </div>

@@ -172,7 +172,7 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (obrigatórias; um cliente OAuth por ambiente, `deploy/README.md`) | **Não** |
 | `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` (RustFS) | **Não** |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_FROM` | **Não** |
-| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (build) / `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Sim / **Não** |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (push; um par por ambiente, lido na hora e não no build, NBB-61 P2-A; sem as três, o push fica desligado) | a pública vai ao navegador / **Não** |
 | `CRON_SECRET` | **Não** |
 | `STAGING_BASIC_AUTH_USER`, `STAGING_BASIC_AUTH_PASSWORD` (só no staging) | **Não** |
 | `NEXT_PUBLIC_APP_VERSION` (injetada no build: `vX.Y.Z`, `staging-<commit>`; ausente = `dev`) | Sim |

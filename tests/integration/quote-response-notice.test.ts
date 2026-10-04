@@ -100,7 +100,7 @@ describe("aviso da resposta (E1-A)", () => {
     });
     expect(result).toBe("ok");
     expect(notice).toEqual({
-      target: { accountEmail: account.email, emailNotifications: true },
+      target: { accountEmail: account.email, emailNotifications: true, pushSubscriptions: [] },
       event: {
         type: "quote_response",
         quoteId: id,

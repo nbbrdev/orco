@@ -43,6 +43,9 @@ services:
       EMAIL_FROM: ${EMAIL_FROM:-}
       STAGING_BASIC_AUTH_USER: ${STAGING_BASIC_AUTH_USER:-}
       STAGING_BASIC_AUTH_PASSWORD: ${STAGING_BASIC_AUTH_PASSWORD:-}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-}
     # Hardening: sistema de arquivos só de leitura (menos o cache do Next e o /tmp, em memória),
     # nenhuma capacidade especial do Linux e sem ganhar privilégios depois de iniciar.
     read_only: true
