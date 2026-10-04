@@ -21,6 +21,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import type { ClientRow } from "@/features/clients/schemas";
+import { downloadQuotePdf } from "@/features/quotes/download-pdf";
 import {
   deleteQuoteAction,
   duplicateQuoteAction,
@@ -68,10 +69,10 @@ import { StatusBadge } from "./status-badge";
 // - Reordenar arrastando pela alça (R2-B), também pelo teclado (espaço, setas, espaço).
 // - Menu "⋯" com Duplicar e Excluir; no expirado, o aviso com "Prorrogar validade" (NBB-49).
 
-const SAVE_DELAY_MS = 800;
+export const SAVE_DELAY_MS = 800;
 const CAPPED_HINT = "O desconto ficou limitado ao valor.";
 
-type SaveStatus = "saved" | "pending" | "saving" | "invalid" | "error" | "blocked";
+export type SaveStatus = "saved" | "pending" | "saving" | "invalid" | "error" | "blocked";
 
 export function QuoteEditor({
   quoteId,
@@ -198,22 +199,12 @@ export function QuoteEditor({
     setDownloading(true);
     try {
       await flush();
-      const response = await fetch(`/api/orcamentos/${quoteId}/pdf`, { method: "POST" });
-      if (!response.ok) {
-        setMessage(await response.text());
+      const error = await downloadQuotePdf(quoteId);
+      if (error) {
+        setMessage(error);
         return;
       }
-      const disposition = response.headers.get("content-disposition") ?? "";
-      const fileName = /filename="([^"]+)"/.exec(disposition)?.[1] ?? "Orcamento.pdf";
-      const url = URL.createObjectURL(await response.blob());
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = fileName;
-      link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
       if (quoteState === "draft") setQuoteState("sent");
-    } catch {
-      setMessage("Não foi possível baixar o PDF. Tente de novo.");
     } finally {
       setDownloading(false);
     }
@@ -484,7 +475,7 @@ function formatLine(item: ParsedItem): string {
   return discount ? `${formatBRL(totals.totalCents)} (${discount})` : formatBRL(totals.totalCents);
 }
 
-function SaveIndicator({ status, onRetry }: { status: SaveStatus; onRetry: () => void }) {
+export function SaveIndicator({ status, onRetry }: { status: SaveStatus; onRetry: () => void }) {
   if (status === "error") {
     return (
       <span role="status" className="flex items-center gap-2 text-sm text-destructive">

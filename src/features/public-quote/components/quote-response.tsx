@@ -17,6 +17,7 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { respondAction } from "@/features/public-quote/actions";
+import { REJECT_REASONS, type RejectReasonCode } from "@/features/public-quote/reasons";
 import { QUOTE_EVENT_LIMITS } from "@/lib/db/schema/quote-limits";
 import { buildWhatsAppLink } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
@@ -24,15 +25,6 @@ import { cn } from "@/lib/utils";
 // Aprovar ou recusar (F-07, F-08, RN-32, RN-33, NBB-53 P5). As duas respostas pedem confirmação numa
 // janela; o nome (aprovar) e o motivo (recusar) são opcionais. A resposta leva a versão que a página
 // mostrou (R2-A). No celular, os botões ficam fixos no rodapé (P4).
-
-const REASONS = [
-  { code: "price", label: "Preço" },
-  { code: "deadline", label: "Prazo" },
-  { code: "gave_up", label: "Desisti" },
-  { code: "other", label: "Outro" },
-] as const;
-
-type ReasonCode = (typeof REASONS)[number]["code"];
 
 const MESSAGES: Record<string, string> = {
   outdated: "O orçamento foi atualizado. Confira de novo antes de responder.",
@@ -59,7 +51,7 @@ export function QuoteResponse({
   const router = useRouter();
   const [dialog, setDialog] = useState<"approved" | "rejected" | null>(null);
   const [name, setName] = useState("");
-  const [reasonCode, setReasonCode] = useState<ReasonCode | null>(null);
+  const [reasonCode, setReasonCode] = useState<RejectReasonCode | null>(null);
   const [reason, setReason] = useState("");
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -194,7 +186,7 @@ export function QuoteResponse({
             <DialogDescription>É opcional. A resposta é definitiva.</DialogDescription>
           </DialogHeader>
           <div role="group" aria-label="Motivo" className="flex flex-wrap gap-2">
-            {REASONS.map((option) => (
+            {REJECT_REASONS.map((option) => (
               <button
                 key={option.code}
                 type="button"

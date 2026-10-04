@@ -73,6 +73,24 @@ export function isExpired(validUntil: IsoDate, now: Date = new Date()): boolean 
   return validUntil < todayInAppTimeZone(now);
 }
 
+const dateTimeInAppTimeZone = new Intl.DateTimeFormat("pt-BR", {
+  timeZone: APP_TIME_ZONE,
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+/** Um instante no fuso de São Paulo: "04/10/2026 às 14:32" (NBB-53 M2). */
+export function formatDateTimeBR(instant: Date): string {
+  const parts = Object.fromEntries(
+    dateTimeInAppTimeZone.formatToParts(instant).map((part) => [part.type, part.value]),
+  );
+  return `${parts.day}/${parts.month}/${parts.year} às ${parts.hour}:${parts.minute}`;
+}
+
 /** "2026-10-12" → "12/10/2026". */
 export function formatDateBR(date: IsoDate): string {
   const { year, month, day } = parseIsoDate(date);

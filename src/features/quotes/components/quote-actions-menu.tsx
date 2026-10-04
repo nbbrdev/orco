@@ -20,8 +20,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// Menu "⋯" do orçamento, no topo do editor (F-12, F-13, NBB-49 P1-A): Duplicar e Excluir. Excluir
-// pede confirmação (RN-29). Quem faz o trabalho é o editor, que antes salva o que estiver pendente.
+// Menu "⋯" do orçamento, no topo do editor (F-12, F-13, NBB-49 P1-A): Duplicar e Excluir; no modo
+// leitura, só Excluir (NBB-53 M3-A). Excluir pede confirmação (RN-29). Quem faz o trabalho é o
+// editor, que antes salva o que estiver pendente.
 
 export function QuoteActionsMenu({
   quoteLabel,
@@ -30,7 +31,8 @@ export function QuoteActionsMenu({
 }: {
   /** "Nº 0001", para a pergunta da exclusão. */
   quoteLabel: string;
-  onDuplicate: () => Promise<void>;
+  /** Sem ele, o menu não mostra o Duplicar (o modo leitura tem o botão próprio, NBB-53 M3-A). */
+  onDuplicate?: () => Promise<void>;
   onDelete: () => Promise<void>;
 }) {
   const [confirming, setConfirming] = useState(false);
@@ -62,10 +64,12 @@ export function QuoteActionsMenu({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">
-          <DropdownMenuItem onSelect={() => void run(onDuplicate)}>
-            <Copy aria-hidden="true" />
-            Duplicar
-          </DropdownMenuItem>
+          {onDuplicate ? (
+            <DropdownMenuItem onSelect={() => void run(onDuplicate)}>
+              <Copy aria-hidden="true" />
+              Duplicar
+            </DropdownMenuItem>
+          ) : null}
           <DropdownMenuItem variant="destructive" onSelect={() => setConfirming(true)}>
             <Trash2 aria-hidden="true" />
             Excluir
