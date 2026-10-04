@@ -85,7 +85,6 @@ describe("loadQuotePdf", () => {
     const pdf = await loadQuotePdf(account, quoteId);
     expect(pdf?.fileName).toBe("Orcamento-0001-Maria-Silva.pdf");
     expect(pdf?.input).toMatchObject({
-      accountEmail: account.email,
       profile: { businessName: "Estúdio Exemplo" },
       quote: { number: 1, status: "draft", sentAt: null, client: { name: "Maria Silva" } },
     });

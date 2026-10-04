@@ -18,7 +18,7 @@ import { LogoField } from "@/features/profile/components/logo-field";
 import { LogoImage } from "@/features/profile/components/logo-image";
 import { ThemeSelector } from "@/features/profile/components/theme-selector";
 import { ProfileTextField } from "@/features/profile/components/profile-field";
-import { issuerContacts, issuerName } from "@/features/profile/issuer";
+import { issuerHeader } from "@/features/profile/issuer";
 import type { ProfileField, ProfileValues } from "@/features/profile/schemas";
 import { formatDocument } from "@/lib/document";
 import { maskDocument, maskPhone } from "@/lib/masks";
@@ -31,11 +31,9 @@ const text = (value: string | number | null) => (value === null ? "" : String(va
 export function ProfileForm({
   initial,
   initialLogoUrl,
-  accountEmail,
 }: {
   initial: ProfileValues;
   initialLogoUrl: string | null;
-  accountEmail: string;
 }) {
   const [values, setValues] = useState(initial);
   const [logoUrl, setLogoUrl] = useState(initialLogoUrl);
@@ -47,12 +45,7 @@ export function ProfileForm({
 
   return (
     <div className="flex flex-col gap-10">
-      <HeaderPreview
-        values={values}
-        logoUrl={logoUrl}
-        onLogoMissing={() => setLogoUrl(null)}
-        accountEmail={accountEmail}
-      />
+      <HeaderPreview values={values} logoUrl={logoUrl} onLogoMissing={() => setLogoUrl(null)} />
 
       <FieldSet>
         <FieldLegend>Sua marca</FieldLegend>
@@ -234,20 +227,20 @@ function EmailNotificationsSwitch({
   );
 }
 
-/** Prévia do cabeçalho do orçamento (D5). Nome pela ordem da RN-04: comercial → seu nome → e-mail. */
+/**
+ * Prévia do cabeçalho do orçamento (D5), igual ao PDF e ao link: nome pela ordem da RN-04 (comercial →
+ * seu nome → e-mail de contato; nunca o e-mail da conta, NBB-52 D3-B).
+ */
 function HeaderPreview({
   values,
   logoUrl,
   onLogoMissing,
-  accountEmail,
 }: {
   values: ProfileValues;
   logoUrl: string | null;
   onLogoMissing: () => void;
-  accountEmail: string;
 }) {
-  const name = issuerName(values, accountEmail);
-  const contacts = issuerContacts(values);
+  const { name, contacts } = issuerHeader(values);
 
   return (
     <section aria-label="Prévia do cabeçalho do orçamento" className="flex flex-col gap-2">
@@ -265,7 +258,7 @@ function HeaderPreview({
         ) : null}
         {/* Nome e contatos numa linha cada, cortados com reticências (NBB-90 B3-A). */}
         <div className="min-w-0">
-          <p className="truncate text-lg font-semibold">{name}</p>
+          {name ? <p className="truncate text-lg font-semibold">{name}</p> : null}
           {contacts.length > 0 ? (
             <p className="truncate text-sm text-muted-foreground">{contacts.join(" · ")}</p>
           ) : (

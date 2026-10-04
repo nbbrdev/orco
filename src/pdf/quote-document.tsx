@@ -94,7 +94,11 @@ export function QuoteDocument({ model }: { model: QuoteDocumentModel }) {
   ].filter((entry) => entry.value);
 
   return (
-    <Document title={`Orçamento Nº ${model.number}`} author={model.issuer.name} language="pt-BR">
+    <Document
+      title={`Orçamento Nº ${model.number}`}
+      author={model.issuer.name ?? undefined}
+      language="pt-BR"
+    >
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <View style={styles.issuer}>
@@ -106,7 +110,9 @@ export function QuoteDocument({ model }: { model: QuoteDocumentModel }) {
               />
             ) : null}
             <View style={{ flex: 1 }}>
-              <Text style={styles.issuerName}>{model.issuer.name}</Text>
+              {model.issuer.name ? (
+                <Text style={styles.issuerName}>{model.issuer.name}</Text>
+              ) : null}
               {model.issuer.contacts.map((contact) => (
                 <Text key={contact} style={styles.muted}>
                   {contact}

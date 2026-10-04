@@ -19,9 +19,15 @@ export const PDF_LIMIT_MESSAGE = "Muitos PDFs em pouco tempo. Tente de novo em u
 
 export type QuotePdf = { input: QuoteDocumentInput; fileName: string };
 
+/** O logo do perfil, já em PNG. Logo que sumiu do RustFS ou não é imagem: o PDF sai sem ele. */
+export async function loadLogoPng(logoPath: string | null): Promise<Uint8Array | null> {
+  const logo = logoPath ? await getObject(logoPath) : null;
+  return logo ? logoToPng(logo) : null;
+}
+
 /** Tudo o que o PDF precisa, ou `null` se o orçamento não existe ou é de outra conta. */
 export async function loadQuotePdf(
-  user: { id: string; email: string },
+  user: { id: string },
   quoteId: string,
 ): Promise<QuotePdf | null> {
   const quote = await getQuoteForEditor(user.id, quoteId);
@@ -29,15 +35,12 @@ export async function loadQuotePdf(
     return null;
   }
   const profile = await getProfile(user.id);
-  // Logo que sumiu do RustFS ou não é imagem: o PDF sai sem ele, em vez de falhar.
-  const logo = profile.logoPath ? await getObject(profile.logoPath) : null;
 
   return {
     fileName: quotePdfFileName(quote.number, quote.client?.name ?? null),
     input: {
       profile,
-      accountEmail: user.email,
-      logoPng: logo ? await logoToPng(logo) : null,
+      logoPng: await loadLogoPng(profile.logoPath),
       quote: {
         number: quote.number,
         status: quote.status,
@@ -67,7 +70,7 @@ export type OwnerPdfResult =
  * - Download (`send: true`, RN-22): antes, envia o rascunho; se faltar algo da RN-13, não gera.
  */
 export async function renderOwnerPdf(
-  user: { id: string; email: string },
+  user: { id: string },
   quoteId: string,
   { send }: { send: boolean } = { send: false },
 ): Promise<OwnerPdfResult> {

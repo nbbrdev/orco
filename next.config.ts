@@ -11,11 +11,16 @@ const nextConfig: NextConfig = {
   // pasta inteira de fontes (4,6 MB, com cirílico, grego, itálicos…); a imagem Docker só precisa dos
   // três pesos usados (NBB-51).
   // A chave é um padrão (picomatch): os colchetes de `[id]` precisam de escape.
+  // Vale para as duas rotas de PDF: a do dono e a pública (NBB-52).
   outputFileTracingExcludes: {
     "/api/orcamentos/\\[id\\]/pdf": ["./node_modules/@fontsource/inter/files/**"],
+    "/api/p/\\[token\\]/pdf": ["./node_modules/@fontsource/inter/files/**"],
   },
   outputFileTracingIncludes: {
     "/api/orcamentos/\\[id\\]/pdf": [
+      "./node_modules/@fontsource/inter/files/inter-latin-{400,600,700}-normal.woff",
+    ],
+    "/api/p/\\[token\\]/pdf": [
       "./node_modules/@fontsource/inter/files/inter-latin-{400,600,700}-normal.woff",
     ],
   },
