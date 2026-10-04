@@ -111,7 +111,7 @@ export function PublicQuoteView({
           </tbody>
         </table>
 
-        <dl className="mt-4 ml-auto flex w-full max-w-xs flex-col gap-1 text-sm">
+        <dl className="mt-4 ml-auto flex w-full flex-col gap-1 text-sm md:max-w-xs">
           {"subtotal" in model.totals ? (
             <>
               <div className="flex justify-between">
