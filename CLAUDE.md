@@ -16,15 +16,14 @@ Produção: https://orco.nbbrdev.com · Repo: `nbbrdev/orco` (público) · Linea
 **M7: Hardening & Lançamento** (meta: `v1.0.0`). A **M6** foi concluída em 2026-10-04, com a `v0.6.0` no ar (link público com aprovar/recusar, modo leitura, compartilhar, e-mail e push ao freelancer, lembrete diário pelo cron da VPS). O ajuste visual da NBB-92 vai numa `v0.6.1`.
 
 Ordem da M7 (decidida com o usuário em 2026-10-04; o staging recebe cada merge, e a `v1.0.0` é o lançamento):
-1. NBB-57: auditoria de segurança (RLS, headers, dependências e os riscos aceitos);
-2. NBB-30: termos de uso e política de privacidade (LGPD);
-3. NBB-58: performance (LCP/INP) e E2E completos;
-4. NBB-56: teste de usabilidade e ajustes;
-5. NBB-59: landing page e go-live.
+1. ✅ NBB-57: auditoria de segurança (RLS, headers, dependências e os riscos aceitos);
+2. ✅ NBB-30: termos de uso e política de privacidade (LGPD), na `v0.7.0`;
+3. ✅ NBB-58: performance (LCP/INP) e E2E completos;
+4. ✅ NBB-56: revisão a 360 px e alvos de toque de 44 px no celular, na `v0.8.0`. O **teste com pessoas** ficou para depois do lançamento (U6-C, 2026-10-05): NBB-94, no Backlog;
+5. NBB-59: landing page e go-live, com o primeiro backup da produção e o teste de restauração dele (o backup é obrigatório a partir da `v1.0.0`).
 
 Lembretes:
 - o teste manual do push nos aparelhos (Android, iPhone instalado, computador e o Sair) é do usuário e ainda está pendente (NBB-61);
-- a NBB-30 ainda lista Vercel, Supabase e Cloudflare como suboperadores, e a NBB-58 lista E2E que já existem: revisar no planejamento de cada uma (ADR-0012 a 0016);
 - as tarefas diárias rodam pelo cron da VPS (`deploy/daily.sh`, `deploy/orco.cron`), instalados à mão como o `deploy.sh`.
 
 A base da VPS (compartilhada entre projetos) fica no repositório privado `nbbrdev/vps` (projeto "VPS" no Linear).
