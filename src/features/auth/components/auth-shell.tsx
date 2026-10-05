@@ -1,9 +1,10 @@
 import Link from "next/link";
 
 import { LogoIcon } from "@/components/brand/logo-icon";
+import { LegalLinks } from "@/features/legal/components/legal-page";
 
 // Moldura das telas de conta (/cadastro, /entrar): logo, título e o conteúdo, centralizados e
-// pensados primeiro para o celular.
+// pensados primeiro para o celular. No fim, os links dos termos e da privacidade (NBB-30 T5).
 export function AuthShell({
   title,
   description,
@@ -28,6 +29,7 @@ export function AuthShell({
         {description ? <p className="text-muted-foreground">{description}</p> : null}
       </div>
       {children}
+      <LegalLinks />
     </main>
   );
 }

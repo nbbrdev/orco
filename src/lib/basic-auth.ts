@@ -6,7 +6,8 @@ import { createHash, timingSafeEqual } from "node:crypto";
 // um cliente, sem senha), os arquivos do PWA, que o navegador busca sem mostrar a janela de senha, e
 // a rota do agendamento diário, que tem a própria senha (CRON_SECRET, NBB-62).
 const PUBLIC_PREFIXES = ["/p/", "/api/p/", "/api/cron/"];
-const PUBLIC_FILES = ["/sw.js", "/manifest.webmanifest"];
+// Os termos e a privacidade também (NBB-30 T6): qualquer pessoa precisa conseguir ler.
+const PUBLIC_FILES = ["/sw.js", "/manifest.webmanifest", "/termos", "/privacidade"];
 
 export function isPublicPath(pathname: string): boolean {
   return (
