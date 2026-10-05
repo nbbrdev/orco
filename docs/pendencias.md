@@ -30,6 +30,6 @@
 | P-11 | ~~Supabase local via Docker ou projeto dev na nuvem?~~ **Resolvido:** local via Docker. **Revisão (2026-09-29):** sem Supabase; Postgres, RustFS e Mailpit locais pelo `compose.dev.yaml` (ADR-0014). | — |
 | P-12 | ~~Dois projetos Supabase?~~ **Resolvido:** `orco-staging` + `orco-prod` (ADR-0008). **Revisão (2026-09-29):** um Postgres por ambiente na VPS (ADR-0012/0014). | — |
 | P-13 | ~~Remetente de e-mail~~ **Resolvido:** `Orçô <nao-responda@orco.nbbrdev.com>`, sem Reply-To. | — |
-| P-14 | ~~Destino dos backups~~ **Resolvido (revisto em 2026-09-30):** sem backup automático; backup manual do banco pelo DBeaver (túnel SSH) antes de cada release (a partir da `v1.0.0`, revisto em 2026-10-05), guardado só no computador do dono. RustFS fora. | — |
+| P-14 | ~~Destino dos backups~~ **Resolvido (revisto em 2026-09-30):** sem backup automático; backup manual do banco pelo DBeaver (túnel SSH) antes de cada release (a partir da primeira depois da `v1.0.0`, revisto em 2026-10-05), guardado só no computador do dono. RustFS fora. | — |
 | P-15 | ~~Vercel Hobby~~ **Resolvido:** Hobby no MVP; migração para VPS após o `1.0.0` (ADR-0011). **Revisão (2026-09-29):** VPS desde a M1, sem Vercel nem Supabase (ADR-0012). | — |
 | P-16 | ~~Proteção contra senhas vazadas~~ **Resolvido:** fica sem; risco aceito no ADR-0002, reavaliar na M7. | — |

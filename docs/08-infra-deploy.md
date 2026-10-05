@@ -104,9 +104,9 @@ command="/opt/orco/bin/deploy.sh staging",restrict ssh-ed25519 AAAA... orco-stag
 
 ## Backup (manual)
 
-- **Sem backup automático** (decidido pelo usuário em 2026-09-30, NBB-75). O dono faz o backup **pelo DBeaver, antes de cada release a partir da `v1.0.0`** (passo 0 de `docs/06-regras-dev.md` §4.1; antes, a produção não tem usuários reais, decisão de 2026-10-05). Passo a passo em `deploy/README.md`, "Backup pelo DBeaver".
+- **Sem backup automático** (decidido pelo usuário em 2026-09-30, NBB-75). O dono faz o backup **pelo DBeaver, antes de cada release a partir da primeira depois da `v1.0.0`** (passo 0 de `docs/06-regras-dev.md` §4.1; até ela, a produção não tinha usuários reais, decisões de 2026-10-05). Passo a passo em `deploy/README.md`, "Backup pelo DBeaver".
 - O `db` de cada ambiente publica o Postgres **só em `127.0.0.1`** da VPS (`DB_PORT` no `.env`: **5433** produção, **5434** staging). O DBeaver entra por **túnel SSH** com a chave de administração, como `postgres`.
-- Formato custom (`pg_dump`), só o banco; os logos do RustFS ficam fora. Restauração: banco novo, sem migrations (roles pelo bootstrap) → **Tools → Restore** no DBeaver, como `postgres`. Teste de restauração no banco local com o primeiro backup da produção, o da `v1.0.0` (NBB-59); a parte técnica já foi testada com um backup local em 2026-10-05 (NBB-58).
+- Formato custom (`pg_dump`), só o banco; os logos do RustFS ficam fora. Restauração: banco novo, sem migrations (roles pelo bootstrap) → **Tools → Restore** no DBeaver, como `postgres`. Teste de restauração no banco local com o primeiro backup da produção (NBB-96); a parte técnica já foi testada com um backup local em 2026-10-05 (NBB-58).
 - **Reforço opcional:** snapshots da VPS no painel da Hostinger.
 
 ## Agendamentos

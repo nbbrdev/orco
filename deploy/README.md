@@ -261,7 +261,7 @@ Ao criar, o Google mostra o **ID do cliente** e a **chave secreta**. Guarde a ch
 
 ## Backup pelo DBeaver
 
-Não há backup automático (decisão de 2026-09-30: projeto pequeno). O backup é **manual**, pelo DBeaver, e é **obrigatório antes de cada release a partir da `v1.0.0`** (uma release aplica migrations no banco da produção). Antes dela, a produção não tem usuários reais, e o backup é opcional (decisão do usuário em 2026-10-05). Só o banco: os logos do RustFS ficam fora (se a VPS for perdida, são enviados de novo).
+Não há backup automático (decisão de 2026-09-30: projeto pequeno). O backup é **manual**, pelo DBeaver, e é **obrigatório antes de cada release a partir da primeira depois da `v1.0.0`** (uma release aplica migrations no banco da produção). Até a `v1.0.0`, inclusive, a produção não tinha usuários reais, e o backup foi opcional (decisões do usuário em 2026-10-05). Com os primeiros cadastros reais, faça o primeiro backup mesmo sem release (NBB-96). Só o banco: os logos do RustFS ficam fora (se a VPS for perdida, são enviados de novo).
 
 **Como o DBeaver alcança o banco:** o Postgres de cada ambiente escuta só em `127.0.0.1` da VPS (`DB_PORT`: 5433 na produção, 5434 no staging). A internet não alcança essas portas. O DBeaver entra na VPS por um **túnel SSH** com a sua chave de administração e, de dentro dela, conversa com o banco.
 
@@ -301,7 +301,7 @@ Num banco **novo e sem migrations** (ex.: depois de recriar o ambiente): as role
 - Conecte como **`postgres`**: só o superusuário consegue devolver cada objeto ao dono certo e aplicar os GRANTs das outras roles.
 - **Format: Custom**; **Clean**, **Create**, **No owner** e **No privileges** desligados.
 
-**Teste de restauração** (com o primeiro backup da produção, o da `v1.0.0`, NBB-59): restaurar no banco **local** do PC e conferir as tabelas, os dados e o app local. Prova que o backup funciona antes do dia em que ele for necessário. O banco local vazio, só com as roles, sai de:
+**Teste de restauração** (com o primeiro backup da produção, NBB-96): restaurar no banco **local** do PC e conferir as tabelas, os dados e o app local. Prova que o backup funciona antes do dia em que ele for necessário. O banco local vazio, só com as roles, sai de:
 
 ```bash
 docker compose -f compose.dev.yaml down -v   # apaga o banco local (e os arquivos do RustFS local)
