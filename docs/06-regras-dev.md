@@ -157,6 +157,21 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
 - Dados sempre fictícios (`@example.com`, CPFs de teste gerados), nunca reais (docs/07 §11).
 - Testes de integração criam e apagam o que usam; não dependem da ordem nem de dados deixados por outro teste.
 
+**Performance (RNF-07):** medida à mão, sem teste automático (NBB-58 D1-A, decidido em 2026-10-05: projeto pequeno, simplicidade).
+- **Como medir:** no Chrome, numa janela anônima, logado.
+  - **LCP:** DevTools → Lighthouse, modo "Mobile", categoria "Performance", na lista (`/app/orcamentos`), no editor e em `/p/[token]`.
+  - **INP:** DevTools → Performance → "Live metrics", com a rede e a CPU limitadas (ex.: "Fast 4G" e "4x slowdown"), usando o editor de verdade (digitar, adicionar e reordenar itens).
+- **Estimado × real:** por padrão, o Lighthouse carrega a página sem limite e **estima** o "4G lento". A estimativa conta como dependência do LCP todo arquivo baixado antes da primeira pintura, inclusive o JavaScript, que não atrasa o que vem pronto do servidor. Para conferir o valor real, rode com a limitação aplicada (`npx lighthouse <url> --throttling-method=devtools`), que é ainda mais dura que o 4G da RNF-07.
+- **Medição de 2026-10-05:**
+
+  | Página | LCP estimado | LCP real (limitação aplicada) | Elemento do LCP |
+  |---|---|---|---|
+  | Lista | 2,1 s (produção) / 2,7 s (local) | 1,9 a 2,3 s (local) | campo de busca |
+  | Editor | 3,6 s (produção) / 3,0 s (local) | 2,3 a 2,4 s (local) | título "Orçamento Nº …" |
+  | `/p/[token]` | 1,9 s (produção) | — | — |
+
+  INP no editor (produção): 47 ms. No editor, o LCP real é igual ao FCP: o título vem pronto no HTML e aparece na primeira pintura. A diferença para a estimativa é o JavaScript a mais do editor (arrastar, sugestões, menus). **RNF-07 atendida** (P1-A: sem mudança de código; reduzir o JavaScript com `next/dynamic` ficou de fora, com ganho incerto e risco de piorar o INP).
+
 ## 8. Variáveis de ambiente
 
 **Do app** (em `.env.local` localmente; em `/opt/orco/<ambiente>/.env` na VPS):
