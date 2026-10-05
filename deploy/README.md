@@ -261,7 +261,7 @@ Ao criar, o Google mostra o **ID do cliente** e a **chave secreta**. Guarde a ch
 
 ## Backup pelo DBeaver
 
-Não há backup automático (decisão de 2026-09-30: projeto pequeno). O backup é **manual**, pelo DBeaver, e é **obrigatório antes de cada release** (uma release aplica migrations no banco da produção). Só o banco: os logos do RustFS ficam fora (se a VPS for perdida, são enviados de novo).
+Não há backup automático (decisão de 2026-09-30: projeto pequeno). O backup é **manual**, pelo DBeaver, e é **obrigatório antes de cada release a partir da `v1.0.0`** (uma release aplica migrations no banco da produção). Antes dela, a produção não tem usuários reais, e o backup é opcional (decisão do usuário em 2026-10-05). Só o banco: os logos do RustFS ficam fora (se a VPS for perdida, são enviados de novo).
 
 **Como o DBeaver alcança o banco:** o Postgres de cada ambiente escuta só em `127.0.0.1` da VPS (`DB_PORT`: 5433 na produção, 5434 no staging). A internet não alcança essas portas. O DBeaver entra na VPS por um **túnel SSH** com a sua chave de administração e, de dentro dela, conversa com o banco.
 
@@ -284,10 +284,11 @@ Use o superusuário `postgres`: o backup precisa ler tudo (produto, login, funç
 
 ### Fazer o backup
 
-1. Botão direito no banco `orco` → **Tools → Backup**.
+1. Botão direito no banco `orco` **da conexão de produção** → **Tools → Backup**. Confira no cabeçalho da tela que é a conexão com a porta `5433` e o túnel SSH, e não a do banco local (`127.0.0.1:55432`): o engano já aconteceu (2026-10-05).
 2. Marque **todos os schemas** (`public`, `app`, `auth` e o `drizzle`, que guarda o controle das migrations).
 3. **Format: Custom** (compactado; é o que o restore usa).
-4. Escolha a pasta e um nome com a data (ex.: `orco-production-2026-10-01.backup`) → **Start**.
+4. Deixe **desligados** o "Do not backup privileges" e o "Discard objects owner": sem os GRANTs, o app não acessa nada depois de restaurar; sem os donos, as funções `SECURITY DEFINER` passariam a ser do `postgres`, que ignora a RLS.
+5. Escolha a pasta e um nome com a data (ex.: `orco-production-2026-10-01.backup`) → **Start**.
 
 O DBeaver usa o `pg_dump` **do seu PC**. Na primeira vez, ele pede o "local client": aponte para (ou deixe o DBeaver baixar) as ferramentas do **PostgreSQL 17**, a mesma versão do servidor.
 
@@ -295,9 +296,19 @@ O DBeaver usa o `pg_dump` **do seu PC**. Na primeira vez, ele pede o "local clie
 
 ### Restaurar
 
-Num banco **novo** (ex.: depois de recriar o ambiente): as roles nascem pelo bootstrap (`init.sh`/`roles.sql`) na primeira subida do container, e só então **Tools → Restore** no banco `orco`, com o arquivo do backup. O `pg_dump` não leva as roles, por isso elas vêm do bootstrap, com as senhas do `.env`.
+Num banco **novo e sem migrations** (ex.: depois de recriar o ambiente): as roles nascem pelo bootstrap (`init.sh`/`roles.sql`) na primeira subida do container, e só então **Tools → Restore** no banco `orco`, com o arquivo do backup. O `pg_dump` não leva as roles, por isso elas vêm do bootstrap, com as senhas do `.env`. Se as migrations já rodaram, as tabelas existem e o restore falha com "already exists".
 
-**Teste de restauração** (uma vez antes do go-live, M7, NBB-58): restaurar um backup da produção no banco **local** do PC (`npm run db:reset` cria um banco vazio com as roles → DBeaver **Tools → Restore** nele) e conferir as tabelas, os dados e o app local. Prova que o backup funciona antes do dia em que ele for necessário.
+- Conecte como **`postgres`**: só o superusuário consegue devolver cada objeto ao dono certo e aplicar os GRANTs das outras roles.
+- **Format: Custom**; **Clean**, **Create**, **No owner** e **No privileges** desligados.
+
+**Teste de restauração** (com o primeiro backup da produção, o da `v1.0.0`, NBB-59): restaurar no banco **local** do PC e conferir as tabelas, os dados e o app local. Prova que o backup funciona antes do dia em que ele for necessário. O banco local vazio, só com as roles, sai de:
+
+```bash
+docker compose -f compose.dev.yaml down -v   # apaga o banco local (e os arquivos do RustFS local)
+docker compose -f compose.dev.yaml up -d --wait
+```
+
+Não use o `npm run db:reset`: ele também roda as migrations. Na conexão local do DBeaver, use `127.0.0.1:55432` e o `postgres` do `compose.dev.yaml`. Em 2026-10-05 (NBB-58), um backup do banco local foi restaurado assim: schemas, donos, RLS, GRANTs e as 16 migrations voltaram certos, e o `security-invariants.test.ts` passou contra o banco restaurado.
 
 ---
 

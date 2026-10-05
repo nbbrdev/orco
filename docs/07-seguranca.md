@@ -208,11 +208,11 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 
 ## 14. Backups e continuidade
 
-- **Sem backup automático** (decidido pelo usuário em 2026-09-30, NBB-75: projeto pequeno, simplicidade). O backup é **manual, pelo DBeaver, obrigatório antes de cada release** (que aplica migrations na produção). Passo a passo em `deploy/README.md`.
+- **Sem backup automático** (decidido pelo usuário em 2026-09-30, NBB-75: projeto pequeno, simplicidade). O backup é **manual, pelo DBeaver, obrigatório antes de cada release a partir da `v1.0.0`** (que aplica migrations na produção). Antes dela, a produção não tem usuários reais (decisão do usuário em 2026-10-05). Passo a passo em `deploy/README.md`.
 - **Acesso:** o Postgres de cada ambiente escuta só em `127.0.0.1` da VPS (5433 produção, 5434 staging), sem porta liberada no firewall. O DBeaver entra por **túnel SSH** com a chave de administração e usa o superusuário `postgres`.
 - **Conteúdo:** só o banco (`pg_dump`, formato custom: schema e dados, incluindo `auth`). O `pg_dump` não leva as roles: na restauração, elas nascem pelo bootstrap (`init.sh`/`roles.sql`) antes do `pg_restore`. O RustFS (logos) fica fora: se a VPS for perdida, os logos são enviados de novo (risco aceito).
 - **Guarda:** o arquivo contém dados pessoais reais. Fica só no computador do dono, nunca no repositório nem em nuvem. A criptografia dos arquivos de backup será decidida depois (decisão do usuário em 2026-10-01).
-- **Teste de restauração** uma vez antes do go-live (M7, NBB-58): restaurar um backup da produção no banco local e conferir dados e app.
+- **Teste de restauração** com o primeiro backup da produção, o da `v1.0.0` (NBB-59): restaurar no banco local e conferir dados e app. A parte técnica (donos, RLS, GRANTs, funções) já foi testada em 2026-10-05 com um backup do banco local (NBB-58).
 - **Riscos aceitos:** perda dos dados desde o último backup manual se a VPS for perdida entre duas releases; depende de o dono lembrar do backup (o passo 0 da release, `docs/06-regras-dev.md` §4.1).
 - Reforço opcional: snapshots da VPS no painel da Hostinger.
 
