@@ -13,12 +13,16 @@ Produção: https://orco.nbbrdev.com · Repo: `nbbrdev/orco` (público) · Linea
 - Mudou `docs/`? Atualize o Linear Doc correspondente na mesma sessão, e vice-versa.
 
 ## Fase atual
-**Depois do lançamento.** A **M7** foi concluída em 2026-10-05, com a **`v1.0.0` no ar** (auditoria de segurança, termos e privacidade, performance e E2E, alvos de toque de 44 px no celular, landing com prévia do link, `robots.txt` e `sitemap.xml`; Google OAuth publicado). Não há marco aberto: o trabalho vem do **Backlog** do Linear e só vira marco quando o usuário decidir.
+**M8: Landing e demonstração** (meta: `v1.1.0`). A **M7** foi concluída em 2026-10-05, com a **`v1.0.0` no ar** (o lançamento). Depois dele, o trabalho vem do Backlog do Linear e vira marco quando o usuário decide; a M8 foi promovida em 2026-10-05.
 
-Próximos candidatos (no Backlog):
-- NBB-96: primeiro backup da produção e teste de restauração; **o backup é obrigatório a partir da primeira release depois da `v1.0.0`**, e o primeiro sai com os primeiros cadastros reais;
-- NBB-94: teste de usabilidade com 3 pessoas (RNF-01), com o roteiro no Linear Doc "Teste de usabilidade (NBB-56)";
-- NBB-95: provar o Orçô sem criar conta (reavaliar depois da NBB-94).
+Ordem da M8 (decidida com o usuário em 2026-10-05):
+1. PR de docs: escopo (`docs/02`), visão (`docs/01`), marco e esta seção;
+2. NBB-97: landing mais elaborada, **focada no problema** do freelancer (serviços e valores espalhados, orçamento sem boa apresentação, sem organização do que foi enviado). Título: "Seus serviços, preços e clientes num só lugar. Orçamentos bonitos em 2 minutos."; só componentes reais, sem imagens;
+3. NBB-95: `/experimentar`, um mini editor sem conta e sem gravar nada, com "Ver como o cliente recebe".
+
+**A `v1.1.0` é a primeira release depois da `v1.0.0`: o backup da produção é obrigatório antes dela.**
+
+Em espera, no Backlog: NBB-96 (primeiro backup e teste de restauração) e NBB-94 (teste de usabilidade com 3 pessoas, roteiro no Linear Doc "Teste de usabilidade (NBB-56)").
 
 Lembretes:
 - o teste manual do push nos aparelhos (Android, iPhone instalado, computador e o Sair) é do usuário e ainda está pendente (NBB-61);

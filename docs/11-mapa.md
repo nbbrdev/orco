@@ -67,6 +67,7 @@ Público (sem login)
 ├── /redefinir-senha          Definir nova senha (via link do e-mail) → /entrar
 ├── /termos                   Termos de uso
 ├── /privacidade              Política de privacidade
+├── /experimentar             Demonstração sem conta: mini editor → como o cliente recebe (nada é gravado; M8, NBB-95)
 └── /p/[token]                Orçamento para o cliente final: ver, PDF, Aprovar/Recusar
 
 App (logado) — barra fixa com botão "Novo orçamento"
