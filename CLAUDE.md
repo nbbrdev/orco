@@ -15,10 +15,11 @@ Produção: https://orco.nbbrdev.com · Repo: `nbbrdev/orco` (público) · Linea
 ## Fase atual
 **Depois do lançamento.** A **M7** foi concluída em 2026-10-05, com a **`v1.0.0` no ar** (auditoria de segurança, termos e privacidade, performance e E2E, alvos de toque de 44 px no celular, landing com prévia do link, `robots.txt` e `sitemap.xml`; Google OAuth publicado). Não há marco aberto: o trabalho vem do **Backlog** do Linear e só vira marco quando o usuário decidir.
 
-Próximos candidatos (no Backlog):
+**Foco** (decidido pelo usuário em 2026-10-05): a NBB-95 (provar o Orçô sem criar conta) e uma landing mais elaborada; o planejamento das duas vem a seguir.
+
+Em espera, no Backlog:
 - NBB-96: primeiro backup da produção e teste de restauração; **o backup é obrigatório a partir da primeira release depois da `v1.0.0`**, e o primeiro sai com os primeiros cadastros reais;
-- NBB-94: teste de usabilidade com 3 pessoas (RNF-01), com o roteiro no Linear Doc "Teste de usabilidade (NBB-56)";
-- NBB-95: provar o Orçô sem criar conta (reavaliar depois da NBB-94).
+- NBB-94: teste de usabilidade com 3 pessoas (RNF-01), com o roteiro no Linear Doc "Teste de usabilidade (NBB-56)".
 
 Lembretes:
 - o teste manual do push nos aparelhos (Android, iPhone instalado, computador e o Sair) é do usuário e ainda está pendente (NBB-61);
