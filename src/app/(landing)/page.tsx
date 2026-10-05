@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { LogoIcon } from "@/components/brand/logo-icon";
-import { Button } from "@/components/ui/button";
 import { AFTER_CONFIRM_PATH } from "@/features/auth/sign-up";
 import {
   BenefitsSection,
@@ -13,11 +10,8 @@ import {
   HowItWorksSection,
   ProblemSection,
 } from "@/features/landing/components/landing-sections";
-import { LegalLinks } from "@/features/legal/components/legal-page";
+import { SignUpButtons, SiteFooter, SiteHeader } from "@/features/landing/components/site-chrome";
 import { getSessionUser } from "@/lib/auth/session";
-
-// Versão no ar: tag vX.Y.Z em produção, staging-<commit> no staging, "dev" localmente (ADR-0010).
-const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
 
 // Prévia do link da landing (NBB-59 L3-B); a imagem vem do ./opengraph-image.tsx. Só aqui, e não no
 // layout, para o link do orçamento do cliente (/p/[token]) não aparecer com a propaganda do Orçô.
@@ -33,8 +27,7 @@ export const metadata: Metadata = {
 };
 
 // Landing (NBB-97): focada no problema do freelancer (D6), com as seções de
-// features/landing/components/landing-sections.tsx. O "Experimentar sem conta" entra com o
-// /experimentar (NBB-95, T6-A).
+// features/landing/components/landing-sections.tsx e o "Experimentar sem conta" (NBB-95 E7-A).
 export default async function HomePage({ searchParams }: PageProps<"/">) {
   const { conta } = await searchParams;
 
@@ -45,15 +38,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-4">
-        <Link href="/" className="flex items-center gap-2" aria-label="Orçô, página inicial">
-          <LogoIcon className="size-9" />
-          <span className="text-xl font-bold tracking-tight">Orçô</span>
-        </Link>
-        <Button asChild variant="ghost">
-          <Link href="/entrar">Entrar</Link>
-        </Button>
-      </header>
+      <SiteHeader />
 
       <main className="flex flex-col">
         {conta === "excluida" ? (
@@ -75,9 +60,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
             Organize os seus serviços e valores, monte um orçamento com a sua marca e mande um link
             para o cliente aprovar com um toque. Grátis.
           </p>
-          <Button asChild size="lg" className="w-full sm:w-auto sm:self-start sm:px-8">
-            <Link href="/cadastro">Começar grátis</Link>
-          </Button>
+          <SignUpButtons />
         </section>
 
         <ProblemSection />
@@ -88,10 +71,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
         <FinalCallSection />
       </main>
 
-      <footer className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-6 text-sm text-muted-foreground">
-        <LegalLinks />
-        <span className="text-xs">{APP_VERSION}</span>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
