@@ -93,3 +93,13 @@ test("título, descrição e endereço canônico para o Google (NBB-99 I2-A, I3-
     );
   }
 });
+
+test("o nome do site para o Google é Orçô, e não o domínio (NBB-100)", async ({ page }) => {
+  await page.goto("/");
+  const jsonLd = await page.locator('script[type="application/ld+json"]').textContent();
+  const data = JSON.parse(jsonLd ?? "{}") as Record<string, string>;
+  expect(data["@type"]).toBe("WebSite");
+  expect(data.name).toBe("Orçô");
+  expect(data.alternateName).toBe("Orco");
+  expect(data.url).toMatch(/^https?:\/\/[^/]+\/$/);
+});
