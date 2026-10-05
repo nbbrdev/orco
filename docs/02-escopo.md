@@ -69,6 +69,13 @@ Uma ferramenta web para **um freelancer** criar, enviar e acompanhar **orçament
 - **Tema claro/escuro:** padrão "Automático" (segue o sistema do aparelho), com opção de fixar Claro ou Escuro no perfil. O PDF e a página do cliente são sempre claros.
 - Termos de uso e política de privacidade (LGPD).
 
+## Depois do lançamento: M8 · Landing e demonstração
+
+Promovido em 2026-10-05 (meta `v1.1.0`), a pedido do usuário:
+
+- **Landing mais elaborada, focada no problema do freelancer** (NBB-97): serviços e valores espalhados, orçamento sem boa apresentação, sem organização do que foi enviado. Seções: topo, o problema, como funciona, o que o cliente recebe (prévia real), benefícios, perguntas frequentes e chamada final. Só componentes reais do app, sem imagens.
+- **Experimentar sem criar conta** (NBB-95), em `/experimentar`: um mini editor com 1 a 3 itens (descrição, quantidade e valor) e o total na hora, que mostra como o cliente recebe o orçamento e deixa simular a aprovação. **Nada é gravado**; no fim, o convite para criar a conta. Não é o editor de verdade nem uma conta de visitante.
+
 ## Fora do MVP (explícito)
 
 | Item | Motivo |

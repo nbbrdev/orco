@@ -38,7 +38,9 @@ Esta pasta é a **fonte da verdade do conteúdo** do projeto. O **planejamento e
 | M6 | Link público + aprovação | Página do cliente, aprovar/recusar, notificações (e-mail, push, lembrete) ✅ (no ar em 2026-10-04) | `0.6.0` |
 | M7 | Hardening & Lançamento | Usabilidade, performance, segurança, LGPD, go-live ✅ (no ar em 2026-10-05) | **`1.0.0`** |
 
-**Depois do lançamento** ← *fase atual*: sem marco; o trabalho vem do Backlog do Linear (ex.: NBB-94, teste com pessoas; NBB-95, provar sem conta; NBB-96, primeiro backup), promovido a um marco quando for decidido.
+| M8 | Landing e demonstração | Landing focada no problema do freelancer, experimentar sem criar conta (`/experimentar`) ← *fase atual* | `1.1.0` |
+
+Depois do lançamento, o trabalho vem do Backlog do Linear e vira marco quando o usuário decide (a M8 foi promovida em 2026-10-05). Em espera: NBB-94 (teste com pessoas) e NBB-96 (primeiro backup).
 
 Versionamento e releases: [ADR-0010](decisoes/0010-versionamento-e-releases.md). Produção só recebe versões com tag.
 

@@ -12,6 +12,7 @@ Slug técnico: `orco` (repositório, subdomínio, pacotes, pastas, identificador
 Freelancers e autônomos (desenvolvedores, designers, eletricistas, fotógrafos, pintores, professores particulares…) montam orçamentos em Word, planilha, bloco de notas ou mensagem de WhatsApp. O resultado:
 
 - aparência pouco profissional e inconsistente entre orçamentos;
+- serviços e valores espalhados (em conversas, planilhas e na memória), sem um lugar central de onde tirar o orçamento;
 - retrabalho: digitar os mesmos serviços, preços e dados do cliente a cada vez;
 - erro de conta em totais e descontos;
 - sem registro claro de quando o cliente aprovou, nem de qual versão;
