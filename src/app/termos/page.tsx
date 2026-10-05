@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { LegalPage } from "@/features/legal/components/legal-page";
-import { CONTROLLER_NAME, TERMS_UPDATED_AT } from "@/features/legal/constants";
+import { CONTACT_EMAIL, CONTROLLER_NAME, TERMS_UPDATED_AT } from "@/features/legal/constants";
 import { MAX_CATALOG_ITEMS_PER_USER } from "@/lib/db/schema/catalog-items";
 import { MAX_CLIENTS_PER_USER } from "@/lib/db/schema/clients";
 import { MAX_ITEMS_PER_QUOTE, MAX_QUOTES_PER_MONTH } from "@/lib/db/schema/quote-limits";
@@ -21,7 +21,8 @@ export default function TermsPage() {
         <p>
           Estes termos valem para quem usa o Orçô, a ferramenta de orçamentos mantida por{" "}
           <strong>{CONTROLLER_NAME}</strong>. Ao criar uma conta, você concorda com eles e com a{" "}
-          <Link href="/privacidade">Política de privacidade</Link>.
+          <Link href="/privacidade">Política de privacidade</Link>. Dúvidas:{" "}
+          <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
         </p>
       </section>
 
