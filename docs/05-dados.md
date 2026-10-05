@@ -179,7 +179,7 @@ Migration `0005_catalog_items` (NBB-45, 2026-10-03).
 | window_start | timestamptz | início da janela, no relógio de São Paulo |
 | count | int | |
 
-PK `(key, window_start)`. Criada na NBB-39 (migration `0002_rate_limits`, escrita à mão). **RLS `ENABLE` + `FORCE` com uma única policy, para a `orco_owner`** (a dona, usada pela função `SECURITY DEFINER`); a `app_user` não tem nenhuma permissão na tabela. Limpeza das janelas antigas da mesma chave feita dentro da própria função.
+PK `(key, window_start)`. Criada na NBB-39 (migration `0002_rate_limits`, escrita à mão). **RLS `ENABLE` + `FORCE` com uma única policy, para a `orco_owner`** (a dona, usada pela função `SECURITY DEFINER`); a `app_user` não tem nenhuma permissão na tabela. Limpeza das janelas antigas da mesma chave feita dentro da própria função. Desde a NBB-30 (T4-A), a tarefa diária também apaga as janelas com mais de 2 dias de **qualquer** chave (`app.purge_old_records()`): antes, uma chave com IP usada uma única vez ficava para sempre.
 
 ## Arquivos (RustFS, ADR-0015)
 
@@ -211,6 +211,7 @@ PK `(key, window_start)`. Criada na NBB-39 (migration `0002_rate_limits`, escrit
 | `app.regenerate_public_token(quote_id)` | `app_user` (só o dono, pela conta da transação; `SECURITY DEFINER`, porque a `app_user` não altera o token) | troca o token na hora, em qualquer status (RN-36, NBB-52 R1-A); devolve o token novo, ou nulo se o orçamento não é da conta |
 | `app.save_push_subscription(endpoint, p256dh, auth, user_agent)` | `app_user` (pela conta da transação; `SECURITY DEFINER`, porque a assinatura pode estar em outra conta) | grava a assinatura deste aparelho na conta logada; se o navegador trocou de conta, passa a assinatura para a atual (RN-45, NBB-61) |
 | `app.delete_push_subscription(endpoint)` | `app_user` (só o servidor, no envio; `SECURITY DEFINER`) | apaga a assinatura com aquele endereço exato quando o serviço de push responde 404/410 (NBB-61 P3-A) |
+| `app.purge_old_records()` | `app_user`, pela tarefa agendada na VPS (`/api/cron/diario`; `SECURITY DEFINER`, porque a `app_user` não alcança a `rate_limits` nem o schema `auth`) | apaga as janelas da `rate_limits` com mais de 2 dias, de qualquer chave (as chaves têm IP), e as sessões de login expiradas (`auth.session`, com IP e navegador); devolve quantas saíram de cada uma (migration `0015_purge_old_records`, NBB-30 T4-A) |
 | `app.anonymize_old_event_ips()` | `app_user`, pela tarefa agendada na VPS (o mesmo agendamento diário do lembrete, NBB-62) | apaga o IP dos eventos com mais de 12 meses (RN-37, NBB-52 D5-A/D6-A) |
 | `app.claim_due_reminders()` | `app_user` (só a rota do agendamento, protegida pela `CRON_SECRET`; `SECURITY DEFINER`) | numa só operação, pega os orçamentos `sent`, sem resposta, com `valid_until = amanhã (SP)` e `reminder_sent_at` nulo, marca o `reminder_sent_at` e devolve o aviso de cada um (número, cliente, validade, e-mail da conta, `email_notifications` e assinaturas de push). Rodar duas vezes não duplica (RN-43; migration `0014_due_reminders`, NBB-62 L4-A; no planejamento se chamava `quotes_due_for_reminder()`) |
 
