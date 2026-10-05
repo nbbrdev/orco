@@ -91,7 +91,7 @@ Uma ferramenta web para **um freelancer** criar, enviar e acompanhar **orçament
 | Modelos (templates) de orçamento | Duplicar cobre o caso |
 | Personalização visual do PDF (cores, layouts) | Um layout bom e fixo no MVP |
 | Relatórios e dashboards | Lista com filtro de status basta |
-| Monitoramento de erros (Sentry) | Reavaliar em M7 |
+| Monitoramento de erros (Sentry) | Reavaliado na M7 (NBB-57, 2026-10-04): fica fora; os erros ficam nos logs do Docker na VPS |
 
 ## Futuro (pós-MVP)
 
