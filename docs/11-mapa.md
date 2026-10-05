@@ -60,7 +60,7 @@ URLs em pt-BR, visíveis ao usuário.
 
 ```
 Público (sem login)
-├── /                         Landing: proposta + "Começar grátis"
+├── /                         Landing: proposta, 3 benefícios, "Começar grátis" e "Entrar" (logado → /app/orcamentos)
 ├── /entrar                   Login (e-mail+senha, Google)
 ├── /cadastro                 Cadastro (e-mail+senha, Google)
 ├── /recuperar-senha          Pedir link de redefinição (aviso se o link venceu)
@@ -82,6 +82,8 @@ Técnico
 ├── /api/auth/*               Rotas do Better Auth: links dos e-mails de conta (confirmação, recuperação) e retorno do Google
 ├── /api/orcamentos/[id]/pdf  PDF (dono) · /api/p/[token]/pdf (cliente final)
 ├── /api/cron/diario          Tarefas diárias: lembrete de vencimento e anonimização dos IPs (POST; cron da VPS, protegido por segredo)
+├── /robots.txt, /sitemap.xml Buscadores: só a landing, /termos e /privacidade (staging: nada)
+├── /opengraph-image          Imagem de prévia do link da landing (gerada no build; só no /)
 ├── /manifest.webmanifest     Manifesto do PWA
 └── /sw.js                    Service worker (recebe push; sem cache offline)
 ```
