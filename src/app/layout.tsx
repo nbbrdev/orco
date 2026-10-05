@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 
 import { ServiceWorker } from "@/components/service-worker";
 import { ThemeProvider } from "@/components/theme-provider";
+import { siteUrl } from "@/lib/site-url";
 import "./globals.css";
 
 const inter = Inter({
@@ -12,18 +13,26 @@ const inter = Inter({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "Orçô",
-    template: "%s · Orçô",
-  },
-  description:
-    "Orçamentos simples para freelancers: crie, envie por link e receba a aprovação do cliente em minutos.",
-  applicationName: "Orçô",
-  // Ícone da tela inicial do iPhone (NBB-60). O favicon é o src/app/icon.svg; o manifesto fica em
-  // src/app/manifest.ts.
-  icons: { apple: "/icons/apple-touch-icon.png" },
-};
+const DESCRIPTION =
+  "Orçamentos simples para freelancers: crie, envie por link e receba a aprovação do cliente em minutos.";
+
+// Lido a cada requisição (as páginas já são dinâmicas por causa do nonce): o metadataBase vem do
+// SITE_URL do ambiente, que não existe no build da imagem Docker.
+export function generateMetadata(): Metadata {
+  return {
+    // Base dos endereços absolutos da prévia do link (og:image, NBB-59 L3-B).
+    metadataBase: new URL(siteUrl()),
+    title: {
+      default: "Orçô",
+      template: "%s · Orçô",
+    },
+    description: DESCRIPTION,
+    applicationName: "Orçô",
+    // Ícone da tela inicial do iPhone (NBB-60). O favicon é o src/app/icon.svg; o manifesto fica em
+    // src/app/manifest.ts.
+    icons: { apple: "/icons/apple-touch-icon.png" },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: [
