@@ -12,13 +12,13 @@
 - Métodos: e-mail + senha e Google OAuth.
 - Confirmação de e-mail obrigatória para cadastro por senha (RN-02).
 - Política de senha: mínimo de 8 caracteres, sem exigência de tipos (RN-03), aplicada pelo Zod no servidor e pela configuração do Better Auth. Risco aceito (ADR-0002/0013).
-- Proteção contra senhas vazadas (HaveIBeenPwned): **não** no MVP. Risco aceito, a reavaliar na M7.
+- Proteção contra senhas vazadas (HaveIBeenPwned): **não** no MVP. Risco aceito, a reavaliar na M7. **Reavaliado em 2026-10-04 (NBB-57 S3):** continua sem; ver §15.
 - **Cadastro protegido sem CAPTCHA externo** (RN-46, decidido em 2026-09-29): a Server Action de cadastro, **antes** de criar a conta, confere:
   - o **limite por IP** (3 por hora);
   - o **campo "isca" (honeypot)**: escondido por CSS, `aria-hidden`, `tabindex="-1"` e `autocomplete="off"`, com um nome que não pareça e-mail nem senha, para gerenciadores de senha e leitores de tela não o preencherem. Preenchido = robô: responde com a tela de sucesso, sem criar conta nem enviar e-mail;
   - o **teto diário de e-mails de cadastro** (60/dia), que protege a cota do Resend Free para recuperação de senha e avisos.
 
-  Risco aceito: um ataque vindo de muitos IPs ainda passa. Se houver abuso, reavaliar um CAPTCHA que rode no nosso servidor (ex.: ALTCHA), sem conta em terceiros.
+  Risco aceito: um ataque vindo de muitos IPs ainda passa. Se houver abuso, reavaliar um CAPTCHA que rode no nosso servidor (ex.: ALTCHA), sem conta em terceiros. **Reavaliado em 2026-10-04 (NBB-57 S3):** continua sem CAPTCHA, no cadastro e no login; ver §15.
 - **Limite de tentativas** de login e de envio de e-mails: o do Better Auth, somado ao nosso rate limit (§10).
 - Mensagens que não revelam se uma conta existe (F-01, F-03, F-04).
 - **Links dos e-mails de conta:** token de **uso único**, com validade de 1 hora, conferido **no servidor** pelas rotas do Better Auth (`/api/auth/*`). Funcionam em qualquer aparelho.
@@ -138,7 +138,9 @@
 
 ## 10. Rate limit e anti-abuso (ADR-0004)
 
-| Alvo | Chave | Limite inicial ⚠️ a calibrar |
+Revistos em 2026-10-04 (NBB-57 S4) e mantidos: ainda não há uso real para calibrar. Recalibrar depois do lançamento, com os logs.
+
+| Alvo | Chave | Limite |
 |---|---|---|
 | `/p/[token]` (visualização) | IP | 60/min |
 | Aprovar/recusar | IP + token | 5/min |
@@ -210,6 +212,25 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 - **Teste de restauração** uma vez antes do go-live (M7, NBB-58): restaurar um backup da produção no banco local e conferir dados e app.
 - **Riscos aceitos:** perda dos dados desde o último backup manual se a VPS for perdida entre duas releases; depende de o dono lembrar do backup (o passo 0 da release, `docs/06-regras-dev.md` §4.1).
 - Reforço opcional: snapshots da VPS no painel da Hostinger.
+
+## 15. Auditoria de segurança (NBB-57, 2026-10-04)
+
+Feita antes do lançamento (M7). Resultado:
+
+| O que | Como foi conferido | Resultado |
+|---|---|---|
+| RLS e permissões do banco | Teste `security-invariants.test.ts`, que roda no CI a cada PR (§3) | As 8 tabelas com RLS ENABLE + FORCE e policies; todas as funções do `app` com dono `orco_owner` e `search_path` vazio; nenhuma função executável por `PUBLIC`; `app_user` e `app_auth` só com as permissões esperadas |
+| Headers HTTP | [securityheaders.com](https://securityheaders.com) na produção | **A+** (HSTS com preload, CSP com nonce, `X-Frame-Options`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`). O `Cross-Origin-Opener-Policy` foi adicionado nesta auditoria (§7) |
+| TLS | [SSL Labs](https://www.ssllabs.com/ssltest/) em `orco.nbbrdev.com` | **A+** (TLS 1.3, troca de chaves pós-quântica, HSTS longo) |
+| Firewall da VPS | `ufw status verbose` | Entrada bloqueada por padrão; abertas só 22, 80 e 443 (IPv4 e IPv6). As portas publicadas pelo Docker ficam só em `127.0.0.1` (app 3000/3001, banco 5433/5434 para o túnel do DBeaver); o RustFS não publica porta. Fora do Nginx, nada é alcançável |
+| Dependências e código | Dependabot e CodeQL no GitHub | Nenhum alerta aberto. O CI segue barrando dependências de produção com falha alta (`npm audit`) |
+
+**Riscos aceitos, reavaliados (S3):**
+- **Senhas vazadas (HaveIBeenPwned):** continua sem. A checagem (pelo prefixo do hash, sem mandar a senha) foi explicada e preterida; o mínimo de 8 caracteres e o limite de tentativas continuam valendo.
+- **CAPTCHA:** continua sem, no cadastro (há limite por IP, honeypot e teto diário, RN-46) e no login (limite de tentativas do Better Auth).
+- **Monitoramento de erros (Sentry):** fica fora. Os erros ficam nos logs do Docker na VPS (`orco <ambiente> logs app`, deploy/README.md), sem dados pessoais mandados a terceiros.
+
+**Mantido como está:** `style-src 'unsafe-inline'` na CSP (S2): usado pelo Next e pelas bibliotecas de interface; os scripts continuam travados pelo nonce. Os limites de uso (§10) ficam como estão (S4).
 
 ## Checklist de segurança do PR
 

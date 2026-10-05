@@ -30,7 +30,7 @@
 | Hosting | **VPS Hostinger** (Ubuntu) com **Docker Compose** (app + Postgres + RustFS por ambiente), **Nginx + Certbot** no Ubuntu; imagens no **GHCR**; deploy por SSH a partir do GitHub Actions (`main` = staging; produção só via release; sem preview por PR) | 0012 |
 | Versionamento / releases | SemVer escolhido pelo usuário; tag `vX.Y.Z` via `gh release create` → `production.yml` (verify → build → migrate → deploy) | 0010 |
 
-**Fora por ora:** Sentry, Upstash, magic link, MFA (reavaliar em M7).
+**Fora por ora:** Sentry, Upstash, magic link, MFA (reavaliar em M7). O Sentry foi reavaliado na NBB-57 (2026-10-04) e continua fora: os erros ficam nos logs do Docker.
 
 ## Visão geral
 
