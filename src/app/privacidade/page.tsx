@@ -202,9 +202,8 @@ export default function PrivacyPage() {
       <section>
         <h2>10. Mudanças nesta política</h2>
         <p>
-          Se esta política mudar de forma relevante, avisaremos por e-mail com pelo menos 15 dias de
-          antecedência. Ajustes só de redação não mudam o que está combinado e não são avisados. A
-          data da última atualização fica no topo da página.
+          Esta política pode mudar. A versão nova é publicada nesta página, com a data no topo, e
+          vale dali para frente.
         </p>
       </section>
     </LegalPage>

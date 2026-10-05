@@ -9,8 +9,9 @@ import { MAX_ITEMS_PER_QUOTE, MAX_QUOTES_PER_MONTH } from "@/lib/db/schema/quote
 
 export const metadata: Metadata = { title: "Termos de uso" };
 
-// Termos de uso (RF-34, NBB-30 T7). Os limites vêm das mesmas constantes que o banco confere (RN-38).
-// Mudou algo relevante? Atualize a data em constants.ts e avise por e-mail com 15 dias (item 10).
+// Termos de uso (RF-34, NBB-30 T7; R1 a R5 e licença A em 2026-10-05: o mínimo de compromissos para
+// um serviço gratuito mantido por uma pessoa). Os limites vêm das mesmas constantes que o banco confere
+// (RN-38). Mudou algo? Atualize a data em constants.ts (item 13).
 
 export default function TermsPage() {
   const number = (value: number) => value.toLocaleString("pt-BR");
@@ -44,11 +45,12 @@ export default function TermsPage() {
       </section>
 
       <section>
-        <h2>3. Disponibilidade</h2>
+        <h2>3. Sem garantias</h2>
         <p>
-          Fazemos o possível para o Orçô funcionar sempre, mas não há garantia de disponibilidade
-          contínua: pode haver falhas e pausas para manutenção. Fazemos cópias de segurança
-          periódicas, mas recomendamos guardar o PDF dos orçamentos importantes.
+          O Orçô é fornecido <strong>como está</strong>, sem garantia de que funcione sem
+          interrupções, de que não tenha erros ou de que atenda a uma necessidade específica sua.
+          Pode haver falhas e pausas. Também <strong>não há garantia contra perda de dados</strong>:
+          guarde o PDF dos orçamentos importantes.
         </p>
       </section>
 
@@ -108,8 +110,8 @@ export default function TermsPage() {
         <h2>8. Suspensão e exclusão</h2>
         <p>
           Contas que violarem estes termos podem ser suspensas ou excluídas. Você pode excluir a sua
-          conta quando quiser, no Perfil: os dados são apagados na hora, e as cópias de segurança
-          antigas são substituídas com o tempo.
+          conta quando quiser, no Perfil: os dados são apagados na hora, e eventuais cópias de
+          segurança são substituídas com o tempo.
         </p>
       </section>
 
@@ -122,16 +124,40 @@ export default function TermsPage() {
       </section>
 
       <section>
-        <h2>10. Mudanças nestes termos</h2>
+        <h2>10. O código e a marca</h2>
         <p>
-          Se estes termos mudarem de forma relevante, avisaremos por e-mail com pelo menos 15 dias
-          de antecedência. Ajustes só de redação não são avisados. A data da última atualização fica
-          no topo da página.
+          O código do Orçô é público para consulta, mas não é licenciado para cópia nem
+          reutilização. O código, o nome Orçô e o logo pertencem ao mantenedor.
         </p>
       </section>
 
       <section>
-        <h2>11. Lei e foro</h2>
+        <h2>11. Limitação de responsabilidade</h2>
+        <p>
+          No limite que a lei permite, o Orçô e o seu mantenedor não respondem por lucros perdidos,
+          negócios não fechados, perda de dados ou outros prejuízos indiretos causados pelo uso do
+          Orçô ou pela impossibilidade de usá-lo.
+        </p>
+      </section>
+
+      <section>
+        <h2>12. Encerramento do serviço</h2>
+        <p>
+          O Orçô pode deixar de existir. Se isso acontecer, avisaremos com pelo menos 30 dias de
+          antecedência, para você baixar os PDFs dos seus orçamentos.
+        </p>
+      </section>
+
+      <section>
+        <h2>13. Mudanças nestes termos</h2>
+        <p>
+          Estes termos podem mudar. A versão nova é publicada nesta página, com a data no topo, e
+          vale dali para frente: continuar usando o Orçô depois disso significa concordar com ela.
+        </p>
+      </section>
+
+      <section>
+        <h2>14. Lei e foro</h2>
         <p>
           Estes termos seguem a lei brasileira. Qualquer disputa será resolvida no foro do domicílio
           de quem usa o Orçô.

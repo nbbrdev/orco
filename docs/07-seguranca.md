@@ -183,6 +183,8 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 - **VPS:** SSH só por chave (sem senha, sem root), firewall com só 22/80/443, atualizações de segurança automáticas; banco e RustFS sem porta publicada.
 - Seeds e testes usam dados fictícios (`@example.com`, CPFs de teste gerados).
 - GitHub: **secret scanning + push protection** ativos (ADR-0007).
+- **Sem licença** (NBB-30, 2026-10-05): o código é público só para consulta, sem licença de cópia ou reutilização; o código, o nome Orçô e o logo pertencem ao mantenedor (dito também nos termos de uso).
+- **`SECURITY.md`** na raiz: falhas de segurança são avisadas em particular, pelo e-mail do mantenedor, nunca por issue pública.
 
 ## 12. Dependências e código
 
