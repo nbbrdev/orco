@@ -13,13 +13,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
 import { PublicQuoteView } from "@/features/public-quote/components/public-quote-view";
 import { MAX_CATALOG_ITEMS_PER_USER } from "@/lib/db/schema/catalog-items";
 import { MAX_CLIENTS_PER_USER } from "@/lib/db/schema/clients";
 import { MAX_QUOTES_PER_MONTH } from "@/lib/db/schema/quote-limits";
 
 import { sampleQuoteModel } from "../sample-quote";
+import { SignUpButtons } from "./site-chrome";
 
 // Seções da landing (NBB-97): o problema do freelancer (D6.2-A), como funciona, o que o cliente
 // recebe, benefícios, perguntas frequentes e a chamada final. Textos decididos com o usuário em
@@ -290,9 +290,7 @@ export function FinalCallSection() {
       <h2 id="final-title" className={SECTION_TITLE}>
         Organize os seus orçamentos hoje.
       </h2>
-      <Button asChild size="lg" className="w-full sm:w-auto sm:px-8">
-        <Link href="/cadastro">Começar grátis</Link>
-      </Button>
+      <SignUpButtons className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row" />
     </section>
   );
 }

@@ -83,7 +83,7 @@ Técnico
 ├── /api/auth/*               Rotas do Better Auth: links dos e-mails de conta (confirmação, recuperação) e retorno do Google
 ├── /api/orcamentos/[id]/pdf  PDF (dono) · /api/p/[token]/pdf (cliente final)
 ├── /api/cron/diario          Tarefas diárias: lembrete de vencimento e anonimização dos IPs (POST; cron da VPS, protegido por segredo)
-├── /robots.txt, /sitemap.xml Buscadores: só a landing, /termos e /privacidade (staging: nada)
+├── /robots.txt, /sitemap.xml Buscadores: só a landing, /experimentar, /termos e /privacidade (staging: nada)
 ├── /opengraph-image          Imagem de prévia do link da landing (gerada no build; só no /)
 ├── /manifest.webmanifest     Manifesto do PWA
 └── /sw.js                    Service worker (recebe push; sem cache offline)
