@@ -60,7 +60,7 @@ URLs em pt-BR, visíveis ao usuário.
 
 ```
 Público (sem login)
-├── /                         Landing: proposta, 3 benefícios, "Começar grátis" e "Entrar" (logado → /app/orcamentos)
+├── /                         Landing focada no problema (NBB-97): topo, o problema, como funciona, o que o cliente recebe, benefícios, perguntas, "Começar grátis" e "Entrar" (logado → /app/orcamentos)
 ├── /entrar                   Login (e-mail+senha, Google)
 ├── /cadastro                 Cadastro (e-mail+senha, Google)
 ├── /recuperar-senha          Pedir link de redefinição (aviso se o link venceu)

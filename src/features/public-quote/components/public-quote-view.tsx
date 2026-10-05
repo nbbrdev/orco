@@ -6,14 +6,20 @@ import type { QuoteDocumentModel } from "@/pdf/model";
 // - Cabeçalho: logo, nome e contatos do freelancer; número, emissão e validade; filete na cor
 //   principal (doc 12).
 // - Itens: no celular, um bloco por item; no computador, uma tabela. Desconto só se existir (RN-15b).
+// - `compact`: sempre o layout do celular, para a prévia dentro de uma moldura de celular na landing
+//   (NBB-97), onde a largura da tela não diz a largura do espaço. `titleAs`: a landing já tem o h1.
 
 export function PublicQuoteView({
   model,
   logoUrl,
+  compact = false,
+  titleAs: Title = "h1",
 }: {
   model: QuoteDocumentModel;
   /** Endereço público do logo (/api/p/logos/…), ou nulo. */
   logoUrl: string | null;
+  compact?: boolean;
+  titleAs?: "h1" | "h2" | "p";
 }) {
   const terms = [
     { label: "Condições de pagamento", value: model.paymentTerms },
@@ -22,7 +28,13 @@ export function PublicQuoteView({
 
   return (
     <article className="flex flex-col gap-8" aria-label={`Orçamento Nº ${model.number}`}>
-      <header className="flex flex-col gap-4 border-b-2 border-primary pb-5 sm:flex-row sm:justify-between">
+      <header
+        className={
+          compact
+            ? "flex flex-col gap-4 border-b-2 border-primary pb-5"
+            : "flex flex-col gap-4 border-b-2 border-primary pb-5 sm:flex-row sm:justify-between"
+        }
+      >
         <div className="flex min-w-0 items-start gap-4">
           {logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- imagem da nossa própria rota, já pequena
@@ -39,8 +51,8 @@ export function PublicQuoteView({
             ))}
           </div>
         </div>
-        <div className="shrink-0 sm:text-right">
-          <h1 className="text-xl font-semibold">Orçamento Nº {model.number}</h1>
+        <div className={compact ? "shrink-0" : "shrink-0 sm:text-right"}>
+          <Title className="text-xl font-semibold">Orçamento Nº {model.number}</Title>
           <p className="text-sm text-muted-foreground">Emitido em {model.issuedAt}</p>
           <p className="text-sm text-muted-foreground">Válido até {model.validUntil}</p>
         </div>
@@ -65,7 +77,13 @@ export function PublicQuoteView({
 
       <section aria-label="Itens">
         {/* Celular: um bloco por item. */}
-        <ul className="flex flex-col divide-y divide-border border-y border-border md:hidden">
+        <ul
+          className={
+            compact
+              ? "flex flex-col divide-y divide-border border-y border-border"
+              : "flex flex-col divide-y divide-border border-y border-border md:hidden"
+          }
+        >
           {model.lines.map((line, index) => (
             <li key={index} className="flex flex-col gap-1 py-3">
               <p className="break-words">{line.description}</p>
@@ -82,7 +100,7 @@ export function PublicQuoteView({
         </ul>
 
         {/* Computador: tabela. */}
-        <table className="hidden w-full text-sm md:table">
+        <table className={compact ? "hidden" : "hidden w-full text-sm md:table"}>
           <thead>
             <tr className="border-b border-foreground text-xs tracking-wide text-muted-foreground uppercase">
               <th className="py-2 pr-3 text-left font-semibold">Descrição</th>
@@ -111,7 +129,13 @@ export function PublicQuoteView({
           </tbody>
         </table>
 
-        <dl className="mt-4 ml-auto flex w-full flex-col gap-1 text-sm md:max-w-xs">
+        <dl
+          className={
+            compact
+              ? "mt-4 flex w-full flex-col gap-1 text-sm"
+              : "mt-4 ml-auto flex w-full flex-col gap-1 text-sm md:max-w-xs"
+          }
+        >
           {"subtotal" in model.totals ? (
             <>
               <div className="flex justify-between">
