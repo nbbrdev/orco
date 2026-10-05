@@ -62,7 +62,7 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
 - **Merge na `main` = deploy automático em staging** (`staging.yml`), nunca em produção.
 - **Produção só recebe versões criadas pelo usuário**, com uma tag `vX.Y.Z` no commit da `main`. O agente **nunca** publica tags ou releases; só cria um **rascunho** a pedido do usuário, que revisa e publica.
 - **Como lançar:**
-  0. **Fazer o backup do banco da produção pelo DBeaver** (`deploy/README.md`, "Backup pelo DBeaver"). Não há backup automático, e a release aplica migrations na produção (decisão do usuário em 2026-09-30).
+  0. **Fazer o backup do banco da produção pelo DBeaver** (`deploy/README.md`, "Backup pelo DBeaver"). Não há backup automático, e a release aplica migrations na produção (decisão do usuário em 2026-09-30). **Obrigatório a partir da `v1.0.0`**; antes, a produção não tem usuários reais (decisão do usuário em 2026-10-05).
   1. Conferir que o CI da `main` está verde.
   2. Escolher o número (**SemVer**) olhando os títulos dos PRs desde a última versão:
      - algum `feat` → sobe o **minor** (0.1.0 → 0.**2**.0);
