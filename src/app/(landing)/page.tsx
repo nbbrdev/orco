@@ -13,16 +13,22 @@ import {
 import { SignUpButtons, SiteFooter, SiteHeader } from "@/features/landing/components/site-chrome";
 import { getSessionUser } from "@/lib/auth/session";
 
-// Prévia do link da landing (NBB-59 L3-B); a imagem vem do ./opengraph-image.tsx. Só aqui, e não no
-// layout, para o link do orçamento do cliente (/p/[token]) não aparecer com a propaganda do Orçô.
+const DESCRIPTION =
+  "Organize os seus serviços e valores, monte um orçamento com a sua marca e mande um link para o cliente aprovar com um toque. Grátis.";
+
+// Título e descrição que aparecem no Google (NBB-99 I2-A) e o endereço canônico, sem o ?conta=excluida
+// (I3-A). A prévia do link (NBB-59 L3-B), com a imagem do ./opengraph-image.tsx, fica só aqui, e não
+// no layout, para o link do orçamento do cliente (/p/[token]) não aparecer com a propaganda do Orçô.
 export const metadata: Metadata = {
+  title: { absolute: "Orçô: seus serviços, preços e clientes num só lugar" },
+  description: DESCRIPTION,
+  alternates: { canonical: "/" },
   openGraph: {
     siteName: "Orçô",
     locale: "pt_BR",
     type: "website",
     title: "Orçô: seus serviços, preços e clientes num só lugar",
-    description:
-      "Organize os seus serviços e valores, monte um orçamento com a sua marca e mande um link para o cliente aprovar com um toque. Grátis.",
+    description: DESCRIPTION,
   },
 };
 

@@ -4,7 +4,11 @@ import Link from "next/link";
 import { LegalPage } from "@/features/legal/components/legal-page";
 import { CONTACT_EMAIL, CONTROLLER_NAME, PRIVACY_UPDATED_AT } from "@/features/legal/constants";
 
-export const metadata: Metadata = { title: "Política de privacidade" };
+// Canônico (NBB-99 I3-A): o endereço único desta página para os buscadores.
+export const metadata: Metadata = {
+  title: "Política de privacidade",
+  alternates: { canonical: "/privacidade" },
+};
 
 // Política de privacidade (RF-34, LGPD, NBB-30). Prazos e dados conferidos no código e em
 // docs/07-seguranca.md §13; mudou algo lá, mude aqui (e a data em constants.ts).

@@ -58,9 +58,38 @@ test("os buscadores só veem a landing e os documentos legais (L4-A)", async ({ 
   const robots = await (await request.get("/robots.txt")).text();
   expect(robots).toContain("Disallow: /app");
   expect(robots).toContain("Disallow: /p/");
+  // NBB-99 I1-A: os Allow sozinhos não fecham nada; as telas de conta são bloqueadas uma a uma.
+  for (const path of ["/entrar", "/cadastro", "/recuperar-senha", "/redefinir-senha"]) {
+    expect(robots).toContain(`Disallow: ${path}`);
+  }
+  expect(robots).not.toContain("Disallow: /\n");
   expect(robots).toContain("Sitemap:");
 
   const sitemap = await (await request.get("/sitemap.xml")).text();
   expect(sitemap).toContain("/termos</loc>");
   expect(sitemap).not.toContain("/app");
+});
+
+test("título, descrição e endereço canônico para o Google (NBB-99 I2-A, I3-A)", async ({
+  page,
+}) => {
+  await page.goto("/?conta=excluida");
+  await expect(page).toHaveTitle("Orçô: seus serviços, preços e clientes num só lugar");
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+    "content",
+    /^Organize os seus serviços e valores/,
+  );
+  // Sem o ?conta=excluida; o Next escreve a raiz sem a barra final, como no sitemap.
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    "href",
+    /^https?:\/\/[^/?]+\/?$/,
+  );
+
+  for (const path of ["/experimentar", "/termos", "/privacidade"]) {
+    await page.goto(path);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      "href",
+      new RegExp(`${path}$`),
+    );
+  }
 });
