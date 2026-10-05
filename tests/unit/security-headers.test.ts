@@ -27,6 +27,7 @@ describe("security headers (next.config)", () => {
     expect(global["Permissions-Policy"]).toBe(
       "camera=(), microphone=(), geolocation=(), payment=()",
     );
+    expect(global["Cross-Origin-Opener-Policy"]).toBe("same-origin");
   });
 
   it("keeps the public quote token private (no referrer, no indexing)", async () => {

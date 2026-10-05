@@ -22,6 +22,9 @@ const GLOBAL_HEADERS: HeaderEntry[] = [
     key: "Permissions-Policy",
     value: "camera=(), microphone=(), geolocation=(), payment=()",
   },
+  // Uma página de outro site aberta a partir do Orçô (ou que o abriu) não alcança esta janela
+  // (NBB-57 S2). O login com o Google é por redirecionamento, não por pop-up, então não é afetado.
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
 ];
 
 // Página pública do orçamento: o token na URL nunca vaza por Referer nem é indexado (ADR-0005).

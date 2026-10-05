@@ -56,6 +56,7 @@
   - outro usuário não lê nem altera;
   - sem usuário na transação, nada é visível;
   - a `app_auth` não alcança as tabelas do produto.
+- **Invariantes conferidos no CI** (NBB-57 S1-A, `tests/integration/security-invariants.test.ts`): toda tabela do `public` com RLS ENABLE + FORCE e ao menos uma policy; toda função do `app` com dono `orco_owner` e `search_path` vazio; nenhuma função executável por `PUBLIC`; as roles do app sem superusuário, `BYPASSRLS`, criação de roles/bancos ou de objetos em schemas; e as permissões exatas da `app_user` (tabelas, colunas alteráveis, funções, sem o IP dos eventos) e da `app_auth` (só o schema `auth`). Permissão nova precisa entrar no teste, no mesmo PR, para ser revisada.
 
 ## 4. Acesso público ao orçamento (ADR-0005/0014)
 
@@ -116,6 +117,7 @@
 - `Referrer-Policy: strict-origin-when-cross-origin` (padrão) / `no-referrer` (em `/p/*`).
 - `X-Robots-Tag: noindex, nofollow` em `/p/*`.
 - `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()`.
+- `Cross-Origin-Opener-Policy: same-origin` (NBB-57 S2): uma página de outro site aberta a partir do Orçô, ou que o abriu, não alcança a janela dele. O login com o Google é por redirecionamento, então não é afetado.
 - `poweredByHeader: false`: sem `X-Powered-By: Next.js`.
 - Verificação externa (securityheaders.com, nota A) no staging, quando ele estiver no ar (NBB-35).
 
