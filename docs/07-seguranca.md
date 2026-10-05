@@ -198,7 +198,7 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 - **Nunca logar** senhas, tokens públicos, cookies, headers de autorização, CPF/CNPJ, e-mails ou telefones.
 - Bases legais: execução de contrato (dados da conta), legítimo interesse (IP do aceite como evidência e segurança).
 - **Minimização no login com Google:** do perfil do Google, o Orçô guarda só o e-mail e o nome (coluna técnica). A foto é descartada, porque não é usada (NBB-40).
-- Retenção: dados da conta até a exclusão (RN-06); IP de eventos por 12 meses (RN-37).
+- Retenção: dados da conta até a exclusão (RN-06); IP de eventos por 12 meses (RN-37). Desde a NBB-30 (T4-A), a tarefa diária também apaga as janelas dos limites de uso com mais de 2 dias (as chaves têm IP) e as sessões de login expiradas (IP e navegador), pela função `app.purge_old_records()`.
 - Direitos do titular: exclusão pela própria conta; demais pedidos pelo e-mail de contato da política de privacidade.
 - Os dados dos clientes finais cadastrados pelo freelancer são tratados pelo Orçô como **operador**; o freelancer é o controlador. Isso consta nos termos.
 - Política de privacidade e termos publicados antes do go-live (M7). ⚠️ PENDENTE: texto.

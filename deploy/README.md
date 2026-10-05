@@ -347,7 +347,7 @@ Rodando à mão, como o cron faz:
 sudo -u deploy /opt/orco/bin/daily.sh staging
 ```
 
-Esperado: `{"reminders":0,"anonymizedIps":0}` (ou os números do dia). Sem a `CRON_SECRET` no app: erro 503; com a senha errada: 401. As execuções do cron ficam no log: `journalctl -t orco-daily`.
+Esperado: `{"reminders":0,"anonymizedIps":0,"purgedRateLimits":…,"purgedSessions":…}` (os números do dia; os dois últimos são a limpeza dos limites de uso e das sessões expiradas, NBB-30). Sem a `CRON_SECRET` no app: erro 503; com a senha errada: 401. As execuções do cron ficam no log: `journalctl -t orco-daily`.
 
 > Como o `deploy.sh`, o `daily.sh` e o `orco.cron` **não se atualizam sozinhos**. Quando um PR mudar um deles, repita o passo 2.
 

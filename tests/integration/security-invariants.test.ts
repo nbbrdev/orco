@@ -94,6 +94,8 @@ const APP_USER_FUNCTIONS = [
   "generate_public_token",
   "get_public_quote",
   "normalize_search",
+  // Limpeza diária das janelas dos limites de uso e das sessões expiradas (NBB-30 T4-A).
+  "purge_old_records",
   "regenerate_public_token",
   "register_quote_view",
   "respond_to_quote",

@@ -5,7 +5,7 @@ import postgres from "postgres";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { POST } from "@/app/api/cron/diario/route";
-import { sendDueReminders } from "@/features/reminders/daily";
+import { purgeOldRecords, sendDueReminders } from "@/features/reminders/daily";
 import { createQuote, saveQuoteItems, sendQuote } from "@/features/quotes/quotes";
 import { closeDb, getAuthDb } from "@/lib/db";
 import { user } from "@/lib/db/schema";
@@ -163,5 +163,30 @@ describe("POST /api/cron/diario (L2-A)", () => {
     expect(body.reminders).toBeGreaterThanOrEqual(1);
     expect(body.anonymizedIps).toBeGreaterThanOrEqual(0);
     expect(await remindedAt(id)).toBeInstanceOf(Date);
+  });
+});
+
+describe("purgeOldRecords (NBB-30 T4-A, LGPD)", () => {
+  it("apaga as janelas dos limites com mais de 2 dias e as sessões expiradas, e só elas", async () => {
+    const tag = randomUUID();
+    await owner`
+      insert into public.rate_limits (key, window_start, count) values
+        (${`teste:ip:${tag}:velha`}, now() - interval '3 days', 1),
+        (${`teste:ip:${tag}:nova`}, now() - interval '1 day', 1)`;
+    await owner`
+      insert into auth.session (expires_at, token, updated_at, ip_address, user_agent, user_id) values
+        (now() - interval '1 hour', ${`expirada-${tag}`}, now(), '200.153.1.1', 'Mozilla/5.0', ${account.id}),
+        (now() + interval '7 days', ${`valendo-${tag}`}, now(), '200.153.1.2', 'Mozilla/5.0', ${account.id})`;
+
+    const purged = await purgeOldRecords();
+    expect(purged.rateLimits).toBeGreaterThanOrEqual(1);
+    expect(purged.sessions).toBeGreaterThanOrEqual(1);
+
+    const limits = await owner<{ key: string }[]>`
+      select key from public.rate_limits where key like ${`teste:ip:${tag}:%`}`;
+    expect(limits.map((row) => row.key)).toEqual([`teste:ip:${tag}:nova`]);
+    const sessions = await owner<{ token: string }[]>`
+      select token from auth.session where token like ${`%-${tag}`}`;
+    expect(sessions.map((row) => row.token)).toEqual([`valendo-${tag}`]);
   });
 });

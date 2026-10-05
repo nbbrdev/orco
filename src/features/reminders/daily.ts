@@ -7,9 +7,10 @@ import { anonymizeOldEventIps } from "@/features/public-quote/public-quote";
 import { getAppDb } from "@/lib/db";
 import { notifyFreelancer } from "@/lib/notify";
 
-// As tarefas do agendamento diário (NBB-62, L2-A): o lembrete de vencimento (RN-43) e a anonimização
-// dos IPs com mais de 12 meses (RN-37). Quem chama é a rota /api/cron/diario, protegida pela
-// CRON_SECRET; não há sessão de ninguém, então os dados vêm das funções SECURITY DEFINER (L4-A).
+// As tarefas do agendamento diário (NBB-62, L2-A): o lembrete de vencimento (RN-43), a anonimização
+// dos IPs com mais de 12 meses (RN-37) e a limpeza das janelas antigas dos limites de uso e das
+// sessões expiradas (NBB-30 T4-A). Quem chama é a rota /api/cron/diario, protegida pela CRON_SECRET;
+// não há sessão de ninguém, então os dados vêm das funções SECURITY DEFINER (L4-A).
 
 // O JSON de app.claim_due_reminders (migration 0014).
 const dueRemindersSchema = z.array(
@@ -55,11 +56,36 @@ export async function sendDueReminders(): Promise<number> {
   return due.length;
 }
 
-export type DailyResult = { reminders: number; anonymizedIps: number };
+// O JSON de app.purge_old_records (migration 0015).
+const purgeSchema = z.object({ rateLimits: z.number().int(), sessions: z.number().int() });
 
-/** As duas tarefas do dia. */
+/**
+ * Apaga as janelas dos limites de uso com mais de 2 dias (as chaves têm IP) e as sessões de login
+ * expiradas (com IP e navegador), como promete a política de privacidade. Devolve quantas saíram.
+ */
+export async function purgeOldRecords(): Promise<z.infer<typeof purgeSchema>> {
+  const rows = await getAppDb().execute<{ purged: unknown }>(
+    sql`select app.purge_old_records() as purged`,
+  );
+  return purgeSchema.parse(rows[0]?.purged);
+}
+
+export type DailyResult = {
+  reminders: number;
+  anonymizedIps: number;
+  purgedRateLimits: number;
+  purgedSessions: number;
+};
+
+/** As tarefas do dia. */
 export async function runDailyTasks(): Promise<DailyResult> {
   const reminders = await sendDueReminders();
   const anonymizedIps = await anonymizeOldEventIps();
-  return { reminders, anonymizedIps };
+  const purged = await purgeOldRecords();
+  return {
+    reminders,
+    anonymizedIps,
+    purgedRateLimits: purged.rateLimits,
+    purgedSessions: purged.sessions,
+  };
 }
