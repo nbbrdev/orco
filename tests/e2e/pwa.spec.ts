@@ -27,8 +27,12 @@ test("manifesto, ícones e service worker são servidos (RF-36)", async ({ reque
   expect(await sw.text()).toContain("skipWaiting");
 });
 
-test("a página aponta o ícone do iPhone e registra o service worker", async ({ page }) => {
+test("a página aponta o favicon e o ícone do iPhone e registra o service worker", async ({
+  page,
+}) => {
   await page.goto("/");
+  // O favicon sumiu das páginas desde a NBB-60, sem nenhum teste perceber.
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute("href", "/icon.svg");
   await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute(
     "href",
     "/icons/apple-touch-icon.png",
