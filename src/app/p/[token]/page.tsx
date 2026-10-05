@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { after } from "next/server";
 
@@ -139,6 +140,13 @@ function PublicShell({
         className={`mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 ${withActionBar ? "pb-28 md:pb-12" : ""}`}
       >
         {children}
+        {/* O cliente final também é titular de dados (guardamos o IP do aceite): o link para a
+            política fica discreto no fim (NBB-30 T5). */}
+        <footer className="text-xs text-muted-foreground">
+          <Link href="/privacidade" className="underline-offset-4 hover:underline">
+            Política de privacidade
+          </Link>
+        </footer>
       </div>
     </main>
   );

@@ -39,6 +39,9 @@ describe("isPublicPath", () => {
     "/manifest.webmanifest",
     // Protegida pela própria senha, a CRON_SECRET (NBB-62).
     "/api/cron/diario",
+    // Documentos legais, para qualquer pessoa ler (NBB-30).
+    "/termos",
+    "/privacidade",
   ])("%s is public", (path) => {
     expect(isPublicPath(path)).toBe(true);
   });

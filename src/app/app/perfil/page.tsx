@@ -6,6 +6,7 @@ import { ProfileForm } from "@/features/profile/components/profile-form";
 import { logoUrl } from "@/features/profile/logo-rules";
 import { getProfile } from "@/features/profile/profile";
 import { requireSessionUser } from "@/lib/auth/session";
+import { LegalLinks } from "@/features/legal/components/legal-page";
 import { vapidPublicKey } from "@/lib/push";
 
 export const metadata: Metadata = { title: "Perfil" };
@@ -57,6 +58,7 @@ export default async function ProfilePage() {
           Novidades
         </a>
       </p>
+      <LegalLinks className="-mt-8 text-xs text-muted-foreground" />
     </div>
   );
 }
