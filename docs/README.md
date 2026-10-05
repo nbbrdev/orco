@@ -36,7 +36,9 @@ Esta pasta é a **fonte da verdade do conteúdo** do projeto. O **planejamento e
 | M4 | Orçamentos | Editor, cálculo, status, duplicar ✅ (no ar em 2026-10-03) | `0.4.0` |
 | M5 | PDF | PDF com marca ✅ (no ar em 2026-10-04) | `0.5.0` |
 | M6 | Link público + aprovação | Página do cliente, aprovar/recusar, notificações (e-mail, push, lembrete) ✅ (no ar em 2026-10-04) | `0.6.0` |
-| M7 | Hardening & Lançamento | Usabilidade, performance, segurança, LGPD, go-live ← *fase atual* | **`1.0.0`** |
+| M7 | Hardening & Lançamento | Usabilidade, performance, segurança, LGPD, go-live ✅ (no ar em 2026-10-05) | **`1.0.0`** |
+
+**Depois do lançamento** ← *fase atual*: sem marco; o trabalho vem do Backlog do Linear (ex.: NBB-94, teste com pessoas; NBB-95, provar sem conta; NBB-96, primeiro backup), promovido a um marco quando for decidido.
 
 Versionamento e releases: [ADR-0010](decisoes/0010-versionamento-e-releases.md). Produção só recebe versões com tag.
 

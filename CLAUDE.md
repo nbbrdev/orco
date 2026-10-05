@@ -13,14 +13,12 @@ Produção: https://orco.nbbrdev.com · Repo: `nbbrdev/orco` (público) · Linea
 - Mudou `docs/`? Atualize o Linear Doc correspondente na mesma sessão, e vice-versa.
 
 ## Fase atual
-**M7: Hardening & Lançamento** (meta: `v1.0.0`). A **M6** foi concluída em 2026-10-04, com a `v0.6.0` no ar (link público com aprovar/recusar, modo leitura, compartilhar, e-mail e push ao freelancer, lembrete diário pelo cron da VPS). O ajuste visual da NBB-92 vai numa `v0.6.1`.
+**Depois do lançamento.** A **M7** foi concluída em 2026-10-05, com a **`v1.0.0` no ar** (auditoria de segurança, termos e privacidade, performance e E2E, alvos de toque de 44 px no celular, landing com prévia do link, `robots.txt` e `sitemap.xml`; Google OAuth publicado). Não há marco aberto: o trabalho vem do **Backlog** do Linear e só vira marco quando o usuário decidir.
 
-Ordem da M7 (decidida com o usuário em 2026-10-04; o staging recebe cada merge, e a `v1.0.0` é o lançamento):
-1. ✅ NBB-57: auditoria de segurança (RLS, headers, dependências e os riscos aceitos);
-2. ✅ NBB-30: termos de uso e política de privacidade (LGPD), na `v0.7.0`;
-3. ✅ NBB-58: performance (LCP/INP) e E2E completos;
-4. ✅ NBB-56: revisão a 360 px e alvos de toque de 44 px no celular, na `v0.8.0`. O **teste com pessoas** ficou para depois do lançamento (U6-C, 2026-10-05): NBB-94, no Backlog;
-5. NBB-59: landing page e go-live, com o primeiro backup da produção e o teste de restauração dele (o backup é obrigatório a partir da `v1.0.0`).
+Próximos candidatos (no Backlog):
+- NBB-96: primeiro backup da produção e teste de restauração; **o backup é obrigatório a partir da primeira release depois da `v1.0.0`**, e o primeiro sai com os primeiros cadastros reais;
+- NBB-94: teste de usabilidade com 3 pessoas (RNF-01), com o roteiro no Linear Doc "Teste de usabilidade (NBB-56)";
+- NBB-95: provar o Orçô sem criar conta (reavaliar depois da NBB-94).
 
 Lembretes:
 - o teste manual do push nos aparelhos (Android, iPhone instalado, computador e o Sair) é do usuário e ainda está pendente (NBB-61);
