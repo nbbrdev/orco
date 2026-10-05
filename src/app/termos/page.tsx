@@ -7,7 +7,8 @@ import { MAX_CATALOG_ITEMS_PER_USER } from "@/lib/db/schema/catalog-items";
 import { MAX_CLIENTS_PER_USER } from "@/lib/db/schema/clients";
 import { MAX_ITEMS_PER_QUOTE, MAX_QUOTES_PER_MONTH } from "@/lib/db/schema/quote-limits";
 
-export const metadata: Metadata = { title: "Termos de uso" };
+// Canônico (NBB-99 I3-A): o endereço único desta página para os buscadores.
+export const metadata: Metadata = { title: "Termos de uso", alternates: { canonical: "/termos" } };
 
 // Termos de uso (RF-34, NBB-30 T7; R1 a R5 e licença A em 2026-10-05: o mínimo de compromissos para
 // um serviço gratuito mantido por uma pessoa). Os limites vêm das mesmas constantes que o banco confere

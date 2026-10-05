@@ -7,6 +7,8 @@ export const metadata: Metadata = {
   title: "Experimente sem criar conta",
   description:
     "Monte um orçamento de exemplo e veja como o seu cliente recebe. Sem cadastro e sem guardar nada.",
+  // Canônico (NBB-99 I3-A): o endereço único desta página para os buscadores.
+  alternates: { canonical: "/experimentar" },
 };
 
 // Experimentar sem conta (NBB-95, D2-A): página pública, aberta também a quem está logado. Fica no
