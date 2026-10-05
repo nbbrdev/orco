@@ -18,7 +18,7 @@
 |---|---|---|
 | P-05 | ~~Limites de uso por conta~~ **Resolvido:** 200 orçamentos/mês, 1.000 clientes, 500 itens (RN-38). | — |
 | P-06 | ~~Retenção do IP~~ **Resolvido:** 12 meses (RN-37). | — |
-| P-07 | Texto dos termos de uso e da política de privacidade | Não (até M7) |
+| P-07 | ~~Texto dos termos de uso e da política de privacidade~~ **Resolvido:** `/termos` e `/privacidade` (NBB-30, 2026-10-04), sem revisão jurídica. | — |
 | P-08 | ~~Identidade visual~~ **Resolvido:** teal + Inter + ícone de documento com visto, tom sóbrio ([12-identidade-visual.md](12-identidade-visual.md)). | — |
 
 ## Infra

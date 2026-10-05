@@ -202,6 +202,7 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 - Direitos do titular: exclusão pela própria conta; demais pedidos pelo e-mail de contato da política de privacidade.
 - Os dados dos clientes finais cadastrados pelo freelancer são tratados pelo Orçô como **operador**; o freelancer é o controlador. Isso consta nos termos.
 - Política de privacidade e termos publicados antes do go-live (M7). ⚠️ PENDENTE: texto.
+- **Como ficou** (NBB-30, 2026-10-04): `/termos` e `/privacidade`, públicas (fora do login e do Basic Auth do staging). Responsável: o mantenedor, pelo nome (T1-B), com o contato `privacidade@nbbrdev.com` (redirecionamento de e-mail no domínio). Suboperadores: Hostinger (servidor e DNS, no Brasil), Resend (e-mails, EUA: transferência internacional), Google, Apple e Mozilla (push; Google também no login). Retenção prometida: conta até a exclusão; IP do link 12 meses; sessões expiradas e IP dos limites de uso apagados diariamente (até 2 dias); registros de acesso do servidor até 14 dias. Aceite pela frase no cadastro, sem caixa de marcar e sem guardar a versão aceita (T5, T6). Pedidos do titular respondidos em até 15 dias. Texto redigido sem revisão jurídica.
 
 ## 14. Backups e continuidade
 
