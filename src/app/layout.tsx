@@ -28,9 +28,13 @@ export function generateMetadata(): Metadata {
     },
     description: DESCRIPTION,
     applicationName: "Orçô",
-    // Ícone da tela inicial do iPhone (NBB-60). O favicon é o src/app/icon.svg; o manifesto fica em
-    // src/app/manifest.ts.
-    icons: { apple: "/icons/apple-touch-icon.png" },
+    // Favicon (src/app/icon.svg) e ícone da tela inicial do iPhone (NBB-60); o manifesto fica em
+    // src/app/manifest.ts. O favicon é declarado aqui também: com `icons` na configuração, o Next
+    // deixava de anunciar o icon.svg, e as páginas ficaram sem favicon desde a NBB-60.
+    icons: {
+      icon: { url: "/icon.svg", type: "image/svg+xml" },
+      apple: "/icons/apple-touch-icon.png",
+    },
   };
 }
 
