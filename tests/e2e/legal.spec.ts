@@ -13,10 +13,7 @@ test("termos e privacidade abrem sem login e apontam um para o outro", async ({ 
   await expect(
     page.getByRole("heading", { level: 1, name: "Política de privacidade" }),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: "privacidade@nbbrdev.com" }).first()).toHaveAttribute(
-    "href",
-    "mailto:privacidade@nbbrdev.com",
-  );
+  await expect(page.getByText("Nícolas Bernardino Bretschneider")).toBeVisible();
 });
 
 test("o cadastro avisa o aceite e as telas de conta levam aos documentos (NBB-30 T5)", async ({

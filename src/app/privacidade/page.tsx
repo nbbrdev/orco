@@ -2,15 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { LegalPage } from "@/features/legal/components/legal-page";
-import { CONTROLLER_NAME, PRIVACY_EMAIL, PRIVACY_UPDATED_AT } from "@/features/legal/constants";
+import { CONTROLLER_NAME, PRIVACY_UPDATED_AT } from "@/features/legal/constants";
 
 export const metadata: Metadata = { title: "Política de privacidade" };
 
 // Política de privacidade (RF-34, LGPD, NBB-30). Prazos e dados conferidos no código e em
 // docs/07-seguranca.md §13; mudou algo lá, mude aqui (e a data em constants.ts).
+// Ainda sem canal de contato (e-mail), a pedido do usuário em 2026-10-04: entra quando o
+// redirecionamento de e-mail do domínio funcionar.
 export default function PrivacyPage() {
-  const email = <a href={`mailto:${PRIVACY_EMAIL}`}>{PRIVACY_EMAIL}</a>;
-
   return (
     <LegalPage title="Política de privacidade" updatedAt={PRIVACY_UPDATED_AT}>
       <section>
@@ -25,7 +25,7 @@ export default function PrivacyPage() {
         <h2>1. Quem é o responsável</h2>
         <p>
           O Orçô é mantido por <strong>{CONTROLLER_NAME}</strong>, responsável (controlador) pelos
-          dados das contas. Para qualquer assunto sobre os seus dados, escreva para {email}.
+          dados das contas.
         </p>
       </section>
 
@@ -40,8 +40,7 @@ export default function PrivacyPage() {
             <strong>Os clientes do profissional:</strong> quando um profissional cadastra um cliente
             ou envia um orçamento, quem decide sobre esses dados é o profissional. Ele é o
             controlador, e o Orçô só guarda e processa os dados em nome dele (operador). Se você
-            recebeu um orçamento e tem uma dúvida sobre os seus dados, fale primeiro com quem o
-            enviou; se precisar, escreva também para {email}.
+            recebeu um orçamento e tem uma dúvida sobre os seus dados, fale com quem o enviou.
           </li>
         </ul>
       </section>
@@ -173,11 +172,7 @@ export default function PrivacyPage() {
             Boa parte você faz sozinho no app: corrigir o perfil, os clientes e os orçamentos, e
             excluir a conta inteira no Perfil.
           </li>
-          <li>Para o resto, escreva para {email}. Respondemos em até 15 dias.</li>
-          <li>
-            Se não ficar satisfeito, você também pode reclamar à Autoridade Nacional de Proteção de
-            Dados (ANPD).
-          </li>
+          <li>Você também pode reclamar à Autoridade Nacional de Proteção de Dados (ANPD).</li>
         </ul>
       </section>
 
