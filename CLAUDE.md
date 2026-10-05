@@ -13,20 +13,19 @@ Produção: https://orco.nbbrdev.com · Repo: `nbbrdev/orco` (público) · Linea
 - Mudou `docs/`? Atualize o Linear Doc correspondente na mesma sessão, e vice-versa.
 
 ## Fase atual
-**M6: Link público + aprovação** (meta: `v0.6.0`). A **M5** foi concluída em 2026-10-04, com a `v0.5.0` no ar (PDF com a marca do freelancer, prévia sem mudar o status e download que envia o rascunho).
+**M7: Hardening & Lançamento** (meta: `v1.0.0`). A **M6** foi concluída em 2026-10-04, com a `v0.6.0` no ar (link público com aprovar/recusar, modo leitura, compartilhar, e-mail e push ao freelancer, lembrete diário pelo cron da VPS). O ajuste visual da NBB-92 vai numa `v0.6.1`.
 
-Ordem da M6 (decidida com o usuário em 2026-10-04; só a `v0.6.0` no fim, o staging recebe cada merge):
-1. NBB-52: funções públicas por token (`SECURITY DEFINER`), `quote_events` e o PDF público;
-2. NBB-53: página `/p/[token]` com aprovar/recusar e o modo leitura de aprovado/recusado;
-3. NBB-54: compartilhar (copiar link, WhatsApp, gerar novo link);
-4. NBB-55: e-mail ao freelancer quando o cliente responde;
-5. NBB-61: notificações push;
-6. NBB-62: lembrete diário de vencimento.
+Ordem da M7 (decidida com o usuário em 2026-10-04; o staging recebe cada merge, e a `v1.0.0` é o lançamento):
+1. NBB-57: auditoria de segurança (RLS, headers, dependências e os riscos aceitos);
+2. NBB-30: termos de uso e política de privacidade (LGPD);
+3. NBB-58: performance (LCP/INP) e E2E completos;
+4. NBB-56: teste de usabilidade e ajustes;
+5. NBB-59: landing page e go-live.
 
 Lembretes:
-- no modo leitura de aprovado/recusado, só as anotações internas são salvas (RN-20a);
-- registrar visualizações não pode mudar o `updated_at` (o trigger `app.set_quote_updated_at` já cuida disso);
-- várias descrições das issues da M6 ainda citam Supabase, Resend ou Vercel Cron: revisar no planejamento de cada uma (ADR-0012 a 0016).
+- o teste manual do push nos aparelhos (Android, iPhone instalado, computador e o Sair) é do usuário e ainda está pendente (NBB-61);
+- a NBB-30 ainda lista Vercel, Supabase e Cloudflare como suboperadores, e a NBB-58 lista E2E que já existem: revisar no planejamento de cada uma (ADR-0012 a 0016);
+- as tarefas diárias rodam pelo cron da VPS (`deploy/daily.sh`, `deploy/orco.cron`), instalados à mão como o `deploy.sh`.
 
 A base da VPS (compartilhada entre projetos) fica no repositório privado `nbbrdev/vps` (projeto "VPS" no Linear).
 
