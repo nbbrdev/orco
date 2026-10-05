@@ -11,6 +11,7 @@ import {
   ProblemSection,
 } from "@/features/landing/components/landing-sections";
 import { SignUpButtons, SiteFooter, SiteHeader } from "@/features/landing/components/site-chrome";
+import { SiteNameJsonLd } from "@/features/landing/components/site-name-json-ld";
 import { getSessionUser } from "@/lib/auth/session";
 
 const DESCRIPTION =
@@ -44,6 +45,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
 
   return (
     <div className="flex flex-1 flex-col">
+      <SiteNameJsonLd />
       <SiteHeader />
 
       <main className="flex flex-col">
