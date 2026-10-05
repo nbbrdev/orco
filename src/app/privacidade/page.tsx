@@ -8,8 +8,8 @@ export const metadata: Metadata = { title: "Política de privacidade" };
 
 // Política de privacidade (RF-34, LGPD, NBB-30). Prazos e dados conferidos no código e em
 // docs/07-seguranca.md §13; mudou algo lá, mude aqui (e a data em constants.ts).
-// Ainda sem canal de contato (e-mail), a pedido do usuário em 2026-10-04: entra quando o
-// redirecionamento de e-mail do domínio funcionar.
+// Sem canal de contato (e-mail) no lançamento, por decisão do usuário em 2026-10-04 (risco aceito,
+// docs/07 §13).
 export default function PrivacyPage() {
   return (
     <LegalPage title="Política de privacidade" updatedAt={PRIVACY_UPDATED_AT}>

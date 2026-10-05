@@ -1,6 +1,6 @@
 // Quem responde pelo Orçô (LGPD, NBB-30 T1-B). Aparece nos termos de uso e na política de
-// privacidade. O canal de contato (e-mail de privacidade, T2-A) ainda não entra: volta quando o
-// redirecionamento de e-mail do domínio funcionar (decidido pelo usuário em 2026-10-04).
+// privacidade. Sem canal de contato no lançamento, por decisão do usuário em 2026-10-04 (risco
+// aceito, docs/07 §13); se um dia houver, o e-mail de privacidade (T2-A) entra nos dois textos.
 
 export const CONTROLLER_NAME = "Nícolas Bernardino Bretschneider";
 
