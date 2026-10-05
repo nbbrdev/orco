@@ -8,7 +8,7 @@ import { ImageResponse } from "next/og";
 // grupo (landing) para valer só no "/": o link do orçamento do cliente (/p/[token]) não leva a marca.
 // Cores e ícone do docs/12-identidade-visual.md; a Inter vem do @fontsource, como no PDF.
 
-export const alt = "Orçô: orçamentos simples para freelancers";
+export const alt = "Orçô: seus serviços, preços e clientes num só lugar";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -54,11 +54,11 @@ export default async function OpenGraphImage() {
         </svg>
         <div style={{ fontSize: 96, fontWeight: 700, letterSpacing: "-0.02em" }}>Orçô</div>
       </div>
-      <div style={{ fontSize: 64, fontWeight: 700, lineHeight: 1.15 }}>
-        Orçamentos simples para freelancers.
+      <div style={{ fontSize: 60, fontWeight: 700, lineHeight: 1.15 }}>
+        Seus serviços, preços e clientes num só lugar.
       </div>
       <div style={{ fontSize: 36, color: "#51615F" }}>
-        Envie por link ou PDF e receba a aprovação do cliente com um toque.
+        Orçamentos bonitos em 2 minutos, aprovados pelo cliente com um toque.
       </div>
     </div>,
     {

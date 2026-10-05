@@ -26,9 +26,9 @@ export const metadata: Metadata = {
     siteName: "Orçô",
     locale: "pt_BR",
     type: "website",
-    title: "Orçô: orçamentos simples para freelancers",
+    title: "Orçô: seus serviços, preços e clientes num só lugar",
     description:
-      "Crie um orçamento em menos de 2 minutos, envie por link ou PDF e receba a aprovação do cliente com um toque.",
+      "Organize os seus serviços e valores, monte um orçamento com a sua marca e mande um link para o cliente aprovar com um toque. Grátis.",
   },
 };
 
