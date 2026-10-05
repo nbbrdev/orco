@@ -65,6 +65,7 @@ Os neutros puxam levemente para o teal, em vez de cinza puro.
 - **Cantos:** 8 px em botões, campos e cartões; 999 px apenas em selos de status; 10 px no ícone do app.
 - **Sombras:** nenhuma no app, apenas bordas `line`. Sombra leve só em sobreposições (modais, menus, bottom sheets).
 - **Foco:** contorno de 2 px na cor `primary`, com afastamento de 2 px, sempre visível no teclado.
+- **Alvos de toque (RNF-03, NBB-56 A2):** no celular (abaixo de 640 px), botões, campos e itens de menu têm pelo menos 44 px de altura; os botões de ícone (⋮) mantêm o desenho e ganham uma área de toque invisível de 44 px. No computador, os tamanhos do shadcn ficam como estão. Tudo vem de um bloco só do `src/app/globals.css`, com a variável `--touch-target`: para testar outro tamanho, muda-se a variável; para reverter, apaga-se o bloco.
 
 ## Temas
 

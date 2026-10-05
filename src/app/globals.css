@@ -194,3 +194,42 @@
     font-variant-numeric: tabular-nums;
   }
 }
+
+/*
+ * Alvos de toque no celular (RNF-03, NBB-56 A2): abaixo de 640 px, botões, campos e itens de menu
+ * têm pelo menos --touch-target de altura; os botões de ícone e o switch mantêm o desenho e ganham
+ * uma área de toque invisível desse tamanho. No computador, nada muda.
+ * Fica fora das camadas do Tailwind de propósito, para valer sobre as classes de altura (h-8, h-9).
+ * O botão é achado por [data-variant][data-size], e não pelo data-slot, porque um gatilho de menu
+ * ou popover (asChild) troca o data-slot dele.
+ * Para testar outro tamanho, mude a variável; para reverter, apague este bloco.
+ */
+:root {
+  --touch-target: 2.75rem;
+}
+
+@media (width < 40rem) {
+  [data-variant][data-size]:not([data-size^="icon"]):not([data-variant="link"]),
+  input:not([type="checkbox"], [type="radio"], [type="file"], [type="hidden"]),
+  [data-slot="input-group"],
+  [data-slot="dropdown-menu-item"],
+  [data-slot="command-item"] {
+    min-height: var(--touch-target);
+  }
+
+  [data-variant][data-size^="icon"]:not(.absolute),
+  [data-slot="switch"] {
+    position: relative;
+  }
+
+  [data-variant][data-size^="icon"]::after,
+  [data-slot="switch"]::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, var(--touch-target));
+    height: max(100%, var(--touch-target));
+    transform: translate(-50%, -50%);
+  }
+}

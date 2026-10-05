@@ -454,7 +454,10 @@ export function QuoteEditor({
     <div className="flex flex-col gap-6 pb-24 md:pb-28">
       <div className="flex items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <h1 className="text-2xl font-semibold">Orçamento Nº {formatQuoteNumber(quoteNumber)}</h1>
+          {/* "Nº 0001" nunca se separa: a 360 px, o título quebra antes dele (NBB-56 A3.1). */}
+          <h1 className="text-2xl font-semibold">
+            Orçamento <span className="whitespace-nowrap">Nº {formatQuoteNumber(quoteNumber)}</span>
+          </h1>
           {/* O status ao lado do número; muda para "Enviado" depois de baixar o PDF (NBB-51). */}
           <StatusBadge
             status={
@@ -663,7 +666,9 @@ export function SaveIndicator({ status, onRetry }: { status: SaveStatus; onRetry
     <span
       role="status"
       className={
-        status === "invalid" ? "text-sm text-destructive" : "text-sm text-muted-foreground"
+        status === "invalid"
+          ? "text-sm text-destructive"
+          : "text-sm whitespace-nowrap text-muted-foreground"
       }
     >
       {text[status]}
