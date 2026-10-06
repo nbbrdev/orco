@@ -85,7 +85,7 @@
 | Onde | Como |
 |---|---|
 | Em trânsito | TLS em tudo que sai da VPS: Nginx + Let's Encrypt; SMTP do Resend com TLS. Dentro da VPS, o app fala com o banco e o RustFS pela rede privada do Docker, sem sair da máquina. HSTS com `max-age=63072000; includeSubDomains; preload`. |
-| Em repouso | Disco da VPS (proteção física do provedor). Backups manuais guardados só no computador do dono; criptografia deles a decidir (§14). Criptografia do disco da VPS: reavaliar na M7. |
+| Em repouso | Disco da VPS (proteção física do provedor). Backups manuais guardados só no computador do dono, sem criptografia (risco aceito em 2026-10-06, §14). Criptografia do disco da VPS: reavaliar na M7. |
 | Senhas | Hash lento (scrypt/argon2) pelo Better Auth. |
 | Tokens públicos | Aleatórios (CSPRNG), 256 bits. |
 | Por coluna | **Não** no MVP: não guardamos dados de pagamento nem dados sensíveis (art. 5º, II, da LGPD). O CPF/CNPJ é opcional (minimização). Reavaliar se o escopo mudar. |
@@ -208,12 +208,12 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 
 ## 14. Backups e continuidade
 
-- **Sem backup automático** (decidido pelo usuário em 2026-09-30, NBB-75: projeto pequeno, simplicidade). O backup é **manual, pelo DBeaver, obrigatório antes de cada release a partir da primeira depois da `v1.0.0`** (que aplica migrations na produção). Até a `v1.0.0`, inclusive, a produção não tinha usuários reais (decisões do usuário em 2026-10-05); o primeiro backup sai com os primeiros cadastros reais (NBB-96). Passo a passo em `deploy/README.md`.
+- **Sem backup automático** (decidido pelo usuário em 2026-09-30, NBB-75: projeto pequeno, simplicidade). O backup é **manual, pelo DBeaver, obrigatório antes de cada release a partir da primeira depois da `v1.0.0`** (que aplica migrations na produção). Até a `v1.0.0`, inclusive, a produção não tinha usuários reais (decisões do usuário em 2026-10-05). O primeiro backup da produção foi feito em 2026-10-06 (NBB-96). Passo a passo em `deploy/README.md`.
 - **Acesso:** o Postgres de cada ambiente escuta só em `127.0.0.1` da VPS (5433 produção, 5434 staging), sem porta liberada no firewall. O DBeaver entra por **túnel SSH** com a chave de administração e usa o superusuário `postgres`.
 - **Conteúdo:** só o banco (`pg_dump`, formato custom: schema e dados, incluindo `auth`). O `pg_dump` não leva as roles: na restauração, elas nascem pelo bootstrap (`init.sh`/`roles.sql`) antes do `pg_restore`. O RustFS (logos) fica fora: se a VPS for perdida, os logos são enviados de novo (risco aceito).
-- **Guarda:** o arquivo contém dados pessoais reais. Fica só no computador do dono, nunca no repositório nem em nuvem. A criptografia dos arquivos de backup será decidida depois (decisão do usuário em 2026-10-01).
-- **Teste de restauração** com o primeiro backup da produção (NBB-96): restaurar no banco local e conferir dados e app. A parte técnica (donos, RLS, GRANTs, funções) já foi testada em 2026-10-05 com um backup do banco local (NBB-58).
-- **Riscos aceitos:** perda dos dados desde o último backup manual se a VPS for perdida entre duas releases; depende de o dono lembrar do backup (o passo 0 da release, `docs/06-regras-dev.md` §4.1).
+- **Guarda:** o arquivo contém dados pessoais reais. Fica só no computador do dono, nunca no repositório nem em nuvem, **sem criptografia** (decisão do usuário em 2026-10-06, NBB-77 R2-C; opções descartadas: BitLocker no disco do PC e cópia em nuvem criptografada).
+- **Teste de restauração:** feito em 2026-10-06 com o primeiro backup da produção, no banco local (NBB-96). A parte técnica (donos, RLS, GRANTs, funções) já tinha sido testada em 2026-10-05 com um backup do banco local (NBB-58).
+- **Riscos aceitos:** perda dos dados desde o último backup manual se a VPS for perdida entre duas releases; depende de o dono lembrar do backup (o passo 0 da release, `docs/06-regras-dev.md` §4.1); quem tiver acesso ao computador do dono lê os backups, que não são criptografados (NBB-77).
 - Reforço opcional: snapshots da VPS no painel da Hostinger.
 
 ## 15. Auditoria de segurança (NBB-57, 2026-10-04)

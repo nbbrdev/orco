@@ -89,7 +89,7 @@
 ### Usabilidade (princípio central, ver [01-visao.md](01-visao.md))
 | # | Requisito |
 |---|---|
-| RNF-01 | Do cadastro ao 1º link copiado em **< 2 min** por um usuário novo, sem ajuda. Medido em teste de usabilidade ~~na M7~~ depois do lançamento (revisto em 2026-10-05, NBB-56 U6-C: NBB-94). |
+| RNF-01 | Do cadastro ao 1º link copiado em **< 2 min** por um usuário novo, sem ajuda. Medido em teste de usabilidade ~~na M7~~ depois do lançamento (revisto em 2026-10-05, NBB-56 U6-C: NBB-94). **Medido em 2026-10-06** com 1 pessoa (o previsto eram 3): foi rápido e sem atritos críticos (NBB-94). |
 | RNF-02 | Cada fluxo respeita o orçamento de simplicidade definido em [10-fluxos.md](10-fluxos.md). |
 | RNF-03 | Mobile-first: todas as telas usáveis a partir de 360 px de largura; alvos de toque ≥ 44 px; ações principais ao alcance do polegar. |
 | RNF-04 | Toda lista tem estado vazio com orientação e ação. Todo erro diz o que fazer. |
