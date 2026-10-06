@@ -17,7 +17,7 @@ Produção: https://orco.nbbrdev.com · Repo: `nbbrdev/orco` (público) · Linea
 
 **O backup da produção pelo DBeaver é obrigatório antes de toda release** (desde a primeira depois da `v1.0.0`).
 
-Em espera, no Backlog: NBB-96 (primeiro backup e teste de restauração) e NBB-94 (teste de usabilidade com 3 pessoas, roteiro no Linear Doc "Teste de usabilidade (NBB-56)").
+Feitos pelo usuário em 2026-10-06: o primeiro backup da produção e o teste de restauração (NBB-96) e o teste de usabilidade, com 1 pessoa (NBB-94). Os backups ficam no PC sem criptografia (risco aceito, NBB-77).
 
 Lembretes:
 - o teste manual do push nos aparelhos (Android, iPhone instalado, computador e o Sair) é do usuário e ainda está pendente (NBB-61);

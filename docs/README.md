@@ -39,7 +39,7 @@ Esta pasta é a **fonte da verdade do conteúdo** do projeto. O **planejamento e
 | M7 | Hardening & Lançamento | Usabilidade, performance, segurança, LGPD, go-live ✅ (no ar em 2026-10-05) | **`1.0.0`** |
 | M8 | Landing e demonstração | Landing focada no problema do freelancer, experimentar sem criar conta (`/experimentar`), favicon e ajustes para os buscadores ✅ (no ar em 2026-10-05) | `1.1.0` |
 
-**Depois do lançamento** ← *fase atual*: sem marco aberto; o trabalho vem do Backlog do Linear e vira marco quando o usuário decide (a M8 foi promovida em 2026-10-05). Em espera: NBB-94 (teste com pessoas) e NBB-96 (primeiro backup e teste de restauração).
+**Depois do lançamento** ← *fase atual*: sem marco aberto; o trabalho vem do Backlog do Linear e vira marco quando o usuário decide (a M8 foi promovida em 2026-10-05). Feitos em 2026-10-06: o teste com pessoas (NBB-94) e o primeiro backup com o teste de restauração (NBB-96).
 
 Versionamento e releases: [ADR-0010](decisoes/0010-versionamento-e-releases.md). Produção só recebe versões com tag.
 

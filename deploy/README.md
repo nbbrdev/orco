@@ -292,7 +292,7 @@ Use o superusuário `postgres`: o backup precisa ler tudo (produto, login, funç
 
 O DBeaver usa o `pg_dump` **do seu PC**. Na primeira vez, ele pede o "local client": aponte para (ou deixe o DBeaver baixar) as ferramentas do **PostgreSQL 17**, a mesma versão do servidor.
 
-> O arquivo contém **dados de usuários reais**. Fica só no seu PC, nunca no repositório nem em nuvem. A criptografia desses arquivos será decidida depois (decisão de 2026-10-01).
+> O arquivo contém **dados de usuários reais**. Fica só no seu PC, nunca no repositório nem em nuvem. Sem criptografia, por decisão de 2026-10-06 (risco aceito, NBB-77).
 
 ### Restaurar
 
@@ -301,7 +301,7 @@ Num banco **novo e sem migrations** (ex.: depois de recriar o ambiente): as role
 - Conecte como **`postgres`**: só o superusuário consegue devolver cada objeto ao dono certo e aplicar os GRANTs das outras roles.
 - **Format: Custom**; **Clean**, **Create**, **No owner** e **No privileges** desligados.
 
-**Teste de restauração** (com o primeiro backup da produção, NBB-96): restaurar no banco **local** do PC e conferir as tabelas, os dados e o app local. Prova que o backup funciona antes do dia em que ele for necessário. O banco local vazio, só com as roles, sai de:
+**Teste de restauração** (feito em 2026-10-06 com o primeiro backup da produção, NBB-96): restaurar no banco **local** do PC e conferir as tabelas, os dados e o app local. Prova que o backup funciona antes do dia em que ele for necessário. O banco local vazio, só com as roles, sai de:
 
 ```bash
 docker compose -f compose.dev.yaml down -v   # apaga o banco local (e os arquivos do RustFS local)
