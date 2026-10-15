@@ -20,6 +20,7 @@ import { updateCatalogItemDraftsAction } from "@/features/quotes/actions";
 import { UpdateDraftsDialog } from "@/features/quotes/components/update-drafts-dialog";
 import { updateDraftsQuestion } from "@/features/quotes/status";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { focusPanelInstead } from "@/lib/panel-focus";
 
 // Catálogo (F-16, NBB-45), no mesmo padrão da lista de clientes: todos os itens chegam de uma vez e
 // a busca filtra aqui; novo e editar abrem o mesmo painel (lateral no computador, de baixo no
@@ -113,6 +114,7 @@ export function CatalogList({ initial }: { initial: CatalogItemRow[] }) {
         <SheetContent
           side={wide ? "right" : "bottom"}
           className="overflow-y-auto data-[side=bottom]:max-h-[90dvh] data-[side=right]:sm:max-w-md"
+          onOpenAutoFocus={editing ? focusPanelInstead : undefined}
         >
           <SheetHeader>
             <SheetTitle>{editing ? "Editar item" : "Novo item"}</SheetTitle>

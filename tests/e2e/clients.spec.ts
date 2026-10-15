@@ -14,6 +14,8 @@ test("criar, buscar, editar e excluir um cliente (F-15)", async ({ page }) => {
   // Novo cliente: só o nome é obrigatório (RN-07), e o CPF inválido é recusado (RN-08).
   await page.getByRole("button", { name: "Novo cliente" }).click();
   const panel = page.getByRole("dialog", { name: "Novo cliente" });
+  // Ao criar, o foco vai para o Nome, porque a pessoa vai digitar (NBB-120 F1-A).
+  await expect(panel.getByLabel("Nome")).toBeFocused();
   await panel.getByRole("button", { name: "Salvar" }).click();
   await expect(panel.getByText("Informe o nome do cliente.")).toBeVisible();
 
@@ -54,6 +56,8 @@ test("criar, buscar, editar e excluir um cliente (F-15)", async ({ page }) => {
   // Editar: continua salvo depois de recarregar.
   await list.getByText("João da Silva").click();
   const editPanel = page.getByRole("dialog", { name: "Editar cliente" });
+  // Ao editar, o foco fica no painel, sem campo (no celular, sem abrir o teclado; NBB-120 F1-A).
+  await expect(editPanel).toBeFocused();
   await expect(editPanel.getByLabel("Observações internas")).toHaveValue("Prefere WhatsApp");
   await editPanel.getByLabel("Nome").fill("João Pereira");
   await editPanel.getByRole("button", { name: "Salvar" }).click();
