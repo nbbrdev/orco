@@ -13,6 +13,8 @@ test("criar, buscar, editar e excluir um item do catálogo (F-16)", async ({ pag
   // Preço inválido é recusado; com preço e unidade, aparece "R$ 800,00 / h" (I2-A, I6-A).
   await page.getByRole("button", { name: "Novo item" }).click();
   const panel = page.getByRole("dialog", { name: "Novo item" });
+  // Ao criar, o foco vai para o Nome (NBB-120 F1-A).
+  await expect(panel.getByLabel("Nome")).toBeFocused();
   await panel.getByLabel("Nome").fill("Criação de logo");
   await panel.getByLabel("Preço (R$)").fill("oitocentos");
   await panel.getByRole("button", { name: "Salvar" }).click();
@@ -43,6 +45,8 @@ test("criar, buscar, editar e excluir um item do catálogo (F-16)", async ({ pag
   // Editar: o preço volta formatado no campo e a mudança fica depois de recarregar.
   await list.getByText("Criação de logo").click();
   const editPanel = page.getByRole("dialog", { name: "Editar item" });
+  // Ao editar, o foco fica no painel, sem campo (NBB-120 F1-A, F2-A).
+  await expect(editPanel).toBeFocused();
   await expect(editPanel.getByLabel("Preço (R$)")).toHaveValue("800,00");
   await editPanel.getByLabel("Preço (R$)").fill("1.250,50");
   await editPanel.getByRole("button", { name: "Salvar" }).click();

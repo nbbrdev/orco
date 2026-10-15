@@ -21,6 +21,7 @@ import { UpdateDraftsDialog } from "@/features/quotes/components/update-drafts-d
 import { updateDraftsQuestion } from "@/features/quotes/status";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { formatDocument } from "@/lib/document";
+import { focusPanelInstead } from "@/lib/panel-focus";
 
 // Lista de clientes (F-15, NBB-44): todos os clientes chegam de uma vez e a busca filtra aqui, na
 // hora (K4-A). Novo e editar abrem o mesmo painel (K5-A): na lateral no computador, de baixo no
@@ -111,6 +112,7 @@ export function ClientList({ initial }: { initial: ClientRow[] }) {
         <SheetContent
           side={wide ? "right" : "bottom"}
           className="overflow-y-auto data-[side=bottom]:max-h-[90dvh] data-[side=right]:sm:max-w-md"
+          onOpenAutoFocus={editing ? focusPanelInstead : undefined}
         >
           <SheetHeader>
             <SheetTitle>{editing ? "Editar cliente" : "Novo cliente"}</SheetTitle>
