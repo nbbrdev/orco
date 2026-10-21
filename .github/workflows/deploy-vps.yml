@@ -1,7 +1,7 @@
 # Receita de publicação na VPS (docs/08-infra-deploy.md, ADR-0012). Não roda sozinha: é chamada pelo
 # production.yml (`workflow_call`), que passa o ambiente e a versão. Sem staging desde ADR-0017.
 #   build da imagem → GHCR → SSH na VPS → deploy.sh (pull → migrate → up)
-# A chave SSH de cada environment só consegue rodar `/opt/orco/bin/deploy.sh <ambiente>` na VPS.
+# A chave SSH do environment `production` só consegue rodar `/opt/orco/bin/deploy.sh production` na VPS.
 name: Deploy VPS
 
 on:

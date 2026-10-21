@@ -24,7 +24,7 @@ fail() {
 env_name="${1:-}"
 request="${SSH_ORIGINAL_COMMAND:-}"
 
-# Formato da etiqueta aceito em cada ambiente.
+# Formato da etiqueta aceito (só a produção, desde o ADR-0017).
 case "$env_name" in
   production) tag_pattern='v[0-9]+\.[0-9]+\.[0-9]+' ;;
   *) fail "ambiente inválido: use production." ;;

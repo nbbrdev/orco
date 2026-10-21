@@ -174,7 +174,7 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
 
 ## 8. Variáveis de ambiente
 
-**Do app** (em `.env.local` localmente; em `/opt/orco/<ambiente>/.env` na VPS):
+**Do app** (em `.env.local` localmente; em `/opt/orco/production/.env` na VPS):
 
 | Variável | Pública? |
 |---|---|

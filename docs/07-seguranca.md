@@ -174,7 +174,7 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 ## 11. Segredos e repositório público
 
 - **O repositório é público.** A segurança nunca depende de o código ser secreto.
-- Segredos do app só nos arquivos `.env` **da VPS** (`/opt/orco/<ambiente>/.env`, legíveis só pelo usuário `deploy`) e no `.env.local` do desenvolvedor. O GitHub guarda só o acesso SSH de deploy. Nunca no código, em docs, seeds, fixtures ou **na imagem Docker**.
+- Segredos do app só nos arquivos `.env` **da VPS** (`/opt/orco/production/.env`, legíveis só pelo usuário `deploy`) e no `.env.local` do desenvolvedor. O GitHub guarda só o acesso SSH de deploy. Nunca no código, em docs, seeds, fixtures ou **na imagem Docker**.
 - `.env*` no `.gitignore`; `.env.example` e `deploy/env.example` com nomes e sem valores.
 - Prefixo `NEXT_PUBLIC_` (embutido no build e visível no navegador) só para valores públicos por natureza: a versão do app. A chave pública VAPID também é pública, mas é lida na hora pelo servidor e passada à página do perfil (NBB-61 P2-A). Senhas de banco, segredo do Better Auth, chaves SMTP/RustFS/VAPID privadas e `CRON_SECRET` **nunca**.
 - **VPS:** SSH só por chave (sem senha, sem root), firewall com só 22/80/443, atualizações de segurança automáticas; banco e RustFS sem porta publicada.
@@ -222,13 +222,13 @@ Feita antes do lançamento (M7). Resultado:
 | RLS e permissões do banco | Teste `security-invariants.test.ts`, que roda no CI a cada PR (§3) | As 8 tabelas com RLS ENABLE + FORCE e policies; todas as funções do `app` com dono `orco_owner` e `search_path` vazio; nenhuma função executável por `PUBLIC`; `app_user` e `app_auth` só com as permissões esperadas |
 | Headers HTTP | [securityheaders.com](https://securityheaders.com) na produção | **A+** (HSTS com preload, CSP com nonce, `X-Frame-Options`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`). O `Cross-Origin-Opener-Policy` foi adicionado nesta auditoria (§7) |
 | TLS | [SSL Labs](https://www.ssllabs.com/ssltest/) em `orco.nbbrdev.com` | **A+** (TLS 1.3, troca de chaves pós-quântica, HSTS longo) |
-| Firewall da VPS | `ufw status verbose` | Entrada bloqueada por padrão; abertas só 22, 80 e 443 (IPv4 e IPv6). As portas publicadas pelo Docker ficam só em `127.0.0.1` (app 3000/3001, banco 5433/5434 para o túnel do DBeaver); o RustFS não publica porta. Fora do Nginx, nada é alcançável |
+| Firewall da VPS | `ufw status verbose` | Entrada bloqueada por padrão; abertas só 22, 80 e 443 (IPv4 e IPv6). As portas publicadas pelo Docker ficam só em `127.0.0.1` (app 3000/3001, banco 5433/5434 para o túnel do DBeaver; desde 2026-10-21, sem o staging, só 3000 e 5433); o RustFS não publica porta. Fora do Nginx, nada é alcançável |
 | Dependências e código | Dependabot e CodeQL no GitHub | Nenhum alerta aberto. O CI segue barrando dependências de produção com falha alta (`npm audit`) |
 
 **Riscos aceitos, reavaliados (S3):**
 - **Senhas vazadas (HaveIBeenPwned):** continua sem. A checagem (pelo prefixo do hash, sem mandar a senha) foi explicada e preterida; o mínimo de 8 caracteres e o limite de tentativas continuam valendo.
 - **CAPTCHA:** continua sem, no cadastro (há limite por IP, honeypot e teto diário, RN-46) e no login (limite de tentativas do Better Auth).
-- **Monitoramento de erros (Sentry):** fica fora. Os erros ficam nos logs do Docker na VPS (`orco <ambiente> logs app`, deploy/README.md), sem dados pessoais mandados a terceiros.
+- **Monitoramento de erros (Sentry):** fica fora. Os erros ficam nos logs do Docker na VPS (`orco logs app`, deploy/README.md), sem dados pessoais mandados a terceiros.
 
 **Mantido como está:** `style-src 'unsafe-inline'` na CSP (S2): usado pelo Next e pelas bibliotecas de interface; os scripts continuam travados pelo nonce. Os limites de uso (§10) ficam como estão (S4).
 

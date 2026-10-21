@@ -3,9 +3,9 @@
 # (ADR-0017).
 #
 # Quem roda é o deploy.sh, que copia este arquivo de dentro da imagem de cada versão:
-#   docker compose -p orco-<ambiente> --env-file .env --env-file image.env run --rm migrate
-#   docker compose -p orco-<ambiente> --env-file .env --env-file image.env up -d
-# .env       segredos do ambiente, criado à mão na VPS (modelo: deploy/env.example)
+#   docker compose -p orco-production --env-file .env --env-file image.env run --rm migrate
+#   docker compose -p orco-production --env-file .env --env-file image.env up -d
+# .env       segredos da produção, criado à mão na VPS (modelo: deploy/env.example)
 # image.env  ORCO_IMAGE=ghcr.io/nbbrdev/orco:<tag>@sha256:<digest>, escrito pelo deploy.sh
 
 # Logs limitados (10 MB × 3 por container) para não encher o disco.
