@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: "Perfil" };
 const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
 
 // "Novidades" (F-14): as notas da versão no GitHub Releases. Numa versão publicada (vX.Y.Z), a página
-// dela; no staging e no local, que não têm versão publicada, a lista de versões.
+// dela; no local, que não tem versão publicada, a lista de versões.
 const RELEASES_URL = "https://github.com/nbbrdev/orco/releases";
 const RELEASE_NOTES_URL = /^v\d+\.\d+\.\d+$/.test(APP_VERSION)
   ? `${RELEASES_URL}/tag/${APP_VERSION}`

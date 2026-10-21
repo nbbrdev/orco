@@ -43,7 +43,7 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
 
 ## 4. Git e GitHub
 
-- Branch padrão `main`, **protegida** (inclusive para administradores): sem push direto, PR obrigatório, CI + CodeQL + título de PR verdes, histórico linear, conversas resolvidas, sem force push nem exclusão.
+- Branch padrão `main`, **protegida** (inclusive para administradores): sem push direto, PR obrigatório, checks `ci`, `image` (a imagem Docker monta, NBB-122), `codeql` e `pr-title` verdes, histórico linear, conversas resolvidas, sem force push nem exclusão.
 - **Aprovações exigidas: 0.** O repositório tem uma única conta (nbbrdev), e o GitHub não permite aprovar o próprio PR. A revisão acontece na conversa com o agente, antes do merge.
 - Merge **somente squash**; a branch é apagada automaticamente. O commit na `main` usa **o título do PR** e fica **sem corpo** (o contexto está no PR, linkado pelo `(#n)` do título).
 - Branch: `<tipo>/<ID-linear>-<descricao-curta>`, ex.: `feat/NBB-12-editor-orcamento`.
@@ -59,7 +59,7 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
 
 ## 4.1 Versionamento e releases (ADR-0010, revisado em 2026-09-28)
 
-- **Merge na `main` = deploy automático em staging** (`staging.yml`), nunca em produção.
+- **O merge na `main` não publica nada.** Desde 2026-10-21 não há staging (ADR-0017): a produção é o único ambiente na VPS e só muda com a release.
 - **Produção só recebe versões criadas pelo usuário**, com uma tag `vX.Y.Z` no commit da `main`. O agente **nunca** publica tags ou releases; só cria um **rascunho** a pedido do usuário, que revisa e publica.
 - **Como lançar:**
   0. **Fazer o backup do banco da produção pelo DBeaver** (`deploy/README.md`, "Backup pelo DBeaver"). Não há backup automático, e a release aplica migrations na produção (decisão do usuário em 2026-09-30). **Obrigatório a partir da primeira release depois da `v1.0.0`**; até ela, a produção não tinha usuários reais (decisões do usuário em 2026-10-05).
@@ -72,7 +72,7 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
   3. `gh release create vX.Y.Z --target main --generate-notes`. Cria a tag e a página da versão, com notas geradas dos títulos dos PRs.
   4. O workflow `production.yml` roda sozinho:
      - **verify**: a tag está no formato `vX.Y.Z`, está na `main` e o CI daquele commit passou;
-     - **build**: imagem `vX.Y.Z` no GHCR (receita comum `deploy-vps.yml`, a mesma do staging);
+     - **build**: imagem `vX.Y.Z` no GHCR (receita `deploy-vps.yml`; a mesma imagem que o job `image` do CI já montou em cada PR, sem enviar);
      - **deploy**: SSH com a chave da produção → `deploy.sh production` → migrations no banco de produção → `docker compose up -d` no projeto `orco-production` (ADR-0012).
   5. Conferir `https://orco.nbbrdev.com`: a versão nova aparece na página.
 - **Hotfix:** PR `fix:` → merge → nova versão patch.
@@ -116,7 +116,7 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
 - **Aplicar migrations:** `npm run db:migrate` (role `orco_owner`, pelo `scripts/migrate.mts`).
 - **Testes de integração:** `npm run test:integration` (precisa do `db:start` + `db:migrate`). No CI, rodam dentro do check `ci`, com um Postgres temporário (ver §7).
 - **Três roles:** migrations com `orco_owner`; o app com `app_user` (produto) e `app_auth` (login). Nunca conectar o app com a role dona ou com superusuário.
-- Nunca alterar o banco de staging ou produção à mão: migrations chegam lá só pelo serviço `migrate`, disparado pelos workflows.
+- Nunca alterar o banco da produção à mão: migrations chegam lá só pelo serviço `migrate`, disparado pelos workflows.
 - Uma migration aplicada nunca é editada; a correção vem em nova migration. Toda migration precisa ser compatível com a versão anterior do código (o banco muda antes do código no deploy).
 - Tabela nova = `ENABLE` + `FORCE ROW LEVEL SECURITY` + policies + grants + teste de RLS, no mesmo PR.
 - [05-dados.md](05-dados.md) atualizado no mesmo PR.
@@ -125,7 +125,7 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
 
 | Tipo | O que testa | Ferramenta e pasta | Obrigatório para | Situação |
 |---|---|---|---|---|
-| **Unitário** | Uma função isolada, sem banco nem rede | Vitest, `tests/unit/` | `money.ts` (100%), `dates.ts`, schemas Zod, validação CPF/CNPJ, transições de status, segurança (CSP, headers, proxy, Basic Auth) | ✅ em uso |
+| **Unitário** | Uma função isolada, sem banco nem rede | Vitest, `tests/unit/` | `money.ts` (100%), `dates.ts`, schemas Zod, validação CPF/CNPJ, transições de status, segurança (CSP, headers, proxy, comparação em tempo constante) | ✅ em uso |
 | **Integração** | O código junto com um **Postgres real** (RLS, roles, funções, login) e o **Mailpit** (envio de e-mail por SMTP) | Vitest, `tests/integration/` (local: `compose.dev.yaml`; CI: service containers) | toda tabela e função (docs/07 §3); envio de e-mail | ✅ em uso |
 | **E2E** | Um fluxo inteiro no navegador, como o usuário faria | Playwright, `tests/e2e/` | F-01, F-05, F-06, F-07, F-08 (RNF-15) | ✅ em uso desde a NBB-39/72. RNF-15 coberto (conferido na NBB-58): F-01 em `sign-up.spec.ts`, F-05 em `quote-editor.spec.ts`, F-06, F-07 e F-08 em `share.spec.ts`. Também cobre F-04, a navegação, o catálogo, os clientes, o perfil, a lista, o PDF, o push, o PWA, a exclusão da conta e os documentos legais; o botão do Google sem login real no Google. Só Chromium, em computador e num celular emulado; no CI, depois do build, com o Postgres e o Mailpit do job |
 
@@ -178,7 +178,7 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
 
 | Variável | Pública? |
 |---|---|
-| `APP_ENV` (`development` \| `staging` \| `production`; ausente = `development`) | não é segredo |
+| `APP_ENV` (`development` \| `production`; ausente = `development`; sem `staging` desde ADR-0017) | não é segredo |
 | `SITE_URL` (ex.: `https://orco.nbbrdev.com`; base dos links de e-mail) | não é segredo |
 | `DATABASE_URL_APP` (role `app_user`), `DATABASE_URL_AUTH` (role `app_auth`) | **Não** |
 | `DATABASE_URL_OWNER` (role `orco_owner`; **só** no serviço `migrate`) | **Não** |
@@ -189,17 +189,16 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_FROM` | **Não** |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (push; um par por ambiente, lido na hora e não no build, NBB-61 P2-A; sem as três, o push fica desligado) | a pública vai ao navegador / **Não** |
 | `CRON_SECRET` (senha da rota do agendamento diário, `POST /api/cron/diario`; uma por ambiente, NBB-62; sem ela, a rota responde 503) | **Não** |
-| `STAGING_BASIC_AUTH_USER`, `STAGING_BASIC_AUTH_PASSWORD` (só no staging) | **Não** |
-| `NEXT_PUBLIC_APP_VERSION` (injetada no build: `vX.Y.Z`, `staging-<commit>`; ausente = `dev`) | Sim |
+| `NEXT_PUBLIC_APP_VERSION` (injetada no build: `vX.Y.Z` na produção, `ci` no job `image` do CI; ausente = `dev`) | Sim |
 | `SIGN_UP_EMAILS_PER_DAY` (teto diário de e-mails de cadastro; ausente = 60, da RN-46). **Só no `.env` local e no CI**, com 1000, porque a suíte E2E cria uma conta por teste (NBB-54). Não entra no `deploy/compose.yaml`: na VPS vale sempre o padrão | não é segredo |
 
-**Do GitHub** (Environments `staging` = só `main`, `production` = só tags `v*`):
+**Do GitHub** (Environment `production` = só tags `v*`):
 
 | Segredo | Para quê |
 |---|---|
-| `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `VPS_KNOWN_HOSTS` | entrar na VPS por SSH para o deploy (a chave de cada environment só roda o `deploy.sh`) |
+| `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `VPS_KNOWN_HOSTS` | entrar na VPS por SSH para o deploy (a chave só roda o `deploy.sh production`) |
 
-- **Da VPS:** `DB_PORT` (porta do banco só em `127.0.0.1`, para o backup pelo DBeaver: 5433 produção, 5434 staging) fica no `.env` de cada ambiente, junto das senhas.
+- **Da VPS:** `DB_PORT` (porta do banco só em `127.0.0.1`, para o backup pelo DBeaver: 5433) fica no `.env` da produção, junto das senhas.
 - `.env.example` e `deploy/env.example` listam todas, sem valores. Variável nova do app também entra na lista `environment:` do serviço `app` em `deploy/compose.yaml`.
 
 ## 9. Definição de pronto (DoD)
@@ -210,4 +209,4 @@ Antes de qualquer feature ou PR, responda: **isso adiciona passo, campo obrigat�
 - [ ] Checklist de segurança do PR ok
 - [ ] Testado no celular (360 px) e no desktop
 - [ ] `/docs` e Linear Docs atualizados, se algo mudou
-- [ ] Testado localmente antes do merge e verificado no staging depois (não há preview por PR)
+- [ ] Testado localmente antes do merge e conferido na produção depois da release (não há preview por PR nem staging)

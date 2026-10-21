@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { proxy } from "@/proxy";
 
@@ -7,20 +7,11 @@ function nonceOf(csp: string | null): string | undefined {
   return csp?.match(/'nonce-([^']+)'/)?.[1];
 }
 
-function request(path: string, credentials?: string): NextRequest {
-  const headers = new Headers();
-  if (credentials) {
-    headers.set("authorization", `Basic ${Buffer.from(credentials).toString("base64")}`);
-  }
-  return new NextRequest(`https://staging.orco.nbbrdev.com${path}`, { headers });
+function request(path: string): NextRequest {
+  return new NextRequest(`https://orco.nbbrdev.com${path}`);
 }
 
 describe("proxy", () => {
-  beforeEach(() => {
-    vi.stubEnv("STAGING_BASIC_AUTH_USER", "tester");
-    vi.stubEnv("STAGING_BASIC_AUTH_PASSWORD", "s3nha");
-  });
-
   afterEach(() => {
     vi.unstubAllEnvs();
   });
@@ -49,47 +40,11 @@ describe("proxy", () => {
     });
   });
 
-  it("does nothing outside staging", async () => {
+  it("lets every request through, without blocking or noindex (no staging since ADR-0017)", async () => {
     vi.stubEnv("APP_ENV", "production");
-    const response = await proxy(request("/"));
+    const response = await proxy(request("/app/orcamentos"));
     expect(response.status).toBe(200);
     expect(response.headers.get("X-Robots-Tag")).toBeNull();
-  });
-
-  describe("in staging", () => {
-    beforeEach(() => {
-      vi.stubEnv("APP_ENV", "staging");
-    });
-
-    it("stays closed (503) when credentials are not configured", async () => {
-      vi.stubEnv("STAGING_BASIC_AUTH_PASSWORD", "");
-      const response = await proxy(request("/"));
-      expect(response.status).toBe(503);
-      expect(response.headers.get("X-Robots-Tag")).toBe("noindex, nofollow");
-    });
-
-    it("asks for a password (401) without credentials", async () => {
-      const response = await proxy(request("/"));
-      expect(response.status).toBe(401);
-      expect(response.headers.get("WWW-Authenticate")).toContain("Basic");
-      expect(response.headers.get("X-Robots-Tag")).toBe("noindex, nofollow");
-    });
-
-    it("rejects wrong credentials", async () => {
-      const response = await proxy(request("/", "tester:errada"));
-      expect(response.status).toBe(401);
-    });
-
-    it("lets the right credentials through, marked noindex", async () => {
-      const response = await proxy(request("/", "tester:s3nha"));
-      expect(response.status).toBe(200);
-      expect(response.headers.get("X-Robots-Tag")).toBe("noindex, nofollow");
-    });
-
-    it("keeps the public quote link open", async () => {
-      const response = await proxy(request("/p/abc123"));
-      expect(response.status).toBe(200);
-      expect(response.headers.get("X-Robots-Tag")).toBe("noindex, nofollow");
-    });
+    expect(response.headers.get("WWW-Authenticate")).toBeNull();
   });
 });

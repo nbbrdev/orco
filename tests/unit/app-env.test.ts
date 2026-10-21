@@ -8,11 +8,12 @@ describe("getAppEnv", () => {
     expect(getAppEnv("")).toBe("development");
   });
 
-  it.each(["development", "staging", "production"] as const)("accepts %s", (value) => {
+  it.each(["development", "production"] as const)("accepts %s", (value) => {
     expect(getAppEnv(value)).toBe(value);
   });
 
-  it.each(["prod", "Staging", "preview"])("rejects %s", (value) => {
+  // "staging" deixou de existir em 2026-10-21 (ADR-0017): um .env antigo com ele falha na subida.
+  it.each(["prod", "staging", "preview"])("rejects %s", (value) => {
     expect(() => getAppEnv(value)).toThrow(/APP_ENV inválido/);
   });
 });

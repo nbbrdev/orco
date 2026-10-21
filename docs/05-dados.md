@@ -186,7 +186,7 @@ PK `(key, window_start)`. Criada na NBB-39 (migration `0002_rate_limits`, escrit
 - Bucket `logos` no RustFS do ambiente, criado pelo próprio app na primeira vez que precisa dele (NBB-81, L1).
 - Chave `{uuid}.{webp|png|jpg}`, com o UUID gerado pelo servidor e **sem o id da conta**, porque o endereço do logo é público (NBB-81, L4). O perfil guarda a chave em `profiles.logo_path`; só existe um logo por conta.
 - **Escrita** (envio, troca, remoção) só pelo servidor, depois de validar a sessão: o perfil alterado é sempre o da sessão (`withUserDb`). Na troca e na remoção, o arquivo anterior é apagado.
-- **Leitura** pela rota pública `/api/p/logos/{uuid}.{ext}` (liberada do Basic Auth no staging, como `/p/*`), com cache "imutável": trocar o logo gera outro nome.
+- **Leitura** pela rota pública `/api/p/logos/{uuid}.{ext}` (sem login, como `/p/*`), com cache "imutável": trocar o logo gera outro nome.
 - Tipos PNG, JPEG e WebP e até 5 MB, conferidos no servidor pelos primeiros bytes do arquivo (RN-05). Na prática, chega um WebP (ou PNG, no Safari) de até 1024 px, já reduzido no navegador.
 
 ## Funções

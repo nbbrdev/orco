@@ -11,9 +11,9 @@ set -euo pipefail
 
 env_name="${1:-}"
 case "$env_name" in
-  staging | production) ;;
+  production) ;;
   *)
-    echo "daily: ambiente inválido: use staging ou production." >&2
+    echo "daily: ambiente inválido: use production." >&2
     exit 1
     ;;
 esac

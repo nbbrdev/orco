@@ -6,7 +6,7 @@ import type { Email } from "@/lib/email/layout";
 
 // Envio de e-mail por SMTP (ADR-0016, NBB-80). Um caminho só em todos os ambientes; muda o destino:
 //   local: Mailpit (compose.dev.yaml, http://localhost:8025), nada sai do PC;
-//   staging/produção: smtp.resend.com:465, com a API key do Resend como senha.
+//   produção: smtp.resend.com:465, com a API key do Resend como senha.
 
 function requireEnv(name: string): string {
   const value = process.env[name];

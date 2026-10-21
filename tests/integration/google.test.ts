@@ -5,7 +5,7 @@ import { getAuth } from "@/lib/auth";
 import { closeDb } from "@/lib/db";
 
 // Login com Google (F-02, NBB-40 G7). O Google de verdade não é chamado: os testes conferem o link
-// gerado para ele e a volta com erro. O login real é testado à mão no staging.
+// gerado para ele e a volta com erro. O login real é testado à mão na produção.
 
 const SITE_URL = process.env.SITE_URL ?? "http://localhost:3000";
 

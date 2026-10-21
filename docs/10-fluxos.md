@@ -178,7 +178,7 @@ Total R$ 2.800,00  [Visualizar] [Compartilhar]
   - **Copiar link** copia na hora e mostra "Link copiado ✓" no próprio menu; logo depois, salva o que estiver pendente e envia o rascunho. Se o navegador não deixar copiar, aparece "Não foi possível copiar o link. Copie à mão: <link>";
   - **WhatsApp** abre o `wa.me` na hora, com o telefone do cliente escolhido no orçamento (se houver), e envia o rascunho em seguida;
   - nos três, se faltar algo da RN-13, os campos ficam destacados e nada é compartilhado;
-  - o endereço do link usa o próprio endereço da página, então é o mesmo no staging e na produção;
+  - o endereço do link usa o próprio endereço da página, então é o mesmo no local e na produção;
   - o convite de notificações push (F-18) fica para a NBB-61.
 
 ## F-07 — Cliente aprova · ✅
@@ -312,7 +312,7 @@ Rodapé ........... "Orçô v0.4.0" · link "Novidades" (notas da versão no Git
 - **Salvamento:** cada campo se salva ao perder o foco, com "Salvando… / Salvo ✓" ao lado do nome e o erro embaixo do campo. O valor volta já limpo: site com `https://`, Instagram como `@usuario`, CPF/CNPJ formatado (NBB-42).
 - **Máscaras** (NBB-84, aqui e nos clientes, F-15): telefone brasileiro com DDD, `(11) 91234-5678` ou `(11) 1234-5678`; CPF `000.000.000-00` até 11 caracteres e CNPJ `00.000.000/0000-00` a partir do 12º ou com letra (alfanumérico, em maiúsculas). Formatam enquanto se digita, sem tirar o cursor do lugar.
 - **Logo** (NBB-81): no topo de "Sua marca", a miniatura com **Enviar logo** / **Trocar** e **Remover**. O navegador reduz a imagem antes de enviar; o logo aparece na prévia. Arquivo inválido: "Use uma imagem PNG, JPEG ou WebP de até 5 MB."
-- **O que já existe** (NBB-42): prévia, Sua marca, Contato, Pagamento, Padrões, Notificações (só o e-mail), Conta (Sair e **Excluir minha conta**, NBB-43) e, no rodapé, a versão com o link **Novidades** (abre numa aba nova a página da versão no GitHub Releases; no staging e no local, a lista de versões). Chega depois: o push (issue de push).
+- **O que já existe** (NBB-42): prévia, Sua marca, Contato, Pagamento, Padrões, Notificações (só o e-mail), Conta (Sair e **Excluir minha conta**, NBB-43) e, no rodapé, a versão com o link **Novidades** (abre numa aba nova a página da versão no GitHub Releases; no local, a lista de versões). Chega depois: o push (issue de push).
 - **Aparência** (NBB-60): três botões, **Automático / Claro / Escuro**. O tema vale na hora e fica salvo neste aparelho.
 - **Instalar** (NBB-60), na seção Notificações:
   - Android e computador: o botão **Instalar o Orçô**, só quando o navegador oferece;

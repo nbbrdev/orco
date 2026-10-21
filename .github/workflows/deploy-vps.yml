@@ -1,5 +1,5 @@
-# Receita comum de publicação na VPS (docs/08-infra-deploy.md, ADR-0012). Não roda sozinha: é chamada
-# pelo staging.yml e pelo production.yml (`workflow_call`), que passam o ambiente e a versão.
+# Receita de publicação na VPS (docs/08-infra-deploy.md, ADR-0012). Não roda sozinha: é chamada pelo
+# production.yml (`workflow_call`), que passa o ambiente e a versão. Sem staging desde ADR-0017.
 #   build da imagem → GHCR → SSH na VPS → deploy.sh (pull → migrate → up)
 # A chave SSH de cada environment só consegue rodar `/opt/orco/bin/deploy.sh <ambiente>` na VPS.
 name: Deploy VPS
@@ -8,7 +8,7 @@ on:
   workflow_call:
     inputs:
       environment:
-        description: "staging ou production (environment do GitHub e ambiente do deploy.sh)"
+        description: "production (environment do GitHub e ambiente do deploy.sh)"
         required: true
         type: string
       ref:
@@ -16,7 +16,7 @@ on:
         required: true
         type: string
       image-tag:
-        description: "Etiqueta da imagem: staging-<commit> ou vX.Y.Z"
+        description: "Etiqueta da imagem: vX.Y.Z"
         required: true
         type: string
       app-version:
@@ -27,10 +27,6 @@ on:
         description: "Endereço do ambiente (aparece no GitHub, em Deployments)"
         required: true
         type: string
-      require-vps:
-        description: "true = falta dos secrets da VPS é erro (produção); false = só aviso (staging)"
-        required: true
-        type: boolean
 
 permissions: {}
 
@@ -77,34 +73,25 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Os secrets VPS_* vêm do environment: `staging` só aceita a main; `production`, só tags v*.
+    # Os secrets VPS_* vêm do environment `production`, que só aceita tags v*.
     environment:
       name: ${{ inputs.environment }}
       url: ${{ inputs.url }}
     permissions: {}
     env:
       IMAGE_REF: ${{ needs.build.outputs.image-ref }}
-      REQUIRE_VPS: ${{ inputs.require-vps }}
       VPS_HOST: ${{ secrets.VPS_HOST }}
       VPS_USER: ${{ secrets.VPS_USER }}
     steps:
-      # Staging sem VPS configurada: publica a imagem e pula o deploy com um aviso.
-      # Produção sem VPS configurada: erro, porque uma release precisa chegar ao ar.
+      # Sem a VPS configurada, a release falha: ela precisa chegar ao ar.
       - name: VPS configurada?
-        id: check
         run: |
-          if [ -n "$VPS_HOST" ] && [ -n "$VPS_USER" ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          elif [ "$REQUIRE_VPS" = "true" ]; then
+          if [ -z "$VPS_HOST" ] || [ -z "$VPS_USER" ]; then
             echo "::error::Secrets VPS_* ausentes neste environment. Veja deploy/README.md."
             exit 1
-          else
-            echo "::warning::Secrets VPS_* ausentes neste environment: deploy pulado. Veja deploy/README.md."
-            echo "ready=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Chave SSH e host conhecido
-        if: steps.check.outputs.ready == 'true'
         env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
           VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
@@ -116,7 +103,6 @@ jobs:
 
       # O texto enviado vira $SSH_ORIGINAL_COMMAND no deploy.sh, que valida o formato.
       - name: Deploy na VPS
-        if: steps.check.outputs.ready == 'true'
         run: >-
           ssh -i ~/.ssh/deploy_key
           -o IdentitiesOnly=yes

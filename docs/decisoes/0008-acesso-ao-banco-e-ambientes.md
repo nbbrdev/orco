@@ -2,6 +2,7 @@
 
 - **Status:** **substituído** pelo [ADR-0014](0014-banco-drizzle-rls-roles.md) (2026-09-29)
 - **Data:** 2026-09-27
+- **Revisto por:** [ADR-0017](0017-sem-staging.md) (sem staging desde 2026-10-21)
 
 > **Revisão (2026-09-29):** `supabase-js`, Supabase CLI e os projetos `orco-staging`/`orco-prod` na nuvem saem. Entram o Postgres próprio por ambiente na VPS, o Drizzle e a RLS com as roles `orco_owner`/`app_auth`/`app_user` ([ADR-0014](0014-banco-drizzle-rls-roles.md)). O texto abaixo fica como histórico.
 

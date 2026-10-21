@@ -22,7 +22,7 @@ Esta pasta é a **fonte da verdade do conteúdo** do projeto. O **planejamento e
 | [10-fluxos.md](10-fluxos.md) | Jornadas de usuário (F), com orçamento de simplicidade |
 | [11-mapa.md](11-mapa.md) | Atores, entidades, estados, mapa de telas, glossário |
 | [12-identidade-visual.md](12-identidade-visual.md) | Logo, cores, tipografia, forma, temas e PDF |
-| [decisoes/](decisoes/) | ADRs: registro de decisões técnicas (0001–0016; os substituídos continuam como histórico) |
+| [decisoes/](decisoes/) | ADRs: registro de decisões técnicas (0001–0017; os substituídos continuam como histórico) |
 | [pendencias.md](pendencias.md) | Perguntas em aberto |
 
 ## Fases

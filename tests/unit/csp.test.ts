@@ -48,9 +48,6 @@ describe("buildCsp", () => {
 
   it("upgrades insecure requests only outside development", () => {
     expect(directive(production, "upgrade-insecure-requests")).toBeDefined();
-    expect(
-      directive(buildCsp({ nonce: "n", appEnv: "staging" }), "upgrade-insecure-requests"),
-    ).toBeDefined();
     expect(directive(development, "upgrade-insecure-requests")).toBeUndefined();
   });
 });

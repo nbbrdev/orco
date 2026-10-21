@@ -3,7 +3,7 @@ import { getObject } from "@/lib/storage";
 
 // Logo do freelancer (NBB-81, L4): público para quem tem o endereço, porque aparece na página do
 // orçamento e no PDF. O nome é um UUID gerado pelo servidor, impossível de adivinhar, e não revela a
-// conta. Fica sob /api/p/, liberado do Basic Auth no staging, como a página pública.
+// conta. Fica sob /api/p/, como a página pública.
 
 const CONTENT_TYPES = { webp: "image/webp", png: "image/png", jpg: "image/jpeg" } as const;
 

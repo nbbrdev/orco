@@ -1,7 +1,7 @@
 import { formatQuoteNumber } from "@/features/quotes/items";
 
 // Compartilhar o orçamento (F-06, NBB-54): o endereço do link público e a mensagem do WhatsApp. O
-// endereço usa a origem da própria página, então funciona igual no staging e na produção (C3-A).
+// endereço usa a origem da própria página, então funciona igual no local e na produção (C3-A).
 
 /** Depois do "Gerar novo link" (F-13, RN-36, C5-A). */
 export const NEW_LINK_NOTICE = "Novo link gerado. O anterior não funciona mais.";

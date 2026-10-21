@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 // Manifesto do PWA (RF-36, ADR-0009, NBB-60 W4): o que o celular usa ao instalar o Orçô na tela inicial.
-// Servido em /manifest.webmanifest (liberado do Basic Auth no staging).
+// Servido em /manifest.webmanifest.
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Orçô",

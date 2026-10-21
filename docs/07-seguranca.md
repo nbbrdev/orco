@@ -27,7 +27,7 @@
 - **Aviso de conta excluída** (NBB-82): depois da exclusão, a conta recebe um aviso com orientação para o caso de não ter sido a pessoa. Sai depois de apagar; se falhar, a exclusão vale e o erro só vai para o log.
 - **Redefinir a senha encerra todas as sessões** da conta (`revokeSessionsOnPasswordReset`, NBB-41), inclusive a de quem a tenha invadido.
 - A chave SMTP do Resend só tem permissão de envio e só para `orco.nbbrdev.com` (ADR-0016).
-- **Google OAuth:** um cliente por ambiente (produção, staging e localhost), cada um só com o redirect do seu domínio (`/api/auth/callback/google`). Segredo de cada um só no `.env` do ambiente.
+- **Google OAuth:** um cliente por ambiente (produção e localhost; o do staging foi apagado com ele, ADR-0017), cada um só com o redirect do seu domínio (`/api/auth/callback/google`). Segredo de cada um só no `.env` do ambiente.
 - **Vinculação Google ↔ conta por senha** só com o e-mail confirmado dos dois lados (padrão do Better Auth). Uma conta por senha ainda não confirmada **não** é vinculada: senão, quem cadastrasse o e-mail de outra pessoa antes dela ficaria com a conta quando ela entrasse com o Google (NBB-40).
 - Erros do login com Google (e outros sem destino próprio) voltam ao `/entrar` com mensagem em pt-BR, nunca à página de erro padrão do Better Auth (`onAPIError.errorURL`).
 
@@ -109,7 +109,7 @@
 - **Por que `style-src 'unsafe-inline'`:** atributos `style="…"` (React, Radix/shadcn) não aceitam nonce, e bloqueá-los quebraria componentes. CSS injetado não executa código nem lê cookies: o risco é muito menor que o de script, que continua travado pelo nonce.
 - O script inline do **next-themes** (evita piscar o tema) recebe o mesmo nonce: o `src/app/layout.tsx` lê `x-nonce` e passa na prop `nonce` do `ThemeProvider`.
 - **Consequência aceita:** com nonce, **todas as páginas são renderizadas por requisição** (dinâmicas). O nonce não existe no build, e o layout lê `headers()`. Sem páginas estáticas nem cache de CDN para HTML.
-- **O matcher do proxy não exclui prefetches** (a doc do Next sugere excluir): no staging, eles escapariam do Basic Auth.
+- **O matcher do proxy não exclui prefetches** (a doc do Next sugere excluir): o motivo era o Basic Auth do staging, que saiu em 2026-10-21 (ADR-0017). Ficou como estava, para todas as respostas levarem a CSP.
 
 **Headers fixos, no `next.config.ts`** (lista em `src/lib/security/headers.ts`), que vale também para arquivos estáticos e APIs:
 - `Strict-Transport-Security` (ver §6).
@@ -119,7 +119,7 @@
 - `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()`.
 - `Cross-Origin-Opener-Policy: same-origin` (NBB-57 S2): uma página de outro site aberta a partir do Orçô, ou que o abriu, não alcança a janela dele. O login com o Google é por redirecionamento, então não é afetado.
 - `poweredByHeader: false`: sem `X-Powered-By: Next.js`.
-- Verificação externa (securityheaders.com, nota A) no staging, quando ele estiver no ar (NBB-35).
+- Verificação externa (securityheaders.com): nota A+ na produção (NBB-57, §15).
 
 ## 8. CSRF
 
@@ -158,21 +158,18 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 ## 10.1 Notificações, cron e service worker (ADR-0009)
 
 - **Cron:** `/api/cron/lembretes` só executa com `Authorization: Bearer $CRON_SECRET`, enviado pelo agendamento na VPS. Sem o header correto, a resposta é 401. A comparação é em tempo constante.
-  - **Como ficou** (NBB-62, 2026-10-04): a rota é `POST /api/cron/diario`. Sem a `CRON_SECRET` configurada, responde 503 (fechada, nunca aberta por esquecimento). Fica fora do Basic Auth do staging, porque tem a própria senha. O `daily.sh` manda a senha pela entrada padrão do `curl`, para ela não aparecer na lista de processos da VPS, e chama o app só pela porta local.
+  - **Como ficou** (NBB-62, 2026-10-04): a rota é `POST /api/cron/diario`. Sem a `CRON_SECRET` configurada, responde 503 (fechada, nunca aberta por esquecimento). A comparação em tempo constante fica em `src/lib/security/safe-equal.ts`. O `daily.sh` manda a senha pela entrada padrão do `curl`, para ela não aparecer na lista de processos da VPS, e chama o app só pela porta local.
 - **Push:** a `VAPID_PRIVATE_KEY` fica só no servidor. As assinaturas (`push_subscriptions`) ficam protegidas por RLS e são tratadas como dado pessoal: apagadas com a conta e quando expiram.
   - **Como ficou** (NBB-61, 2026-10-04): a app_user lê e apaga só as assinaturas da própria conta; gravar é pela função `app.save_push_subscription`, que passa a assinatura para a conta logada se o navegador trocou de conta. Na resposta do cliente, sem a sessão do freelancer, as assinaturas chegam pelo aviso da `respond_to_quote` (P3-A), e as vencidas (404/410) são apagadas pelo endereço exato (`app.delete_push_subscription`). O log de falha não leva o endereço da assinatura.
   - O service worker só abre endereços do próprio app (`/caminho`), nunca de outro domínio.
 - **Conteúdo do push:** apenas número do orçamento, primeiro nome do cliente e o evento. Nada de valores, CPF/CNPJ ou dados de contato na notificação, porque ela aparece na tela bloqueada.
 - **Service worker:** servido do próprio domínio (`/sw.js`, escopo `/`), sem cache de páginas autenticadas (sem modo offline) e sem importar scripts de terceiros. A CSP inclui `worker-src 'self'` e `manifest-src 'self'`.
 
-## 10.2 Staging
+## 10.2 ~~Staging~~ (removido em 2026-10-21, ADR-0017)
 
-- Protegido por **HTTP Basic Auth no proxy** quando `APP_ENV=staging`, exceto nas rotas públicas do orçamento (`/p/*`, `/api/p/*`) e nos arquivos do PWA (`src/lib/basic-auth.ts`). A comparação das credenciais é feita em **tempo constante** (hash SHA-256 + `timingSafeEqual`), para que o tempo de resposta não revele a senha.
-- Sem credenciais configuradas, o staging responde **503**: fica fechado, nunca aberto por esquecimento.
-- `X-Robots-Tag: noindex, nofollow` em todas as rotas do staging.
-- Não há preview por PR ([08-infra-deploy.md](08-infra-deploy.md)): o acesso SSH à VPS fica nos environments `staging` (só `main`) e `production` (só tags `v*`), fora do alcance de qualquer PR.
-- Staging e produção são **projetos Compose separados**, com redes e volumes próprios: o app de staging não alcança o banco de produção.
-- Dados sempre fictícios; o banco de staging nunca recebe cópia de produção.
+- **Não há mais staging** nem o Basic Auth dele: a produção é o único ambiente na VPS.
+- Não há preview por PR ([08-infra-deploy.md](08-infra-deploy.md)): o acesso SSH à VPS fica só no environment `production` (só tags `v*`), fora do alcance de qualquer PR.
+- O banco local e o do CI têm sempre dados fictícios e nunca recebem cópia da produção; o backup da produção só é restaurado no PC do dono, para o teste de restauração (§14).
 
 ## 11. Segredos e repositório público
 
@@ -204,12 +201,12 @@ A resposta ao exceder o limite é HTTP 429 com mensagem amigável.
 - Direitos do titular: exclusão pela própria conta; demais pedidos pelo e-mail de contato da política de privacidade.
 - Os dados dos clientes finais cadastrados pelo freelancer são tratados pelo Orçô como **operador**; o freelancer é o controlador. Isso consta nos termos.
 - Política de privacidade e termos publicados antes do go-live (M7). ⚠️ PENDENTE: texto.
-- **Como ficou** (NBB-30, 2026-10-04): `/termos` e `/privacidade`, públicas (fora do login e do Basic Auth do staging). Responsável: o mantenedor, pelo nome (T1-B). **Canal de contato** (revisto em 2026-10-05): o e-mail do mantenedor, `nbbr.dev@gmail.com`, nos dois textos (em vez do `privacidade@nbbrdev.com` planejado no T2-A). Pedidos do titular respondidos em até 15 dias. Suboperadores: Hostinger (servidor e DNS, no Brasil), Resend (e-mails, EUA: transferência internacional), Google, Apple e Mozilla (push; Google também no login). Retenção prometida: conta até a exclusão; IP do link 12 meses; sessões expiradas e IP dos limites de uso apagados diariamente (até 2 dias); registros de acesso do servidor até 14 dias. Aceite pela frase no cadastro, sem caixa de marcar e sem guardar a versão aceita (T5, T6). Texto redigido sem revisão jurídica.
+- **Como ficou** (NBB-30, 2026-10-04): `/termos` e `/privacidade`, públicas (fora do login). Responsável: o mantenedor, pelo nome (T1-B). **Canal de contato** (revisto em 2026-10-05): o e-mail do mantenedor, `nbbr.dev@gmail.com`, nos dois textos (em vez do `privacidade@nbbrdev.com` planejado no T2-A). Pedidos do titular respondidos em até 15 dias. Suboperadores: Hostinger (servidor e DNS, no Brasil), Resend (e-mails, EUA: transferência internacional), Google, Apple e Mozilla (push; Google também no login). Retenção prometida: conta até a exclusão; IP do link 12 meses; sessões expiradas e IP dos limites de uso apagados diariamente (até 2 dias); registros de acesso do servidor até 14 dias. Aceite pela frase no cadastro, sem caixa de marcar e sem guardar a versão aceita (T5, T6). Texto redigido sem revisão jurídica.
 
 ## 14. Backups e continuidade
 
 - **Sem backup automático** (decidido pelo usuário em 2026-09-30, NBB-75: projeto pequeno, simplicidade). O backup é **manual, pelo DBeaver, obrigatório antes de cada release a partir da primeira depois da `v1.0.0`** (que aplica migrations na produção). Até a `v1.0.0`, inclusive, a produção não tinha usuários reais (decisões do usuário em 2026-10-05). O primeiro backup da produção foi feito em 2026-10-06 (NBB-96). Passo a passo em `deploy/README.md`.
-- **Acesso:** o Postgres de cada ambiente escuta só em `127.0.0.1` da VPS (5433 produção, 5434 staging), sem porta liberada no firewall. O DBeaver entra por **túnel SSH** com a chave de administração e usa o superusuário `postgres`.
+- **Acesso:** o Postgres da produção escuta só em `127.0.0.1` da VPS (porta 5433), sem porta liberada no firewall. O DBeaver entra por **túnel SSH** com a chave de administração e usa o superusuário `postgres`.
 - **Conteúdo:** só o banco (`pg_dump`, formato custom: schema e dados, incluindo `auth`). O `pg_dump` não leva as roles: na restauração, elas nascem pelo bootstrap (`init.sh`/`roles.sql`) antes do `pg_restore`. O RustFS (logos) fica fora: se a VPS for perdida, os logos são enviados de novo (risco aceito).
 - **Guarda:** o arquivo contém dados pessoais reais. Fica só no computador do dono, nunca no repositório nem em nuvem, **sem criptografia** (decisão do usuário em 2026-10-06, NBB-77 R2-C; opções descartadas: BitLocker no disco do PC e cópia em nuvem criptografada).
 - **Teste de restauração:** feito em 2026-10-06 com o primeiro backup da produção, no banco local (NBB-96). A parte técnica (donos, RLS, GRANTs, funções) já tinha sido testada em 2026-10-05 com um backup do banco local (NBB-58).

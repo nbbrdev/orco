@@ -18,7 +18,7 @@
 | Autenticação | **Better Auth** (e-mail + senha, confirmação, recuperação, Google; sessões no Postgres) | 0013 |
 | Arquivos | **RustFS** (compatível com S3) via `@aws-sdk/client-s3` | 0015 |
 | PDF | `@react-pdf/renderer` em Route Handler (runtime Node) | 0003 |
-| E-mail transacional | **Nodemailer + SMTP**: Mailpit local, Resend em staging/produção | 0016 |
+| E-mail transacional | **Nodemailer + SMTP**: Mailpit local, Resend na produção | 0016 |
 | Anti-abuso do cadastro | Sem CAPTCHA externo: limite por IP, honeypot e teto diário de e-mails, validados pela Server Action (RN-46) | 0002 |
 | Rate limit | Tabela + função no Postgres | 0004 |
 | PWA | `app/manifest.ts` + service worker próprio (`public/sw.js`), sem cache offline | 0009 |
@@ -27,7 +27,7 @@
 | Tema | **next-themes** (classe `.dark` no `<html>`, escolha salva no navegador) + Tailwind `dark:`. Padrão "Automático" (segue o sistema); o usuário pode fixar Claro ou Escuro no perfil | 0001 |
 | Testes | Vitest (unitário) + Playwright (E2E) | 0001 |
 | Qualidade / segurança de código | ESLint, Prettier, GitHub Actions, CodeQL, Dependabot, secret scanning | 0007 |
-| Hosting | **VPS Hostinger** (Ubuntu) com **Docker Compose** (app + Postgres + RustFS por ambiente), **Nginx + Certbot** no Ubuntu; imagens no **GHCR**; deploy por SSH a partir do GitHub Actions (`main` = staging; produção só via release; sem preview por PR) | 0012 |
+| Hosting | **VPS Hostinger** (Ubuntu) com **Docker Compose** (app + Postgres + RustFS da produção), **Nginx + Certbot** no Ubuntu; imagens no **GHCR**; deploy por SSH a partir do GitHub Actions (produção só via release; sem staging e sem preview por PR) | 0012, 0017 |
 | Versionamento / releases | SemVer escolhido pelo usuário; tag `vX.Y.Z` via `gh release create` → `production.yml` (verify → build → migrate → deploy) | 0010 |
 
 **Fora por ora:** Sentry, Upstash, magic link, MFA (reavaliar em M7). O Sentry foi reavaliado na NBB-57 (2026-10-04) e continua fora: os erros ficam nos logs do Docker.
@@ -42,8 +42,8 @@ flowchart LR
     end
     subgraph VPS["VPS (Ubuntu)"]
       NG[Nginx + Certbot<br/>HTTPS]
-      subgraph Compose["projeto Compose (por ambiente)"]
-        MW[Proxy do Next<br/>CSP, Basic Auth staging]
+      subgraph Compose["projeto Compose (produção)"]
+        MW[Proxy do Next<br/>CSP]
         RSC[Server Components<br/>+ Server Actions<br/>+ Better Auth]
         RH[Route Handlers<br/>PDF, logos, cron]
         DB[(Postgres<br/>RLS + funções)]
@@ -97,7 +97,7 @@ flowchart LR
 │   │   ├── notify.ts          e-mail + push ao freelancer (ADR-0009)
 │   │   ├── whatsapp.ts        buildWhatsAppLink (click-to-chat)
 │   │   └── dates.ts           fuso America/Sao_Paulo
-│   ├── proxy.ts               Proxy do Next 16 (antigo middleware): CSP, Basic Auth do staging
+│   ├── proxy.ts               Proxy do Next 16 (antigo middleware): CSP com nonce
 │   └── pdf/                   templates react-pdf
 ├── tests/                     como rodar: docs/06-regras-dev.md §7
 │   ├── unit/                  Vitest, sem banco
@@ -135,7 +135,7 @@ flowchart LR
 
 **Lembrete diário:** agendamento na VPS (ex.: 9h em São Paulo) → `GET /api/cron/lembretes` com `Authorization: Bearer $CRON_SECRET` → função `quotes_due_for_reminder()` → `notifyFreelancer` → marca `reminder_sent_at`.
 
-- **Como ficou** (NBB-62, 2026-10-04): o cron do sistema da VPS (`/etc/cron.d/orco`, modelo em `deploy/orco.cron`) roda o `deploy/daily.sh` todo dia às 12h UTC (9h de São Paulo), um ambiente de cada vez. O script faz `POST /api/cron/diario` pela porta local do app, com a `CRON_SECRET` do `.env`. A rota faz as duas tarefas do dia (L2-A): o lembrete (a função `app.claim_due_reminders()` pega os orçamentos e marca o `reminder_sent_at` numa só operação, então rodar duas vezes não duplica; depois, `notifyFreelancer` por e-mail e push) e a anonimização dos IPs antigos (RN-37). Responde 503 sem a `CRON_SECRET` configurada e 401 sem a senha certa. Fica fora do Basic Auth do staging, porque tem a própria senha.
+- **Como ficou** (NBB-62, 2026-10-04): o cron do sistema da VPS (`/etc/cron.d/orco`, modelo em `deploy/orco.cron`) roda o `deploy/daily.sh` todo dia às 12h UTC (9h de São Paulo), na produção. O script faz `POST /api/cron/diario` pela porta local do app, com a `CRON_SECRET` do `.env`. A rota faz as duas tarefas do dia (L2-A): o lembrete (a função `app.claim_due_reminders()` pega os orçamentos e marca o `reminder_sent_at` numa só operação, então rodar duas vezes não duplica; depois, `notifyFreelancer` por e-mail e push) e a anonimização dos IPs antigos (RN-37). Responde 503 sem a `CRON_SECRET` configurada e 401 sem a senha certa.
 
 **Status `expirado`:** derivado na leitura (`status = 'sent' AND valid_until < hoje_SP`), exposto por uma view/função. Não depende de cron.
 

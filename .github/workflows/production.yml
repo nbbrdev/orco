@@ -75,4 +75,3 @@ jobs:
       image-tag: ${{ github.event.release.tag_name }}
       app-version: ${{ github.event.release.tag_name }}
       url: https://orco.nbbrdev.com
-      require-vps: true

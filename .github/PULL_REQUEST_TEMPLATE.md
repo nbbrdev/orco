@@ -15,10 +15,11 @@ NBB-
 ## Como testar
 
 <!--
-Não há preview por PR: teste a branch localmente e, depois do merge, no staging.
+Não há preview por PR nem staging: teste a branch localmente. O merge não publica nada; a produção
+só muda com a release.
 Local: `git switch <branch>` → `npm ci` → `npm run db:start` → `npm run dev`.
 No celular (mesma Wi-Fi): abra o endereço "Network" que o `npm run dev` mostra.
-PWA e push só no staging (precisam de HTTPS).
+PWA e push só na produção (precisam de HTTPS).
 -->
 
 1.
