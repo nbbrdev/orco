@@ -2,8 +2,8 @@ import Link from "next/link";
 
 import { LogoIcon } from "@/components/brand/logo-icon";
 
-// Moldura das páginas de termos e privacidade (RF-34, NBB-30 T6): públicas, estáticas, fora do login
-// e do Basic Auth do staging. Texto longo em colunas estreitas, para ler bem no celular.
+// Moldura das páginas de termos e privacidade (RF-34, NBB-30 T6): públicas, estáticas, fora do
+// login. Texto longo em colunas estreitas, para ler bem no celular.
 
 export function LegalPage({
   title,

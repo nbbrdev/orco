@@ -8,13 +8,11 @@ import { buildWhatsAppLink } from "@/lib/whatsapp";
 const TOKEN = "AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-AbCdE";
 
 describe("publicQuoteUrl", () => {
-  it("usa a origem da página, igual no staging e na produção", () => {
+  it("usa a origem da página, igual no local e na produção", () => {
     expect(publicQuoteUrl("https://orco.nbbrdev.com", TOKEN)).toBe(
       `https://orco.nbbrdev.com/p/${TOKEN}`,
     );
-    expect(publicQuoteUrl("https://staging.orco.nbbrdev.com", TOKEN)).toBe(
-      `https://staging.orco.nbbrdev.com/p/${TOKEN}`,
-    );
+    expect(publicQuoteUrl("http://localhost:3000", TOKEN)).toBe(`http://localhost:3000/p/${TOKEN}`);
   });
 });
 

@@ -1,5 +1,5 @@
 import { runDailyTasks } from "@/features/reminders/daily";
-import { safeEqual } from "@/lib/basic-auth";
+import { safeEqual } from "@/lib/security/safe-equal";
 
 // Agendamento diário (NBB-62, L1-A, L2-A): o cron da VPS chama esta rota todo dia às 9h de São Paulo,
 // pela porta local do app, com `Authorization: Bearer <CRON_SECRET>`. Faz o lembrete de vencimento

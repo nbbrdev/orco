@@ -2,8 +2,7 @@
 # Deploy de um ambiente do Orçô na VPS (ADR-0012, docs/08-infra-deploy.md).
 #
 # É o ÚNICO comando que as chaves SSH de deploy do GitHub conseguem rodar. No authorized_keys do
-# usuário deploy, cada chave fica presa a um ambiente:
-#   command="/opt/orco/bin/deploy.sh staging",restrict ssh-ed25519 AAAA... orco-staging-deploy
+# usuário deploy, a chave fica presa ao ambiente (só a produção desde 2026-10-21, ADR-0017):
 #   command="/opt/orco/bin/deploy.sh production",restrict ssh-ed25519 AAAA... orco-production-deploy
 #
 # O ambiente vem da chave ($1). O workflow só escolhe QUAL imagem subir: o pedido chega em
@@ -25,11 +24,10 @@ fail() {
 env_name="${1:-}"
 request="${SSH_ORIGINAL_COMMAND:-}"
 
-# Formato da etiqueta aceito em cada ambiente.
+# Formato da etiqueta aceito (só a produção, desde o ADR-0017).
 case "$env_name" in
-  staging) tag_pattern='staging-[0-9a-f]{40}' ;;
   production) tag_pattern='v[0-9]+\.[0-9]+\.[0-9]+' ;;
-  *) fail "ambiente inválido: use staging ou production." ;;
+  *) fail "ambiente inválido: use production." ;;
 esac
 
 # Pedido inteiro validado: etiqueta do ambiente + digest (a impressão digital exata da imagem).

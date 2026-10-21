@@ -4,7 +4,7 @@ import { getClientIp } from "@/lib/request";
 
 // PDF do orçamento pelo link público (F-07 "Baixar PDF", NBB-52 D7). Casca fina sobre
 // src/features/public-quote/public-quote.ts. Sem login: quem tem o token baixa. Fica sob /api/p/,
-// liberado do Basic Auth no staging, como a página pública. Não conta visualização (D2-A).
+// como a página pública. Não conta visualização (D2-A).
 
 function text(message: string, status: number): Response {
   return new Response(message, {

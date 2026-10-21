@@ -8,7 +8,7 @@ import { quoteReminderEmail, reminderTitle } from "@/lib/email/templates/quote-r
 import { quoteResponseEmail, responderName } from "@/lib/email/templates/quote-response";
 import { recoveryEmail } from "@/lib/email/templates/recovery";
 
-const siteUrl = "https://staging.orco.nbbrdev.com";
+const siteUrl = "https://orco.nbbrdev.com";
 
 describe("escapeHtml", () => {
   it("transforma os caracteres especiais do HTML em texto", () => {

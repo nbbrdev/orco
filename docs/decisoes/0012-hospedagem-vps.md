@@ -3,6 +3,7 @@
 - **Status:** aceito (decidido pelo usuário em 2026-09-29)
 - **Data:** 2026-09-29
 - **Substitui:** ADR-0011 (Vercel no MVP, VPS depois) e as partes de Vercel/Supabase dos ADR-0001, 0008, 0009 e 0010
+- **Revisto por:** [ADR-0017](0017-sem-staging.md) (sem staging desde 2026-10-21: só a produção na VPS)
 
 ## Contexto
 O plano era começar na Vercel + Supabase e migrar para uma VPS depois do `1.0.0`. Na M1, a configuração de painéis e segredos em serviços de terceiros cresceu:

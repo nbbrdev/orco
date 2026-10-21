@@ -6,7 +6,7 @@ import { LegalLinks } from "@/features/legal/components/legal-page";
 
 // Cabeçalho e rodapé das páginas de apresentação (landing e /experimentar, NBB-97 e NBB-95).
 
-// Versão no ar: tag vX.Y.Z em produção, staging-<commit> no staging, "dev" localmente (ADR-0010).
+// Versão no ar: tag vX.Y.Z em produção, "dev" localmente (ADR-0010).
 const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
 
 export function SiteHeader() {

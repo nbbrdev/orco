@@ -1,6 +1,6 @@
 // Ambiente do app, definido por nós (e não pela plataforma), igual em qualquer hospedagem
-// (ADR-0012). Veja docs/06-regras-dev.md §8.
-export const APP_ENVS = ["development", "staging", "production"] as const;
+// (ADR-0012). Veja docs/06-regras-dev.md §8. Sem staging desde 2026-10-21 (ADR-0017).
+export const APP_ENVS = ["development", "production"] as const;
 
 export type AppEnv = (typeof APP_ENVS)[number];
 

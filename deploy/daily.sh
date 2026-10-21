@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Agendamento diário do Orçô na VPS (NBB-62, L1-A, docs/08-infra-deploy.md "Agendamentos").
 #
-# Chamado pelo cron do sistema (deploy/orco.cron), uma vez por dia e por ambiente. Faz um POST em
-# /api/cron/diario do app do ambiente, pela porta local (só a VPS alcança), com a CRON_SECRET do .env
-# dele. O app faz o lembrete de vencimento (RN-43) e a anonimização dos IPs antigos (RN-37).
+# Chamado pelo cron do sistema (deploy/orco.cron), uma vez por dia, na produção. Faz um POST em
+# /api/cron/diario do app, pela porta local (só a VPS alcança), com a CRON_SECRET do .env da
+# produção. O app faz o lembrete de vencimento (RN-43) e a anonimização dos IPs antigos (RN-37).
 #
 # Instalação (deploy/README.md): /opt/orco/bin/daily.sh, dono root, modo 755. Roda como o usuário
 # deploy, o único que lê os .env.
@@ -11,9 +11,9 @@ set -euo pipefail
 
 env_name="${1:-}"
 case "$env_name" in
-  staging | production) ;;
+  production) ;;
   *)
-    echo "daily: ambiente inválido: use staging ou production." >&2
+    echo "daily: ambiente inválido: use production." >&2
     exit 1
     ;;
 esac

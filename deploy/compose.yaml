@@ -1,11 +1,11 @@
-# Um ambiente do Orçô na VPS (ADR-0012, docs/08-infra-deploy.md). O mesmo arquivo serve ao staging e
-# à produção, cada um na sua pasta (/opt/orco/staging, /opt/orco/production) e no seu projeto do
-# Compose (orco-staging, orco-production): redes e volumes separados, um não alcança o outro.
+# A produção do Orçô na VPS (ADR-0012, docs/08-infra-deploy.md), na pasta /opt/orco/production e no
+# projeto do Compose orco-production, com rede e volumes próprios. Sem staging desde 2026-10-21
+# (ADR-0017).
 #
 # Quem roda é o deploy.sh, que copia este arquivo de dentro da imagem de cada versão:
-#   docker compose -p orco-<ambiente> --env-file .env --env-file image.env run --rm migrate
-#   docker compose -p orco-<ambiente> --env-file .env --env-file image.env up -d
-# .env       segredos do ambiente, criado à mão na VPS (modelo: deploy/env.example)
+#   docker compose -p orco-production --env-file .env --env-file image.env run --rm migrate
+#   docker compose -p orco-production --env-file .env --env-file image.env up -d
+# .env       segredos da produção, criado à mão na VPS (modelo: deploy/env.example)
 # image.env  ORCO_IMAGE=ghcr.io/nbbrdev/orco:<tag>@sha256:<digest>, escrito pelo deploy.sh
 
 # Logs limitados (10 MB × 3 por container) para não encher o disco.
@@ -19,7 +19,7 @@ services:
   app:
     image: ${ORCO_IMAGE:?defina ORCO_IMAGE (image.env)}
     restart: unless-stopped
-    # Só o Nginx da própria VPS alcança o app (127.0.0.1). Produção: 3000; staging: 3001.
+    # Só o Nginx da própria VPS alcança o app (127.0.0.1), na porta 3000.
     ports:
       - "127.0.0.1:${APP_PORT:?defina APP_PORT}:3000"
     # Lista explícita: o app recebe só o que usa (nunca a senha do superusuário do banco).
@@ -41,8 +41,6 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       EMAIL_FROM: ${EMAIL_FROM:-}
-      STAGING_BASIC_AUTH_USER: ${STAGING_BASIC_AUTH_USER:-}
-      STAGING_BASIC_AUTH_PASSWORD: ${STAGING_BASIC_AUTH_PASSWORD:-}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-}
@@ -83,7 +81,7 @@ services:
     restart: unless-stopped
     # Porta só em 127.0.0.1 da VPS: a internet não alcança (e o ufw nem precisa liberar). Serve para o
     # backup manual pelo DBeaver, que entra por um túnel SSH (deploy/README.md, "Backup pelo DBeaver").
-    # Produção: 5433; staging: 5434.
+    # Na produção, 5433.
     ports:
       - "127.0.0.1:${DB_PORT:?defina DB_PORT}:5432"
     environment:

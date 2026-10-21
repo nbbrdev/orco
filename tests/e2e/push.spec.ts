@@ -4,7 +4,7 @@ import { signUpAndConfirm, useOwnIp } from "./helpers";
 
 // "Notificações neste aparelho" no perfil (RN-45, NBB-61 P5, P7): os estados que dá para simular no
 // navegador de teste. A assinatura de verdade depende do serviço de push do Google ou da Apple e é
-// testada à mão no staging. Precisa das chaves VAPID no .env (no CI, valores de mentira).
+// testada à mão na produção. Precisa das chaves VAPID no .env (no CI, valores de mentira).
 
 const label = "Notificações neste aparelho";
 
